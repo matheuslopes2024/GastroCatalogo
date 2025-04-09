@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Heart, User, Menu, LogOut, Clipboard, ShoppingCart, Settings } from "lucide-react";
 import { UserRole } from "@shared/schema";
+import { CartDrawer } from "@/components/cart/cart-drawer";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -100,6 +101,8 @@ export function Header() {
               <Heart className="h-5 w-5 mr-1" />
               <span>Favoritos</span>
             </Link>
+            
+            <CartDrawer />
 
             {user ? (
               <DropdownMenu>

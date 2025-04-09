@@ -3,7 +3,13 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
+import Stripe from "stripe";
 import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, UserRole } from "@shared/schema";
+
+// Inicialização do Stripe
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-03-31.basil" }) 
+  : null;
 
 // Helper for checking user roles
 const checkRole = (roles: string[]) => {
@@ -247,6 +253,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sanitizedUsers);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+  });
+  
+  // Suppliers info API (for checkout)
+  app.get("/api/suppliers-info", async (req, res) => {
+    try {
+      const { ids } = req.query;
+      
+      if (!ids) {
+        return res.status(400).json({ message: "IDs dos fornecedores são obrigatórios" });
+      }
+      
+      const supplierIds = (ids as string).split(',').map(id => parseInt(id));
+      const suppliers = await storage.getUsers(UserRole.SUPPLIER);
+      
+      // Filter suppliers by IDs and remove sensitive information
+      const filteredSuppliers = suppliers
+        .filter(supplier => supplierIds.includes(supplier.id))
+        .map(({ password, email, ...supplier }) => supplier);
+      
+      res.json(filteredSuppliers);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar informações dos fornecedores" });
+    }
+  });
+  
+  // Stripe Payment API
+  app.post("/api/create-payment-intent", async (req, res) => {
+    if (!stripe) {
+      return res.status(500).json({ 
+        message: "Stripe não configurado. Adicione suas chaves de API nas variáveis de ambiente." 
+      });
+    }
+    
+    try {
+      const { amount } = req.body;
+      
+      if (!amount || isNaN(amount)) {
+        return res.status(400).json({ message: "Valor inválido" });
+      }
+      
+      // Criar PaymentIntent no Stripe
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Converter para centavos
+        currency: "brl", // Moeda brasileira
+        metadata: {
+          integration_check: "accept_a_payment",
+        },
+      });
+      
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Erro ao criar payment intent:", error);
+      res.status(500).json({ 
+        message: "Erro ao processar pagamento", 
+        error: error.message 
+      });
     }
   });
   

@@ -5,9 +5,11 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import SearchResults from "@/pages/search-results";
 import ProductDetails from "@/pages/product-details";
+import Checkout from "@/pages/checkout";
 import { ProtectedRoute } from "./lib/protected-route";
 import { UserRole } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
+import { CartProvider } from "./hooks/use-cart";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -28,6 +30,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/busca" component={SearchResults} />
       <Route path="/produto/:slug" component={ProductDetails} />
+      <Route path="/checkout" component={Checkout} />
       
       {/* Admin Routes */}
       <ProtectedRoute 
@@ -77,8 +80,10 @@ function Router() {
 function App() {
   return (
     <AuthProvider>
-      <Router />
-      <Toaster />
+      <CartProvider>
+        <Router />
+        <Toaster />
+      </CartProvider>
     </AuthProvider>
   );
 }
