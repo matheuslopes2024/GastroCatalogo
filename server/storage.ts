@@ -1,8 +1,13 @@
 import { users, type User, type InsertUser, categories, type Category, type InsertCategory, products, type Product, type InsertProduct, sales, type Sale, type InsertSale, commissionSettings, type CommissionSetting, type InsertCommissionSetting } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, desc, like, and, or, isNull } from "drizzle-orm";
+import { pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User methods
@@ -45,7 +50,7 @@ export interface IStorage {
   getCommissionSettings(options?: { categoryId?: number; supplierId?: number; active?: boolean }): Promise<CommissionSetting[]>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 }
 
 export class MemStorage implements IStorage {
@@ -61,7 +66,7 @@ export class MemStorage implements IStorage {
   currentSaleId: number;
   currentCommissionSettingId: number;
   
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     this.users = new Map();
@@ -338,4 +343,307 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  sessionStore: any;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
+    this.initData();
+  }
+
+  private async initData() {
+    try {
+      // Verificar se já existem categorias
+      const existingCategories = await db.select().from(categories);
+      if (existingCategories.length === 0) {
+        // Adicionar categorias iniciais
+        const categoryData: InsertCategory[] = [
+          { name: "Utensílios", slug: "utensilios", description: "Utensílios para restaurantes", icon: "utensils" },
+          { name: "Refrigeração", slug: "refrigeracao", description: "Equipamentos de refrigeração", icon: "temperature-low" },
+          { name: "Cocção", slug: "coccao", description: "Equipamentos para cocção", icon: "fire" },
+          { name: "Preparação", slug: "preparacao", description: "Equipamentos para preparação de alimentos", icon: "blender" },
+          { name: "Bar", slug: "bar", description: "Equipamentos para bar", icon: "wine-glass-alt" },
+          { name: "Lavagem", slug: "lavagem", description: "Equipamentos para lavagem", icon: "sink" },
+          { name: "Mobiliário", slug: "mobiliario", description: "Mobiliário para restaurantes", icon: "chair" }
+        ];
+        
+        for (const cat of categoryData) {
+          await this.createCategory(cat);
+        }
+      }
+
+      // Verificar se já existem configurações de comissão
+      const existingSettings = await db.select().from(commissionSettings);
+      if (existingSettings.length === 0) {
+        // Adicionar configuração de comissão padrão
+        await this.createCommissionSetting({
+          rate: "5",
+          active: true
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao inicializar dados:", error);
+    }
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+  
+  async getUsers(role?: string): Promise<User[]> {
+    if (role) {
+      return db.select().from(users).where(eq(users.role, role));
+    }
+    return db.select().from(users);
+  }
+  
+  // Category methods
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category;
+  }
+  
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
+    return category;
+  }
+  
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db
+      .insert(categories)
+      .values({ ...insertCategory, productsCount: 0 })
+      .returning();
+    return category;
+  }
+  
+  async updateCategory(id: number, categoryData: Partial<Category>): Promise<Category | undefined> {
+    const [updatedCategory] = await db
+      .update(categories)
+      .set(categoryData)
+      .where(eq(categories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+  
+  async getCategories(): Promise<Category[]> {
+    return db.select().from(categories);
+  }
+  
+  // Product methods
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
+  }
+  
+  async getProductBySlug(slug: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.slug, slug));
+    return product;
+  }
+  
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const [product] = await db
+      .insert(products)
+      .values({
+        ...insertProduct,
+        rating: "0",
+        ratingsCount: 0
+      })
+      .returning();
+    
+    // Atualizar contagem de produtos na categoria
+    const category = await this.getCategory(product.categoryId);
+    if (category) {
+      await this.updateCategory(category.id, { 
+        productsCount: category.productsCount + 1 
+      });
+    }
+    
+    return product;
+  }
+  
+  async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set(productData)
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct;
+  }
+  
+  async getProducts(options?: { 
+    categoryId?: number; 
+    supplierId?: number; 
+    active?: boolean;
+    limit?: number;
+    search?: string;
+  }): Promise<Product[]> {
+    let query = db.select().from(products);
+    
+    if (options) {
+      const conditions = [];
+      
+      if (options.categoryId !== undefined) {
+        conditions.push(eq(products.categoryId, options.categoryId));
+      }
+      
+      if (options.supplierId !== undefined) {
+        conditions.push(eq(products.supplierId, options.supplierId));
+      }
+      
+      if (options.active !== undefined) {
+        conditions.push(eq(products.active, options.active));
+      }
+      
+      if (options.search) {
+        const searchTerm = `%${options.search}%`;
+        conditions.push(
+          or(
+            like(products.name, searchTerm),
+            like(products.description, searchTerm)
+          )
+        );
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+    }
+    
+    return query;
+  }
+  
+  // Sale methods
+  async getSale(id: number): Promise<Sale | undefined> {
+    const [sale] = await db.select().from(sales).where(eq(sales.id, id));
+    return sale;
+  }
+  
+  async createSale(insertSale: InsertSale): Promise<Sale> {
+    const [sale] = await db
+      .insert(sales)
+      .values(insertSale)
+      .returning();
+    return sale;
+  }
+  
+  async getSales(options?: { supplierId?: number; buyerId?: number }): Promise<Sale[]> {
+    let query = db.select().from(sales);
+    
+    if (options) {
+      const conditions = [];
+      
+      if (options.supplierId !== undefined) {
+        conditions.push(eq(sales.supplierId, options.supplierId));
+      }
+      
+      if (options.buyerId !== undefined) {
+        conditions.push(eq(sales.buyerId, options.buyerId));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+    }
+    
+    return query;
+  }
+  
+  // Commission Settings methods
+  async getCommissionSetting(id: number): Promise<CommissionSetting | undefined> {
+    const [setting] = await db.select().from(commissionSettings).where(eq(commissionSettings.id, id));
+    return setting;
+  }
+  
+  async createCommissionSetting(insertSetting: InsertCommissionSetting): Promise<CommissionSetting> {
+    const [setting] = await db
+      .insert(commissionSettings)
+      .values(insertSetting)
+      .returning();
+    return setting;
+  }
+  
+  async updateCommissionSetting(id: number, settingData: Partial<CommissionSetting>): Promise<CommissionSetting | undefined> {
+    const [updatedSetting] = await db
+      .update(commissionSettings)
+      .set(settingData)
+      .where(eq(commissionSettings.id, id))
+      .returning();
+    return updatedSetting;
+  }
+  
+  async getCommissionSettings(options?: { 
+    categoryId?: number; 
+    supplierId?: number; 
+    active?: boolean
+  }): Promise<CommissionSetting[]> {
+    let query = db.select().from(commissionSettings);
+    
+    if (options) {
+      const conditions = [];
+      
+      if (options.categoryId !== undefined) {
+        conditions.push(
+          or(
+            eq(commissionSettings.categoryId, options.categoryId),
+            isNull(commissionSettings.categoryId)
+          )
+        );
+      }
+      
+      if (options.supplierId !== undefined) {
+        conditions.push(
+          or(
+            eq(commissionSettings.supplierId, options.supplierId),
+            isNull(commissionSettings.supplierId)
+          )
+        );
+      }
+      
+      if (options.active !== undefined) {
+        conditions.push(eq(commissionSettings.active, options.active));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+    }
+    
+    return query;
+  }
+}
+
+// Usar o armazenamento de banco de dados PostgreSQL
+export const storage = new DatabaseStorage();
