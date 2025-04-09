@@ -1,0 +1,255 @@
+import type { Express, Request, Response } from "express";
+import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { z } from "zod";
+import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, UserRole } from "@shared/schema";
+
+// Helper for checking user roles
+const checkRole = (roles: string[]) => {
+  return (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Não autorizado" });
+    }
+    
+    const userRole = req.user?.role;
+    if (!userRole || !roles.includes(userRole)) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    
+    next();
+  };
+};
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication routes
+  setupAuth(app);
+  
+  // Categories API
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar categorias" });
+    }
+  });
+  
+  app.get("/api/categories/:slug", async (req, res) => {
+    try {
+      const category = await storage.getCategoryBySlug(req.params.slug);
+      if (!category) {
+        return res.status(404).json({ message: "Categoria não encontrada" });
+      }
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar categoria" });
+    }
+  });
+  
+  app.post("/api/categories", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const validatedData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(validatedData);
+      res.status(201).json(category);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar categoria" });
+    }
+  });
+  
+  app.patch("/api/categories/:id", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const category = await storage.getCategory(id);
+      if (!category) {
+        return res.status(404).json({ message: "Categoria não encontrada" });
+      }
+      
+      const updatedCategory = await storage.updateCategory(id, req.body);
+      res.json(updatedCategory);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar categoria" });
+    }
+  });
+  
+  // Products API
+  app.get("/api/products", async (req, res) => {
+    try {
+      const { categoryId, supplierId, search, limit } = req.query;
+      
+      const options: any = { active: true };
+      
+      if (categoryId) options.categoryId = parseInt(categoryId as string);
+      if (supplierId) options.supplierId = parseInt(supplierId as string);
+      if (search) options.search = search as string;
+      if (limit) options.limit = parseInt(limit as string);
+      
+      const products = await storage.getProducts(options);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar produtos" });
+    }
+  });
+  
+  app.get("/api/products/:slug", async (req, res) => {
+    try {
+      const product = await storage.getProductBySlug(req.params.slug);
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar produto" });
+    }
+  });
+  
+  app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const validatedData = insertProductSchema.parse(req.body);
+      
+      // If user is a supplier, force supplierId to be their user ID
+      if (req.user?.role === UserRole.SUPPLIER) {
+        validatedData.supplierId = req.user.id;
+      }
+      
+      const product = await storage.createProduct(validatedData);
+      res.status(201).json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar produto" });
+    }
+  });
+  
+  app.patch("/api/products/:id", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const product = await storage.getProduct(id);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Suppliers can only update their own products
+      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para editar este produto" });
+      }
+      
+      const updatedProduct = await storage.updateProduct(id, req.body);
+      res.json(updatedProduct);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar produto" });
+    }
+  });
+  
+  // Sales API
+  app.get("/api/sales", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const options: any = {};
+      
+      // Suppliers can only see their own sales
+      if (req.user?.role === UserRole.SUPPLIER) {
+        options.supplierId = req.user.id;
+      } else if (req.query.supplierId) {
+        options.supplierId = parseInt(req.query.supplierId as string);
+      }
+      
+      if (req.query.buyerId) {
+        options.buyerId = parseInt(req.query.buyerId as string);
+      }
+      
+      const sales = await storage.getSales(options);
+      res.json(sales);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar vendas" });
+    }
+  });
+  
+  app.post("/api/sales", async (req, res) => {
+    try {
+      const validatedData = insertSaleSchema.parse(req.body);
+      
+      // Set buyer ID if user is authenticated
+      if (req.isAuthenticated()) {
+        validatedData.buyerId = req.user.id;
+      }
+      
+      const sale = await storage.createSale(validatedData);
+      res.status(201).json(sale);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao registrar venda" });
+    }
+  });
+  
+  // Commission Settings API
+  app.get("/api/commission-settings", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const { categoryId, supplierId, active } = req.query;
+      
+      const options: any = {};
+      
+      if (categoryId) options.categoryId = parseInt(categoryId as string);
+      if (supplierId) options.supplierId = parseInt(supplierId as string);
+      if (active !== undefined) options.active = active === 'true';
+      
+      const settings = await storage.getCommissionSettings(options);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar configurações de comissão" });
+    }
+  });
+  
+  app.post("/api/commission-settings", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const validatedData = insertCommissionSettingSchema.parse(req.body);
+      const setting = await storage.createCommissionSetting(validatedData);
+      res.status(201).json(setting);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar configuração de comissão" });
+    }
+  });
+  
+  app.patch("/api/commission-settings/:id", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const setting = await storage.getCommissionSetting(id);
+      
+      if (!setting) {
+        return res.status(404).json({ message: "Configuração não encontrada" });
+      }
+      
+      const updatedSetting = await storage.updateCommissionSetting(id, req.body);
+      res.json(updatedSetting);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar configuração de comissão" });
+    }
+  });
+  
+  // Users API (admin only)
+  app.get("/api/users", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const { role } = req.query;
+      const users = await storage.getUsers(role as string | undefined);
+      
+      // Remove passwords before sending response
+      const sanitizedUsers = users.map(({ password, ...user }) => user);
+      
+      res.json(sanitizedUsers);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+  });
+  
+  const httpServer = createServer(app);
+  return httpServer;
+}
