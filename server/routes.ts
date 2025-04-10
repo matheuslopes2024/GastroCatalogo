@@ -4,7 +4,8 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
-import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, UserRole } from "@shared/schema";
+import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, insertProductImageSchema, UserRole, productImages } from "@shared/schema";
+import { eq, and, or, like, ne } from "drizzle-orm";
 import bodyParser from "body-parser";
 
 // Inicialização do Stripe

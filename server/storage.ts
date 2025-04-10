@@ -84,12 +84,14 @@ export class MemStorage implements IStorage {
     this.products = new Map();
     this.sales = new Map();
     this.commissionSettings = new Map();
+    this.productImages = new Map();
     
     this.currentUserId = 1;
     this.currentCategoryId = 1;
     this.currentProductId = 1;
     this.currentSaleId = 1;
     this.currentCommissionSettingId = 1;
+    this.currentProductImageId = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -350,6 +352,52 @@ export class MemStorage implements IStorage {
     }
     
     return settings;
+  }
+  
+  // Product Image methods
+  async getProductImage(id: number): Promise<ProductImage | undefined> {
+    return this.productImages.get(id);
+  }
+  
+  async createProductImage(insertImage: InsertProductImage): Promise<ProductImage> {
+    const id = this.currentProductImageId++;
+    const image: ProductImage = { 
+      ...insertImage, 
+      id, 
+      createdAt: new Date() 
+    };
+    this.productImages.set(id, image);
+    return image;
+  }
+  
+  async updateProductImage(id: number, imageData: Partial<ProductImage>): Promise<ProductImage | undefined> {
+    const image = await this.getProductImage(id);
+    if (!image) return undefined;
+    
+    const updatedImage = { ...image, ...imageData };
+    this.productImages.set(id, updatedImage);
+    return updatedImage;
+  }
+  
+  async deleteProductImage(id: number): Promise<void> {
+    this.productImages.delete(id);
+  }
+  
+  async getProductImages(productId: number): Promise<ProductImage[]> {
+    const images = Array.from(this.productImages.values())
+      .filter(image => image.productId === productId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    return images;
+  }
+  
+  async updateProductImagesNotPrimary(productId: number, excludeId?: number): Promise<void> {
+    const images = await this.getProductImages(productId);
+    
+    for (const image of images) {
+      if (excludeId !== undefined && image.id === excludeId) continue;
+      
+      await this.updateProductImage(image.id, { isPrimary: false });
+    }
   }
 }
 
