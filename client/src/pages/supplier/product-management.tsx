@@ -151,12 +151,21 @@ export default function ProductManagement() {
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      const slug = generateSlug(data.name);
-      return apiRequest("POST", "/api/products", { 
-        ...data,
-        slug,
-        price: Number(data.price).toString(), // Ensure price is string
-      });
+      console.log("Iniciando mutação de criação de produto:", data);
+      return apiRequest("POST", "/api/products", data)
+        .then(response => {
+          if (!response.ok) {
+            console.error("Erro na resposta API:", response.status, response.statusText);
+            return response.json().then(err => {
+              throw new Error(err.message || "Erro ao criar produto");
+            });
+          }
+          return response.json();
+        })
+        .catch(error => {
+          console.error("Erro ao criar produto:", error);
+          throw error;
+        });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -225,7 +234,24 @@ export default function ProductManagement() {
   
   // Handler for submitting the add product form
   const onSubmit = (data: ProductFormValues) => {
-    createProductMutation.mutate(data);
+    console.log("Enviando dados do formulário:", data);
+    
+    // Certifique-se de que o supplierId esteja definido
+    if (!data.supplierId && user) {
+      data.supplierId = user.id;
+    }
+    
+    // Garanta que todos os campos obrigatórios estejam presentes
+    const slug = generateSlug(data.name);
+    const productData = {
+      ...data,
+      slug,
+      price: data.price ? data.price.toString() : "0",
+      active: true
+    };
+    
+    console.log("Dados preparados para envio:", productData);
+    createProductMutation.mutate(productData);
   };
   
   // Handler for submitting the edit product form
