@@ -112,6 +112,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para buscar o mesmo produto de diferentes fornecedores
+  app.get("/api/products/:slug/suppliers", async (req, res) => {
+    try {
+      // Buscar o produto principal
+      const baseProduct = await storage.getProductBySlug(req.params.slug);
+      if (!baseProduct) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Buscar produtos similares com base no nome do produto
+      const similarProducts = await storage.getProducts({
+        search: baseProduct.name,
+        active: true
+      });
+      
+      // Filtrar para incluir apenas produtos que correspondam exatamente ao nome
+      // e sejam de fornecedores diferentes
+      const matchingProducts = similarProducts.filter(product => 
+        product.name.toLowerCase().trim() === baseProduct.name.toLowerCase().trim() &&
+        product.id !== baseProduct.id
+      );
+      
+      // Adicionar o produto base à lista
+      const allProducts = [baseProduct, ...matchingProducts];
+      
+      // Ordenar por preço (do menor para o maior)
+      const sortedProducts = allProducts.sort((a, b) => 
+        parseFloat(a.price.toString()) - parseFloat(b.price.toString())
+      );
+      
+      // Obter IDs dos fornecedores
+      const supplierIds = [...new Set(sortedProducts.map(p => p.supplierId))];
+      
+      // Buscar informações dos fornecedores
+      const suppliers = await Promise.all(
+        supplierIds.map(id => storage.getUser(id))
+      );
+      
+      // Criar mapa de fornecedores para acesso rápido
+      const supplierMap = new Map();
+      suppliers.forEach(supplier => {
+        if (supplier) {
+          // Remove a senha antes de enviar
+          const { password, ...safeSupplier } = supplier;
+          supplierMap.set(supplier.id, safeSupplier);
+        }
+      });
+      
+      // Adicionar informações do fornecedor a cada produto
+      const productsWithSuppliers = sortedProducts.map(product => ({
+        ...product,
+        supplier: supplierMap.get(product.supplierId) || null,
+        isBestPrice: false // Será atualizado abaixo
+      }));
+      
+      // Marcar o produto com melhor preço
+      if (productsWithSuppliers.length > 0) {
+        productsWithSuppliers[0].isBestPrice = true;
+      }
+      
+      res.json(productsWithSuppliers);
+    } catch (error) {
+      console.error("Erro ao buscar produto de diferentes fornecedores:", error);
+      res.status(500).json({ message: "Erro ao buscar produto de diferentes fornecedores" });
+    }
+  });
+  
   app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);

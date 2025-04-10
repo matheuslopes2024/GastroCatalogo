@@ -10,6 +10,8 @@ import { Product, User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { SupplierOptions } from "@/components/product/supplier-options";
+import { useCart } from "@/hooks/use-cart";
 
 export default function ProductDetails() {
   const [, params] = useRoute("/produto/:slug");
@@ -244,6 +246,11 @@ export default function ProductDetails() {
                   </ul>
                 </div>
               </div>
+            </div>
+            
+            {/* Supplier Options */}
+            <div className="border-t border-gray-200 p-6">
+              <SupplierOptions productSlug={params?.slug || ''} />
             </div>
           </div>
         </div>
