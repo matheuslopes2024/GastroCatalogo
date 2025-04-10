@@ -147,3 +147,85 @@ export type InsertCommissionSetting = z.infer<typeof insertCommissionSettingSche
 
 export type ProductImage = typeof productImages.$inferSelect;
 export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
+
+// FAQ Categories Table (para organizar as perguntas frequentes em categorias)
+export const faqCategories = pgTable("faq_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  icon: text("icon"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// FAQ Items Table (perguntas e respostas)
+export const faqItems = pgTable("faq_items", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull().references(() => faqCategories.id, { onDelete: "cascade" }),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Chat Messages
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: text("attachment_type"),
+  attachmentData: text("attachment_data"), // Base64 do arquivo (para arquivos menores)
+  attachmentSize: integer("attachment_size"), // Tamanho em bytes
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Chat Conversations (para agrupar conversas)
+export const chatConversations = pgTable("chat_conversations", {
+  id: serial("id").primaryKey(),
+  participantIds: jsonb("participant_ids").$type<number[]>().notNull(), // Array com IDs dos usuários na conversa
+  lastMessageId: integer("last_message_id"), // Referência à última mensagem
+  lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(),
+  subject: text("subject"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Insert schemas para as novas tabelas
+export const insertFaqCategorySchema = createInsertSchema(faqCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFaqItemSchema = createInsertSchema(faqItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  lastActivityAt: true,
+});
+
+// Types para as novas tabelas
+export type FaqCategory = typeof faqCategories.$inferSelect;
+export type InsertFaqCategory = z.infer<typeof insertFaqCategorySchema>;
+
+export type FaqItem = typeof faqItems.$inferSelect;
+export type InsertFaqItem = z.infer<typeof insertFaqItemSchema>;
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;

@@ -57,6 +57,38 @@ export interface IStorage {
   updateCommissionSetting(id: number, settingData: Partial<CommissionSetting>): Promise<CommissionSetting | undefined>;
   getCommissionSettings(options?: { categoryId?: number; supplierId?: number; active?: boolean }): Promise<CommissionSetting[]>;
   
+  // FAQ Category methods
+  getFaqCategory(id: number): Promise<FaqCategory | undefined>;
+  getFaqCategoryBySlug(slug: string): Promise<FaqCategory | undefined>;
+  createFaqCategory(category: InsertFaqCategory): Promise<FaqCategory>;
+  updateFaqCategory(id: number, categoryData: Partial<FaqCategory>): Promise<FaqCategory | undefined>;
+  getFaqCategories(): Promise<FaqCategory[]>;
+  
+  // FAQ Item methods
+  getFaqItem(id: number): Promise<FaqItem | undefined>;
+  createFaqItem(item: InsertFaqItem): Promise<FaqItem>;
+  updateFaqItem(id: number, itemData: Partial<FaqItem>): Promise<FaqItem | undefined>;
+  getFaqItems(categoryId?: number): Promise<FaqItem[]>;
+  
+  // Chat methods
+  getChatMessage(id: number): Promise<ChatMessage | undefined>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  getChatMessages(options: { 
+    conversationId?: number;
+    senderId?: number;
+    receiverId?: number;
+    limit?: number;
+    offset?: number;
+    unreadOnly?: boolean;
+  }): Promise<ChatMessage[]>;
+  markMessagesAsRead(messagesIds: number[]): Promise<void>;
+  
+  // Chat Conversation methods
+  getChatConversation(id: number): Promise<ChatConversation | undefined>;
+  createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
+  updateChatConversation(id: number, conversationData: Partial<ChatConversation>): Promise<ChatConversation | undefined>;
+  getChatConversations(userId: number): Promise<ChatConversation[]>;
+  
   // Session store
   sessionStore: any;
 }
