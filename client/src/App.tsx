@@ -23,9 +23,19 @@ import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierProductManagement from "@/pages/supplier/product-management";
 import SupplierSales from "@/pages/supplier/sales";
 
-// Vamos adicionar em breve
+// Existing pages
 import CategoriesPage from "@/pages/categories-page";
 import ProfilePage from "@/pages/profile-page";
+
+// New pages
+import HowItWorksPage from "@/pages/how-it-works";
+import SuppliersListPage from "@/pages/suppliers-list";
+import BlogPage from "@/pages/blog";
+import BlogPostPage from "@/pages/blog-post";
+import ContactPage from "@/pages/contact";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
+import HelpPage from "@/pages/help";
 
 function Router() {
   return (
@@ -39,6 +49,16 @@ function Router() {
       <Route path="/carrinho" component={CartPage} />
       <Route path="/categorias" component={CategoriesPage} />
       <Route path="/perfil" component={ProfilePage} />
+      
+      {/* New Public Routes */}
+      <Route path="/como-funciona" component={HowItWorksPage} />
+      <Route path="/fornecedores" component={SuppliersListPage} />
+      <Route path="/blog" component={BlogPage} />
+      <Route path="/blog/:slug" component={BlogPostPage} />
+      <Route path="/contato" component={ContactPage} />
+      <Route path="/termos" component={TermsPage} />
+      <Route path="/privacidade" component={PrivacyPage} />
+      <Route path="/ajuda" component={HelpPage} />
       
       {/* Admin Routes */}
       <ProtectedRoute 
