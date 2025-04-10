@@ -51,9 +51,22 @@ export const products = pgTable("products", {
   ratingsCount: integer("ratings_count").notNull().default(0),
   features: jsonb("features").$type<string[]>(),
   imageUrl: text("image_url").notNull(),
-  imageData: text("image_data"), // Armazenamento de imagem em base64
-  imageType: text("image_type"), // Tipo MIME da imagem
+  imageData: text("image_data"), // Imagem principal em base64
+  imageType: text("image_type"), // Tipo MIME da imagem principal
+  additionalImages: jsonb("additional_images").$type<{url?: string, data?: string, type?: string}[]>(), // Lista de até 8 imagens adicionais
   active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Tabela de imagens de produto (para suportar múltiplas imagens por produto)
+export const productImages = pgTable("product_images", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  imageUrl: text("image_url"),
+  imageData: text("image_data"), // Armazenamento de imagem em base64
+  imageType: text("image_type"), // Tipo MIME da imagem 
+  isPrimary: boolean("is_primary").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -99,6 +112,11 @@ export const insertProductSchema = createInsertSchema(products).omit({
   ratingsCount: true,
 });
 
+export const insertProductImageSchema = createInsertSchema(productImages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSaleSchema = createInsertSchema(sales).omit({
   id: true,
   createdAt: true,
@@ -124,3 +142,6 @@ export type InsertSale = z.infer<typeof insertSaleSchema>;
 
 export type CommissionSetting = typeof commissionSettings.$inferSelect;
 export type InsertCommissionSetting = z.infer<typeof insertCommissionSettingSchema>;
+
+export type ProductImage = typeof productImages.$inferSelect;
+export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
