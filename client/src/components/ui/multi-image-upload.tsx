@@ -21,11 +21,22 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
+interface ProductImage {
+  id?: number;
+  url?: string;
+  data?: string;
+  type?: string;
+  imageData?: string;
+  imageType?: string;
+  isPrimary?: boolean;
+  sortOrder?: number;
+}
+
 interface MultiImageUploadProps {
   productId: number;
-  initialImages?: Array<{id?: number, url?: string, data?: string, type?: string}>;
+  initialImages?: ProductImage[];
   maxImages?: number;
-  onImagesUpdated?: (newImages: Array<{id?: number, url?: string, data?: string, type?: string}>) => void;
+  onImagesUpdated?: (newImages: ProductImage[]) => void;
 }
 
 export function MultiImageUpload({ 
@@ -34,7 +45,7 @@ export function MultiImageUpload({
   maxImages = 8,
   onImagesUpdated 
 }: MultiImageUploadProps) {
-  const [images, setImages] = useState<Array<{id?: number, url?: string, data?: string, type?: string}>>(initialImages);
+  const [images, setImages] = useState<ProductImage[]>(initialImages);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -235,10 +246,27 @@ export function MultiImageUpload({
       
       const response = await fetch(`/api/products/images/${imageToSetPrimary.id}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPrimary: true }),
       });
       
       if (!response.ok) {
         throw new Error('Falha ao definir imagem principal');
+      }
+      
+      // Atualizar o estado local com a nova imagem principal
+      const newImages = [...images];
+      newImages.forEach((img, idx) => {
+        if (idx === index) {
+          img.isPrimary = true;
+        } else {
+          img.isPrimary = false;
+        }
+      });
+      setImages(newImages);
+      
+      if (onImagesUpdated) {
+        onImagesUpdated(newImages);
       }
       
       toast({
@@ -285,7 +313,7 @@ export function MultiImageUpload({
       for (const img of imagesToUpdate) {
         if (img.id) {
           await fetch(`/api/products/images/${img.id}`, {
-            method: 'PUT',
+            method: 'PATCH', // Usar PATCH em vez de PUT para evitar conflitos
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sortOrder: img.sortOrder }),
           });
@@ -301,7 +329,7 @@ export function MultiImageUpload({
     }
   };
 
-  const getImageUrl = (image: {id?: number, url?: string, data?: string, type?: string}) => {
+  const getImageUrl = (image: ProductImage) => {
     // Prioridade: URL externa > Dados em base64 > Endpoint da API
     if (image.url) return image.url;
     if (image.data) return image.data;
