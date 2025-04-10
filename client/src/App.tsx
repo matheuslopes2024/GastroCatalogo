@@ -33,6 +33,7 @@ import SuppliersListPage from "@/pages/suppliers-list";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
 import ContactPage from "@/pages/contact";
+import FAQPage from "@/pages/faq";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import HelpPage from "@/pages/help";
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />
       <Route path="/contato" component={ContactPage} />
+      <Route path="/faq" component={FAQPage} />
       <Route path="/termos" component={TermsPage} />
       <Route path="/privacidade" component={PrivacyPage} />
       <Route path="/ajuda" component={HelpPage} />

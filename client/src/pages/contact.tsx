@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -75,12 +76,14 @@ const FAQCard = ({
   icon, 
   title, 
   description, 
-  buttonText
+  buttonText,
+  link
 }: { 
   icon: React.ReactNode; 
   title: string; 
   description: string; 
   buttonText: string;
+  link: string;
 }) => {
   return (
     <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-full">
@@ -90,10 +93,12 @@ const FAQCard = ({
         </div>
         <h3 className="text-lg font-semibold mb-2 text-gray-900">{title}</h3>
         <p className="text-gray-600 mb-6 flex-grow">{description}</p>
-        <Button variant="outline" className="w-full group">
-          {buttonText}
-          <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-        </Button>
+        <Link href={link}>
+          <Button variant="outline" className="w-full group">
+            {buttonText}
+            <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );
@@ -369,6 +374,7 @@ export default function ContactPage() {
                   title="Perguntas Frequentes"
                   description="Encontre respostas para as dúvidas mais comuns sobre nossa plataforma e como ela funciona."
                   buttonText="Ver FAQ"
+                  link="/faq"
                 />
               </motion.div>
               
@@ -383,6 +389,7 @@ export default function ContactPage() {
                   title="Chat ao Vivo"
                   description="Converse em tempo real com nossa equipe de suporte para obter ajuda imediata com suas dúvidas."
                   buttonText="Iniciar Chat"
+                  link="#" // Será substituído quando implementarmos o chat
                 />
               </motion.div>
               
@@ -397,6 +404,7 @@ export default function ContactPage() {
                   title="Suporte para Empresas"
                   description="Atendimento dedicado para fornecedores e parceiros comerciais interessados em nossa plataforma."
                   buttonText="Contato Comercial"
+                  link="/contato?tipo=comercial"
                 />
               </motion.div>
             </div>
