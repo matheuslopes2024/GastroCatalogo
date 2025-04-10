@@ -347,12 +347,13 @@ export default function ProductManagement() {
     // Garanta que todos os campos obrigatórios estejam presentes
     const slug = generateSlug(data.name);
     
-    // Versão simplificada do produto para evitar erros de validação
+    // Versão completa do produto com todas as propriedades necessárias
     const productData = {
       name: data.name,
       description: data.description,
       slug,
       categoryId: data.categoryId,
+      additionalCategories: data.additionalCategories || [], // Adicionando categorias adicionais
       supplierId: data.supplierId || user?.id,
       price: data.price ? data.price.toString() : "0",
       imageUrl: data.imageUrl,
@@ -376,13 +377,14 @@ export default function ProductManagement() {
     
     console.log("Enviando dados de edição:", data);
     
-    // Versão simplificada do produto para edição
+    // Versão completa do produto para edição
     const productData = {
       id: editingProduct.id,
       name: data.name,
       description: data.description,
       slug: editingProduct.slug,
       categoryId: data.categoryId,
+      additionalCategories: data.additionalCategories || [], // Adicionando categorias adicionais
       supplierId: data.supplierId || user?.id,
       price: data.price ? data.price.toString() : "0",
       imageUrl: data.imageUrl,
@@ -415,11 +417,19 @@ export default function ProductManagement() {
       ? product.features.join('\n') 
       : "";
     
+    // Garantir que additionalCategories seja um array, mesmo se for null
+    const additionalCats = Array.isArray(product.additionalCategories) 
+      ? product.additionalCategories 
+      : [];
+    
+    console.log("Carregando categorias adicionais:", additionalCats);
+    
     editForm.reset({
       ...product,
       features: featuresString,
       price: product.price.toString(), // Convert to string for form
       categoryId: product.categoryId,
+      additionalCategories: additionalCats, // Certifique-se de definir as categorias adicionais
     });
     
     setIsEditDialogOpen(true);
