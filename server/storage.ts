@@ -1,9 +1,20 @@
-import { users, type User, type InsertUser, categories, type Category, type InsertCategory, products, type Product, type InsertProduct, sales, type Sale, type InsertSale, commissionSettings, type CommissionSetting, type InsertCommissionSetting, productImages, type ProductImage, type InsertProductImage } from "@shared/schema";
+import { 
+  users, type User, type InsertUser, 
+  categories, type Category, type InsertCategory, 
+  products, type Product, type InsertProduct, 
+  sales, type Sale, type InsertSale, 
+  commissionSettings, type CommissionSetting, type InsertCommissionSetting, 
+  productImages, type ProductImage, type InsertProductImage,
+  faqCategories, type FaqCategory, type InsertFaqCategory,
+  faqItems, type FaqItem, type InsertFaqItem,
+  chatMessages, type ChatMessage, type InsertChatMessage,
+  chatConversations, type ChatConversation, type InsertChatConversation
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, desc, like, and, or, isNull, ne, sql } from "drizzle-orm";
+import { eq, desc, like, and, or, isNull, ne, sql, inArray } from "drizzle-orm";
 import { pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
