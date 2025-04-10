@@ -43,7 +43,7 @@ export function CategoryNav() {
           {categories.map((category) => (
             <Link 
               key={category.id}
-              href={`/busca?categoria=${category.slug}`}
+              href={`/busca?categoria=${category.id}`}
               className="flex flex-col items-center p-2 hover:text-primary transition-colors"
             >
               <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
