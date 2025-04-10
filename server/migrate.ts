@@ -95,10 +95,12 @@ async function runMigration() {
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = 'faq_items'
-      );
+      ) as exists;
     `);
     
-    if (!faqItemsExists[0].exists) {
+    console.log('Verificação da tabela faq_items:', faqItemsExists);
+    
+    if (!faqItemsExists[0]?.exists) {
       console.log('Criando tabela faq_items...');
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS faq_items (
