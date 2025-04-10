@@ -161,8 +161,32 @@ export default function AdminCommissions() {
     mutationFn: async (data: CommissionFormValues) => {
       return apiRequest("POST", "/api/commission-settings", data);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/commission-settings"] });
+      
+      // Adicionar a nova configuração ao cache em tempo real
+      try {
+        data.json().then(newCommission => {
+          try {
+            const currentSettings = queryClient.getQueryData<CommissionSetting[]>(["/api/commission-settings"]) || [];
+            
+            // Adicionar a nova configuração à lista existente
+            const updatedSettings = [...currentSettings, newCommission];
+            
+            // Atualizar o cache
+            queryClient.setQueryData(["/api/commission-settings"], updatedSettings);
+            console.log("Nova configuração de comissão adicionada em tempo real:", newCommission);
+          } catch (e) {
+            console.error("Erro ao processar dados da nova configuração:", e);
+          }
+        }).catch(e => {
+          console.error("Erro ao processar resposta JSON:", e);
+        });
+      } catch (e) {
+        console.error("Erro ao processar resposta da nova configuração:", e);
+      }
+      
       setIsAddDialogOpen(false);
       form.reset();
       toast({
@@ -185,8 +209,34 @@ export default function AdminCommissions() {
       const { id, ...commissionData } = data;
       return apiRequest("PATCH", `/api/commission-settings/${id}`, commissionData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/commission-settings"] });
+      
+      // Atualizar a configuração no cache em tempo real
+      try {
+        data.json().then(updatedCommission => {
+          try {
+            const currentSettings = queryClient.getQueryData<CommissionSetting[]>(["/api/commission-settings"]) || [];
+            
+            // Substituir a configuração antiga pela atualizada
+            const updatedSettings = currentSettings.map(commission => 
+              commission.id === updatedCommission.id ? updatedCommission : commission
+            );
+            
+            // Atualizar o cache
+            queryClient.setQueryData(["/api/commission-settings"], updatedSettings);
+            console.log("Configuração de comissão atualizada em tempo real:", updatedCommission);
+          } catch (e) {
+            console.error("Erro ao processar dados da configuração atualizada:", e);
+          }
+        }).catch(e => {
+          console.error("Erro ao processar resposta JSON:", e);
+        });
+      } catch (e) {
+        console.error("Erro ao processar resposta da configuração atualizada:", e);
+      }
+      
       setIsEditDialogOpen(false);
       setEditingCommission(null);
       toast({
@@ -208,8 +258,34 @@ export default function AdminCommissions() {
     mutationFn: async (id: number) => {
       return apiRequest("PATCH", `/api/commission-settings/${id}`, { active: false });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/commission-settings"] });
+      
+      // Atualizar a configuração desativada em tempo real
+      try {
+        data.json().then(updatedCommission => {
+          try {
+            const currentSettings = queryClient.getQueryData<CommissionSetting[]>(["/api/commission-settings"]) || [];
+            
+            // Substituir a configuração antiga pela atualizada (desativada)
+            const updatedSettings = currentSettings.map(commission => 
+              commission.id === updatedCommission.id ? updatedCommission : commission
+            );
+            
+            // Atualizar o cache
+            queryClient.setQueryData(["/api/commission-settings"], updatedSettings);
+            console.log("Configuração de comissão desativada em tempo real:", updatedCommission);
+          } catch (e) {
+            console.error("Erro ao processar dados da configuração desativada:", e);
+          }
+        }).catch(e => {
+          console.error("Erro ao processar resposta JSON:", e);
+        });
+      } catch (e) {
+        console.error("Erro ao processar resposta da configuração desativada:", e);
+      }
+      
       setIsDeleteDialogOpen(false);
       setDeletingCommission(null);
       toast({
