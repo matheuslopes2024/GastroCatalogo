@@ -562,12 +562,25 @@ export default function ProductManagement() {
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL da Imagem</FormLabel>
+                    <FormLabel>Imagem do Produto</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/image.jpg" {...field} />
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          type="hidden"
+                          {...field}
+                        />
+                        <div className="mt-1">
+                          {/* Mostramos o upload apenas depois que o produto for criado com ID */}
+                          <div className="mt-1 flex items-center">
+                            <span className="text-sm text-gray-500">
+                              Preencha os dados do produto para primeiro criar o cadastro, depois você poderá fazer o upload da imagem na tela de edição.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </FormControl>
                     <FormDescription>
-                      Insira o URL da imagem do produto (use serviços como Unsplash para imagens).
+                      Uma imagem de boa qualidade aumenta a visibilidade do seu produto.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -702,12 +715,32 @@ export default function ProductManagement() {
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL da Imagem</FormLabel>
+                    <FormLabel>Imagem do Produto</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/image.jpg" {...field} />
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          type="hidden"
+                          {...field}
+                        />
+                        {editingProduct?.id ? (
+                          <ImageUpload 
+                            productId={editingProduct.id} 
+                            imageUrl={field.value} 
+                            onImageUploaded={(newUrl) => {
+                              field.onChange(newUrl);
+                              // Recarregar dados do produto para atualizar a imagem
+                              queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+                            }}
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            Salve o produto primeiro para adicionar uma imagem.
+                          </p>
+                        )}
+                      </div>
                     </FormControl>
                     <FormDescription>
-                      Insira o URL da imagem do produto (use serviços como Unsplash para imagens).
+                      Uma imagem de boa qualidade aumenta a visibilidade do seu produto.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
