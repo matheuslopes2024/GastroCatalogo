@@ -4,7 +4,19 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
-import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, insertProductImageSchema, UserRole, productImages } from "@shared/schema";
+import { 
+  insertCategorySchema, 
+  insertProductSchema, 
+  insertSaleSchema, 
+  insertCommissionSettingSchema, 
+  insertProductImageSchema, 
+  insertFaqCategorySchema,
+  insertFaqItemSchema,
+  insertChatMessageSchema,
+  insertChatConversationSchema,
+  UserRole, 
+  productImages 
+} from "@shared/schema";
 import { eq, and, or, like, ne } from "drizzle-orm";
 import bodyParser from "body-parser";
 import multer from "multer";
@@ -940,6 +952,277 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao excluir imagem do produto:", error);
       res.status(500).json({ message: "Erro ao excluir imagem do produto" });
+    }
+  });
+
+  // FAQ API
+  
+  // FAQ Categories
+  app.get("/api/faq/categories", async (req, res) => {
+    try {
+      const categories = await storage.getFaqCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Erro ao buscar categorias de FAQ:", error);
+      res.status(500).json({ message: "Erro ao buscar categorias de FAQ" });
+    }
+  });
+  
+  app.get("/api/faq/categories/:idOrSlug", async (req, res) => {
+    try {
+      const idOrSlug = req.params.idOrSlug;
+      let category;
+      
+      // Verifica se é um ID (número) ou slug (string)
+      if (!isNaN(Number(idOrSlug))) {
+        category = await storage.getFaqCategory(parseInt(idOrSlug));
+      } else {
+        category = await storage.getFaqCategoryBySlug(idOrSlug);
+      }
+      
+      if (!category) {
+        return res.status(404).json({ message: "Categoria de FAQ não encontrada" });
+      }
+      
+      res.json(category);
+    } catch (error) {
+      console.error("Erro ao buscar categoria de FAQ:", error);
+      res.status(500).json({ message: "Erro ao buscar categoria de FAQ" });
+    }
+  });
+  
+  app.post("/api/faq/categories", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const validatedData = insertFaqCategorySchema.parse(req.body);
+      const category = await storage.createFaqCategory(validatedData);
+      res.status(201).json(category);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Erro ao criar categoria de FAQ:", error);
+      res.status(500).json({ message: "Erro ao criar categoria de FAQ" });
+    }
+  });
+  
+  app.patch("/api/faq/categories/:id", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const category = await storage.getFaqCategory(id);
+      
+      if (!category) {
+        return res.status(404).json({ message: "Categoria de FAQ não encontrada" });
+      }
+      
+      const updatedCategory = await storage.updateFaqCategory(id, req.body);
+      res.json(updatedCategory);
+    } catch (error) {
+      console.error("Erro ao atualizar categoria de FAQ:", error);
+      res.status(500).json({ message: "Erro ao atualizar categoria de FAQ" });
+    }
+  });
+  
+  // FAQ Items
+  app.get("/api/faq/items", async (req, res) => {
+    try {
+      const { categoryId } = req.query;
+      const items = await storage.getFaqItems(
+        categoryId ? parseInt(categoryId as string) : undefined
+      );
+      res.json(items);
+    } catch (error) {
+      console.error("Erro ao buscar itens de FAQ:", error);
+      res.status(500).json({ message: "Erro ao buscar itens de FAQ" });
+    }
+  });
+  
+  app.get("/api/faq/items/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const item = await storage.getFaqItem(id);
+      
+      if (!item) {
+        return res.status(404).json({ message: "Item de FAQ não encontrado" });
+      }
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Erro ao buscar item de FAQ:", error);
+      res.status(500).json({ message: "Erro ao buscar item de FAQ" });
+    }
+  });
+  
+  app.post("/api/faq/items", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const validatedData = insertFaqItemSchema.parse(req.body);
+      const item = await storage.createFaqItem(validatedData);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Erro ao criar item de FAQ:", error);
+      res.status(500).json({ message: "Erro ao criar item de FAQ" });
+    }
+  });
+  
+  app.patch("/api/faq/items/:id", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const item = await storage.getFaqItem(id);
+      
+      if (!item) {
+        return res.status(404).json({ message: "Item de FAQ não encontrado" });
+      }
+      
+      const updatedItem = await storage.updateFaqItem(id, req.body);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Erro ao atualizar item de FAQ:", error);
+      res.status(500).json({ message: "Erro ao atualizar item de FAQ" });
+    }
+  });
+  
+  // Chat API
+  
+  // Chat Conversations
+  app.get("/api/chat/conversations", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      const conversations = await storage.getChatConversations(req.user.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Erro ao buscar conversas:", error);
+      res.status(500).json({ message: "Erro ao buscar conversas" });
+    }
+  });
+  
+  app.post("/api/chat/conversations", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      const validatedData = insertChatConversationSchema.parse(req.body);
+      
+      // Garantir que o usuário atual seja um participante da conversa
+      if (!validatedData.participantIds.includes(req.user.id)) {
+        validatedData.participantIds.push(req.user.id);
+      }
+      
+      const conversation = await storage.createChatConversation(validatedData);
+      res.status(201).json(conversation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Erro ao criar conversa:", error);
+      res.status(500).json({ message: "Erro ao criar conversa" });
+    }
+  });
+  
+  // Chat Messages
+  app.get("/api/chat/messages", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      const { conversationId, limit, offset, unreadOnly } = req.query;
+      
+      const options: any = {};
+      
+      if (conversationId) options.conversationId = parseInt(conversationId as string);
+      if (limit) options.limit = parseInt(limit as string);
+      if (offset) options.offset = parseInt(offset as string);
+      if (unreadOnly) options.unreadOnly = unreadOnly === 'true';
+      
+      // Verificar se o usuário tem acesso às mensagens
+      if (options.conversationId) {
+        const conversation = await storage.getChatConversation(options.conversationId);
+        if (!conversation || !conversation.participantIds.includes(req.user.id)) {
+          return res.status(403).json({ message: "Sem permissão para acessar esta conversa" });
+        }
+      } else {
+        // Se não houver conversationId, buscar apenas mensagens onde o usuário é remetente ou destinatário
+        options.senderId = req.user.id;
+        options.receiverId = req.user.id;
+      }
+      
+      const messages = await storage.getChatMessages(options);
+      res.json(messages);
+    } catch (error) {
+      console.error("Erro ao buscar mensagens:", error);
+      res.status(500).json({ message: "Erro ao buscar mensagens" });
+    }
+  });
+  
+  app.post("/api/chat/messages", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      const validatedData = insertChatMessageSchema.parse(req.body);
+      
+      // Definir o remetente como o usuário atual
+      validatedData.senderId = req.user.id;
+      
+      // Verificar se o usuário tem acesso à conversa, se houver
+      if (validatedData.conversationId) {
+        const conversation = await storage.getChatConversation(validatedData.conversationId);
+        if (!conversation || !conversation.participantIds.includes(req.user.id)) {
+          return res.status(403).json({ message: "Sem permissão para enviar mensagens nesta conversa" });
+        }
+      }
+      
+      const message = await storage.createChatMessage(validatedData);
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Erro ao enviar mensagem:", error);
+      res.status(500).json({ message: "Erro ao enviar mensagem" });
+    }
+  });
+  
+  // Marcar mensagens como lidas
+  app.post("/api/chat/messages/read", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      const { messageIds } = req.body;
+      
+      if (!Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ message: "IDs de mensagens inválidos" });
+      }
+      
+      // Verificar se o usuário tem permissão para marcar essas mensagens como lidas
+      // (deve ser o destinatário)
+      const messages = await Promise.all(
+        messageIds.map(id => storage.getChatMessage(id))
+      );
+      
+      // Filtrar mensagens válidas e onde o usuário é o destinatário
+      const validMessageIds = messages
+        .filter(msg => msg && msg.receiverId === req.user.id)
+        .map(msg => msg!.id);
+      
+      if (validMessageIds.length === 0) {
+        return res.status(403).json({ message: "Sem permissão para marcar estas mensagens como lidas" });
+      }
+      
+      await storage.markMessagesAsRead(validMessageIds);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Erro ao marcar mensagens como lidas:", error);
+      res.status(500).json({ message: "Erro ao marcar mensagens como lidas" });
     }
   });
   
