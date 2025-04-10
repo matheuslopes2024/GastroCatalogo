@@ -7,11 +7,28 @@ import Stripe from "stripe";
 import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, insertProductImageSchema, UserRole, productImages } from "@shared/schema";
 import { eq, and, or, like, ne } from "drizzle-orm";
 import bodyParser from "body-parser";
+import multer from "multer";
 
 // Inicialização do Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-03-31.basil" }) 
   : null;
+  
+// Configuração para armazenamento das imagens usando multer
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limite de 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    // Aceita apenas imagens
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Apenas arquivos de imagem são permitidos") as any);
+    }
+  },
+});
 
 // Helper for checking user roles
 const checkRole = (roles: string[]) => {
@@ -490,12 +507,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(bodyParser.json({ limit: '10mb' }));
   
   // Rota para upload de imagem de produto
-  app.post("/api/upload-product-image", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.post("/api/upload-product-image", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("image"), async (req, res) => {
     try {
-      const { productId, imageData, imageType } = req.body;
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Nenhum arquivo enviado" 
+        });
+      }
       
-      if (!productId || !imageData || !imageType) {
-        return res.status(400).json({ message: "ID do produto, dados da imagem e tipo da imagem são obrigatórios" });
+      const productId = parseInt(req.body.productId);
+      const isPrimary = req.body.isPrimary === "true";
+      const sortOrder = parseInt(req.body.sortOrder) || 0;
+      
+      if (!productId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "ID do produto é obrigatório" 
+        });
       }
       
       // Verificar se o produto existe
@@ -506,13 +535,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verificar se o fornecedor tem permissão para editar este produto
       if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
-        return res.status(403).json({ message: "Sem permissão para editar este produto" });
+        return res.status(403).json({ 
+          success: false, 
+          message: "Você não tem permissão para adicionar imagens a este produto" 
+        });
       }
-      
-      // Atualizar o produto com os dados da imagem
-      const updatedProduct = await storage.updateProduct(product.id, {
+
+      // Se isPrimary, define todas as outras imagens como não primárias
+      if (isPrimary) {
+        await storage.updateProductImagesNotPrimary(productId);
+      }
+
+      // Converte a imagem para base64
+      const imageData = req.file.buffer.toString('base64');
+      const imageType = req.file.mimetype;
+
+      // Cria o registro da imagem no banco
+      const productImage = await storage.createProductImage({
+        productId,
         imageData,
-        imageType
+        imageType,
+        imageUrl: null, // Não usamos URL, armazenamos diretamente no banco
+        isPrimary,
+        sortOrder
       });
       
       res.json({ 

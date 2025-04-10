@@ -1,568 +1,368 @@
-import { useState, useRef, useEffect } from "react";
-import { 
-  Upload, 
-  X, 
-  Image as ImageIcon, 
-  RotateCw, 
-  Camera,
-  Check, 
-  Trash2,
-  ArrowLeft,
-  ArrowRight
-} from "lucide-react";
+import { useState, useRef, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Upload, 
+  Trash2, 
+  Check,
+  Image as ImageIcon, 
+  X, 
+  Star,
+  RefreshCcw
+} from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { FormControl, FormDescription, FormLabel, FormMessage } from "./form";
+import { Card, CardContent } from "./card";
+import { FormItem } from "./form";
 import { useToast } from "@/hooks/use-toast";
 
-interface ProductImage {
+export type ProductImage = {
   id?: number;
-  url?: string;
-  data?: string;
-  type?: string;
-  imageData?: string;
-  imageType?: string;
+  productId?: number;
+  imageUrl?: string | null;
+  imageData?: string | null;
+  imageType?: string | null;
   isPrimary?: boolean;
   sortOrder?: number;
-}
+  file?: File; // Para novos uploads
+  previewUrl?: string; // Para visualização local
+  isNew?: boolean; // Para indicar que é uma nova imagem
+  isUploading?: boolean; // Para indicar que está em processo de upload
+  uploadProgress?: number; // Progresso de upload
+};
 
 interface MultiImageUploadProps {
-  productId: number;
-  initialImages?: ProductImage[];
+  productId?: number;
+  images: ProductImage[];
+  onChange: (images: ProductImage[]) => void;
   maxImages?: number;
-  onImagesUpdated?: (newImages: ProductImage[]) => void;
+  showLabels?: boolean;
+  disabled?: boolean;
+  storeDataInDatabase?: boolean;
 }
 
-export function MultiImageUpload({ 
-  productId, 
-  initialImages = [], 
+export function MultiImageUpload({
+  productId,
+  images = [],
+  onChange,
   maxImages = 8,
-  onImagesUpdated 
+  showLabels = true,
+  disabled = false,
+  storeDataInDatabase = true
 }: MultiImageUploadProps) {
-  const [images, setImages] = useState<ProductImage[]>(initialImages);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Atualizar o estado quando as imagens iniciais mudarem
-    setImages(initialImages);
-  }, [JSON.stringify(initialImages)]);
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
+  // Upload de uma imagem
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
     
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
-    }
-  };
-
-  const handleFiles = async (files: FileList) => {
+    const files = Array.from(e.target.files);
     if (images.length + files.length > maxImages) {
       toast({
-        title: "Limite de imagens excedido",
-        description: `Você pode enviar no máximo ${maxImages} imagens. Selecione menos arquivos.`,
+        title: "Limite excedido",
+        description: `Você pode adicionar no máximo ${maxImages} imagens.`,
         variant: "destructive",
       });
       return;
     }
 
-    // Verificar tipos de arquivo permitidos
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    const validFiles = Array.from(files).filter(file => allowedTypes.includes(file.type));
-    
-    if (validFiles.length !== files.length) {
-      toast({
-        title: "Formato de arquivo inválido",
-        description: "Apenas imagens nos formatos JPEG, JPG, PNG, GIF e WEBP são permitidas.",
-        variant: "destructive",
-      });
-    }
-
-    if (validFiles.length === 0) return;
-
-    setIsUploading(true);
-    
-    try {
-      const newImages = [...images];
-      
-      for (const file of validFiles) {
-        const base64Data = await convertToBase64(file);
-        newImages.push({
-          data: base64Data,
-          type: file.type,
-        });
-      }
-
-      setImages(newImages);
-      
-      if (onImagesUpdated) {
-        onImagesUpdated(newImages);
-      }
-
-      // Enviar para o servidor
-      try {
-        for (let i = images.length; i < newImages.length; i++) {
-          const image = newImages[i];
-          const response = await fetch(`/api/products/${productId}/images`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageData: image.data,
-              imageType: image.type,
-              isPrimary: i === 0 && images.length === 0, // Primeira imagem é principal se for a primeira
-              sortOrder: i
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Falha ao salvar imagem');
-          }
-
-          const savedImage = await response.json();
-          newImages[i] = {
-            ...newImages[i],
-            id: savedImage.id
-          };
-        }
-
-        setImages(newImages);
-        
-        if (onImagesUpdated) {
-          onImagesUpdated(newImages);
-        }
-
+    // Para cada arquivo selecionado
+    for (const file of files) {
+      // Verifica se é uma imagem válida
+      if (!file.type.startsWith("image/")) {
         toast({
-          title: "Imagens enviadas com sucesso",
-          description: `${validFiles.length} ${validFiles.length === 1 ? 'imagem' : 'imagens'} foram enviadas com sucesso.`,
-        });
-      } catch (error) {
-        console.error("Erro ao salvar imagens:", error);
-        toast({
-          title: "Erro ao salvar imagens",
-          description: "Ocorreu um erro ao salvar as imagens no servidor.",
+          title: "Formato inválido",
+          description: "Por favor, selecione apenas arquivos de imagem.",
           variant: "destructive",
         });
+        continue;
       }
-    } catch (error) {
-      console.error("Erro ao processar arquivos:", error);
-      toast({
-        title: "Erro ao processar imagens",
-        description: "Ocorreu um erro ao processar as imagens selecionadas.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-      // Limpar o input de arquivo para permitir selecionar o mesmo arquivo novamente
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
 
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
+      // Cria objeto de imagem temporário com preview local
+      const previewUrl = URL.createObjectURL(file);
+      const newImage: ProductImage = {
+        imageData: null,
+        imageType: file.type,
+        file,
+        previewUrl,
+        isNew: true,
+        isPrimary: images.length === 0, // Primeira imagem é a principal
+        sortOrder: images.length,
+        isUploading: false
+      };
 
-  const handleDeleteImage = async (index: number) => {
-    const imageToDelete = images[index];
-    
-    if (!imageToDelete) return;
-    
-    try {
-      // Se a imagem tem ID, excluí-la do servidor
-      if (imageToDelete.id) {
-        const response = await fetch(`/api/products/images/${imageToDelete.id}`, {
-          method: 'DELETE',
-        });
-        
-        if (!response.ok) {
-          throw new Error('Falha ao excluir imagem do servidor');
+      // Se for para armazenar direto no banco
+      if (storeDataInDatabase) {
+        // Se já temos um productId, fazemos upload direto
+        if (productId) {
+          await uploadImageToServer(newImage, productId);
+        } else {
+          // Senão, apenas adicionamos à lista para upload posterior
+          onChange([...images, newImage]);
         }
+      } else {
+        // Apenas convertemos para base64 e adicionamos
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            const base64 = event.target.result.toString();
+            newImage.imageData = base64;
+            onChange([...images, newImage]);
+          }
+        };
+        reader.readAsDataURL(file);
       }
-      
-      // Remover do estado local
-      const newImages = [...images];
-      newImages.splice(index, 1);
-      setImages(newImages);
-      
-      if (onImagesUpdated) {
-        onImagesUpdated(newImages);
-      }
-      
-      toast({
-        title: "Imagem excluída",
-        description: "A imagem foi excluída com sucesso.",
-      });
-    } catch (error) {
-      console.error("Erro ao excluir imagem:", error);
-      toast({
-        title: "Erro ao excluir imagem",
-        description: "Ocorreu um erro ao excluir a imagem.",
-        variant: "destructive",
-      });
+    }
+    
+    // Limpa input para permitir selecionar os mesmos arquivos novamente
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
-  const handleSetPrimary = async (index: number) => {
+  // Upload da imagem para o servidor
+  const uploadImageToServer = async (image: ProductImage, prodId: number) => {
+    if (!image.file) return;
+    
+    setIsLoading(true);
     try {
-      // Definir como imagem principal no servidor
-      const imageToSetPrimary = images[index];
-      
-      if (!imageToSetPrimary || !imageToSetPrimary.id) {
-        throw new Error('Imagem inválida');
+      // Marca imagem como em upload
+      const updatedImages = [...images];
+      const imageIndex = updatedImages.findIndex(img => img.previewUrl === image.previewUrl);
+      if (imageIndex >= 0) {
+        updatedImages[imageIndex] = { ...updatedImages[imageIndex], isUploading: true };
+        onChange(updatedImages);
+      } else {
+        const newImage = { ...image, isUploading: true };
+        onChange([...images, newImage]);
       }
+
+      // Prepara FormData para upload
+      const formData = new FormData();
+      formData.append("image", image.file);
+      formData.append("productId", prodId.toString());
+      formData.append("isPrimary", image.isPrimary ? "true" : "false");
+      formData.append("sortOrder", (image.sortOrder || 0).toString());
       
-      const response = await fetch(`/api/products/images/${imageToSetPrimary.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isPrimary: true }),
-      });
+      // Envia para API
+      const response = await apiRequest("POST", "/api/upload-product-image", formData);
+      
+      const data = await response.json();
       
       if (!response.ok) {
-        throw new Error('Falha ao definir imagem principal');
+        throw new Error(data.message || "Erro ao fazer upload da imagem");
       }
       
-      // Atualizar o estado local com a nova imagem principal
-      const newImages = [...images];
-      newImages.forEach((img, idx) => {
-        if (idx === index) {
-          img.isPrimary = true;
+      // Atualiza a lista com a imagem salva vinda do servidor
+      if (data.image) {
+        const updatedImages = [...images];
+        // Se foi encontrada a imagem temporária, substitui pela salva
+        const imageIndex = updatedImages.findIndex(img => img.previewUrl === image.previewUrl);
+        if (imageIndex >= 0) {
+          updatedImages[imageIndex] = { 
+            ...data.image, 
+            previewUrl: image.previewUrl, 
+            isUploading: false 
+          };
         } else {
-          img.isPrimary = false;
+          updatedImages.push({ ...data.image, isUploading: false });
         }
-      });
-      setImages(newImages);
-      
-      if (onImagesUpdated) {
-        onImagesUpdated(newImages);
+        onChange(updatedImages);
       }
-      
+
       toast({
-        title: "Imagem principal atualizada",
-        description: "A imagem principal do produto foi atualizada com sucesso.",
+        title: "Upload concluído",
+        description: "A imagem foi salva com sucesso",
       });
-    } catch (error) {
-      console.error("Erro ao definir imagem principal:", error);
+    } catch (error: any) {
+      console.error("Erro ao fazer upload da imagem:", error);
       toast({
-        title: "Erro ao definir imagem principal",
-        description: "Ocorreu um erro ao definir a imagem principal.",
+        title: "Erro no upload",
+        description: error.message || "Não foi possível fazer o upload da imagem",
         variant: "destructive",
       });
+      
+      // Atualiza a imagem como falha
+      const updatedImages = [...images];
+      const imageIndex = updatedImages.findIndex(img => img.previewUrl === image.previewUrl);
+      if (imageIndex >= 0) {
+        updatedImages[imageIndex] = { ...updatedImages[imageIndex], isUploading: false };
+        onChange(updatedImages);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleMoveImage = async (index: number, direction: 'left' | 'right') => {
-    if ((direction === 'left' && index === 0) || 
-        (direction === 'right' && index === images.length - 1)) {
-      return;
+  // Remover uma imagem
+  const handleRemoveImage = (index: number) => {
+    // Se a imagem for a primária, define a próxima como primária
+    const updatedImages = [...images];
+    const removedImage = updatedImages[index];
+    
+    // Remove a imagem
+    updatedImages.splice(index, 1);
+    
+    // Se a imagem removida era a primária, define a primeira como primária
+    if (removedImage.isPrimary && updatedImages.length > 0) {
+      updatedImages[0] = { ...updatedImages[0], isPrimary: true };
     }
     
-    const newIndex = direction === 'left' ? index - 1 : index + 1;
+    // Atualiza ordenação
+    updatedImages.forEach((img, i) => {
+      updatedImages[i] = { ...img, sortOrder: i };
+    });
     
-    // Reordenar no array local
-    const newImages = [...images];
-    const temp = newImages[index];
-    newImages[index] = newImages[newIndex];
-    newImages[newIndex] = temp;
-    
-    setImages(newImages);
-    
-    if (onImagesUpdated) {
-      onImagesUpdated(newImages);
-    }
-    
-    try {
-      // Atualizar ordem no servidor
-      const imagesToUpdate = [
-        { id: newImages[index].id, sortOrder: index },
-        { id: newImages[newIndex].id, sortOrder: newIndex }
-      ];
-      
-      for (const img of imagesToUpdate) {
-        if (img.id) {
-          await fetch(`/api/products/images/${img.id}`, {
-            method: 'PATCH', // Usar PATCH em vez de PUT para evitar conflitos
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sortOrder: img.sortOrder }),
+    onChange(updatedImages);
+
+    // Se a imagem já tinha ID (salva no servidor), faríamos a requisição de DELETE
+    if (removedImage.id && productId) {
+      apiRequest("DELETE", `/api/product-images/${removedImage.id}`)
+        .catch(err => {
+          console.error("Erro ao excluir imagem:", err);
+          toast({
+            title: "Erro ao excluir",
+            description: "Não foi possível excluir a imagem do servidor",
+            variant: "destructive",
           });
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao reordenar imagens:", error);
-      toast({
-        title: "Erro ao reordenar imagens",
-        description: "As imagens foram reordenadas localmente, mas houve um erro ao salvar a ordem no servidor.",
-        variant: "destructive",
-      });
+        });
     }
   };
 
-  const getImageUrl = (image: ProductImage) => {
-    // Prioridade: URL externa > Dados em base64 > Endpoint da API
-    if (image.url) return image.url;
-    if (image.data) return image.data;
-    if (image.id) return `/api/products/images/${image.id}`;
-    return "";
+  // Definir uma imagem como principal
+  const handleSetPrimary = (index: number) => {
+    const updatedImages = [...images];
+    
+    // Desmarca todas como não primárias
+    updatedImages.forEach(img => {
+      img.isPrimary = false;
+    });
+    
+    // Define a selecionada como primária
+    updatedImages[index] = { ...updatedImages[index], isPrimary: true };
+    
+    onChange(updatedImages);
+
+    // Se o produto já existe, atualiza no servidor
+    if (productId && updatedImages[index].id) {
+      apiRequest("PATCH", `/api/product-images/${updatedImages[index].id}/set-primary`, {
+        productId,
+      }).catch(err => {
+        console.error("Erro ao definir imagem principal:", err);
+        toast({
+          title: "Erro",
+          description: "Não foi possível definir a imagem como principal",
+          variant: "destructive",
+        });
+      });
+    }
   };
 
   return (
-    <div className="w-full space-y-4">
-      {/* Área de Upload */}
-      <div
-        className={`
-          border-2 border-dashed rounded-lg p-6 
-          flex flex-col items-center justify-center 
-          transition-colors 
-          ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/50'}
-        `}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        style={{ cursor: 'pointer' }}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          className="hidden"
-          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-          multiple
-          disabled={isUploading || images.length >= maxImages}
-        />
-        
-        {isUploading ? (
-          <div className="flex flex-col items-center text-gray-500">
-            <RotateCw className="h-10 w-10 animate-spin mb-2" />
-            <p className="text-sm font-medium">Enviando imagens...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center text-gray-500">
-            <Upload className="h-10 w-10 mb-2" />
-            <p className="text-sm font-medium">
-              {images.length >= maxImages 
-                ? `Limite máximo de ${maxImages} imagens atingido` 
-                : 'Clique ou arraste imagens para fazer upload'}
-            </p>
-            <p className="text-xs mt-1">
-              {images.length < maxImages 
-                ? `Formatos aceitos: JPEG, PNG, GIF, WEBP (máx. ${maxImages} imagens)` 
-                : 'Remova imagens para adicionar novas'}
-            </p>
-            <p className="text-xs mt-1">
-              {images.length < maxImages 
-                ? `${images.length} de ${maxImages} imagens` 
-                : ''}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Galeria de Miniaturas */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
-          {images.map((image, index) => (
-            <div 
-              key={index} 
-              className="relative group border rounded-lg overflow-hidden aspect-square"
-            >
-              <img
-                src={getImageUrl(image)}
-                alt={`Imagem ${index + 1}`}
-                className="w-full h-full object-cover"
-                onClick={() => {
-                  setPreviewIndex(index);
-                  setShowPreview(true);
-                }}
-              />
-              
-              {/* Overlay com ações */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    className="w-8 h-8 p-0 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewIndex(index);
-                      setShowPreview(true);
-                    }}
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    className="w-8 h-8 p-0 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSetPrimary(index);
-                    }}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    className="w-8 h-8 p-0 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteImage(index);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="flex gap-2 mt-2">
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    className="w-8 h-8 p-0 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMoveImage(index, 'left');
-                    }}
-                    disabled={index === 0}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    className="w-8 h-8 p-0 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMoveImage(index, 'right');
-                    }}
-                    disabled={index === images.length - 1}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                    Principal
-                  </div>
-                )}
-              </div>
-              
-              {/* Indicador de imagem principal (visível sempre) */}
-              {index === 0 && (
-                <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                  Principal
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+    <FormItem>
+      {showLabels && (
+        <FormLabel>Imagens do produto</FormLabel>
       )}
-
-      {/* Diálogo de Visualização */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Visualização da Imagem</DialogTitle>
-            <DialogDescription>
-              Imagem {previewIndex + 1} de {images.length}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="relative w-full aspect-video mx-auto overflow-hidden border rounded-lg">
-            {images[previewIndex] && (
-              <img
-                src={getImageUrl(images[previewIndex])}
-                alt={`Visualização da imagem ${previewIndex + 1}`}
-                className="w-full h-full object-contain"
-              />
+      <FormControl>
+        <div className="space-y-3">
+          {/* Previews */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {images.map((image, index) => (
+              <Card key={index} className="relative overflow-hidden group">
+                <CardContent className="p-0">
+                  <div 
+                    className="w-full aspect-square relative"
+                    style={{ backgroundColor: '#f3f4f6' }}
+                  >
+                    <img
+                      src={image.previewUrl || image.imageUrl || ""}
+                      alt={`Imagem ${index + 1}`}
+                      className="w-full h-full object-contain" // object-contain para não cortar
+                      style={{ maxHeight: "200px" }}
+                    />
+                    
+                    {/* Indicador de imagem principal */}
+                    {image.isPrimary && (
+                      <div className="absolute top-1 left-1 bg-yellow-500 text-white p-1 rounded-full">
+                        <Star className="h-3 w-3" />
+                      </div>
+                    )}
+                    
+                    {/* Indicador de upload em andamento */}
+                    {image.isUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60">
+                        <RefreshCcw className="h-8 w-8 text-white animate-spin" />
+                      </div>
+                    )}
+                    
+                    {/* Botões de ação somente visíveis no hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40">
+                      <div className="flex space-x-1">
+                        {/* Botão para definir como primária */}
+                        {!image.isPrimary && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 bg-white hover:bg-yellow-500 hover:text-white"
+                            onClick={() => handleSetPrimary(index)}
+                            disabled={disabled || image.isUploading}
+                          >
+                            <Star className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        {/* Botão para remover */}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 bg-white hover:bg-red-500 hover:text-white"
+                          onClick={() => handleRemoveImage(index)}
+                          disabled={disabled || image.isUploading}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* Botão para adicionar mais imagens */}
+            {images.length < maxImages && (
+              <Card className="border-dashed cursor-pointer hover:border-primary hover:bg-gray-50 transition-colors">
+                <CardContent className="p-0">
+                  <div 
+                    className="w-full aspect-square flex flex-col items-center justify-center text-gray-400 hover:text-primary"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8 mb-2" />
+                    <span className="text-sm font-medium">Adicionar</span>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
+
+          {/* Input para seleção de arquivo (oculto) */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handleFileChange}
+            multiple
+            disabled={disabled || isLoading}
+          />
           
-          <DialogFooter className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPreviewIndex(prev => (prev > 0 ? prev - 1 : images.length - 1))}
-                disabled={images.length <= 1}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Anterior
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => setPreviewIndex(prev => (prev < images.length - 1 ? prev + 1 : 0))}
-                disabled={images.length <= 1}
-              >
-                Próxima
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => handleSetPrimary(previewIndex)}
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Definir como Principal
-              </Button>
-              
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  handleDeleteImage(previewIndex);
-                  if (images.length <= 1) {
-                    setShowPreview(false);
-                  } else if (previewIndex === images.length - 1) {
-                    setPreviewIndex(previewIndex - 1);
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <FormDescription>
+            Adicione até {maxImages} imagens do seu produto. A primeira imagem será usada como capa.
+            Você pode definir qual imagem será a principal clicando no ícone de estrela.
+          </FormDescription>
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
   );
 }
