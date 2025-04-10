@@ -6,6 +6,7 @@ import AuthPage from "@/pages/auth-page";
 import SearchResults from "@/pages/search-results";
 import ProductDetails from "@/pages/product-details";
 import Checkout from "@/pages/checkout";
+import CartPage from "@/pages/cart-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { UserRole } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
@@ -22,6 +23,10 @@ import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierProductManagement from "@/pages/supplier/product-management";
 import SupplierSales from "@/pages/supplier/sales";
 
+// Vamos adicionar em breve
+import CategoriesPage from "@/pages/categories-page";
+import ProfilePage from "@/pages/profile-page";
+
 function Router() {
   return (
     <Switch>
@@ -31,6 +36,9 @@ function Router() {
       <Route path="/busca" component={SearchResults} />
       <Route path="/produto/:slug" component={ProductDetails} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/carrinho" component={CartPage} />
+      <Route path="/categorias" component={CategoriesPage} />
+      <Route path="/perfil" component={ProfilePage} />
       
       {/* Admin Routes */}
       <ProtectedRoute 

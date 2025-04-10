@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "wouter";
+import { useLocation, Link } from "wouter";
 import { 
   ArrowLeft, 
   Trash2, 
@@ -15,7 +15,7 @@ import { Header } from "@/components/layout/header";
 import { MobileNavigation } from "@/components/layout/mobile-navigation";
 
 export default function CartPage() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { items, removeItem, updateQuantity, getTotalPrice } = useCart();
   const [animatedItemId, setAnimatedItemId] = useState<number | null>(null);
 
@@ -49,7 +49,7 @@ export default function CartPage() {
           variant="ghost" 
           size="icon" 
           className="touch-target mr-2" 
-          onClick={() => navigate(-1)}
+          onClick={() => window.history.back()}
         >
           <ArrowLeft className="h-6 w-6" />
         </Button>
