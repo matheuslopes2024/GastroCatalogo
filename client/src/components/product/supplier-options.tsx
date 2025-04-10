@@ -125,7 +125,7 @@ export function SupplierOptions({ productSlug }: SupplierOptionsProps) {
                   <div>
                     <div className="flex items-center gap-2">
                       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-semibold text-gray-700 overflow-hidden">
-                        {product.supplier?.logoData ? (
+                        {product.supplier && product.supplier.id ? (
                           <img 
                             src={`/api/supplier-logo/${product.supplier.id}`} 
                             alt={product.supplier?.companyName || "Logo do fornecedor"}
@@ -134,11 +134,12 @@ export function SupplierOptions({ productSlug }: SupplierOptionsProps) {
                               const target = e.target as HTMLImageElement;
                               // Se falhar, mostrar a letra inicial como fallback
                               target.style.display = 'none';
-                              target.parentElement!.textContent = product.supplier?.companyName?.charAt(0) || "F";
+                              const companyName = product.supplier?.companyName || product.supplier?.username || "F";
+                              target.parentElement!.textContent = companyName.charAt(0);
                             }}
                           />
                         ) : (
-                          product.supplier?.companyName?.charAt(0) || "F"
+                          (product.supplier?.companyName || product.supplier?.username || "F").charAt(0)
                         )}
                       </div>
                       <div>
