@@ -145,6 +145,16 @@ export function MultiImageUpload({
       formData.append("isPrimary", image.isPrimary ? "true" : "false");
       formData.append("sortOrder", (image.sortOrder || 0).toString());
       
+      console.log("Enviando upload de imagem:", {
+        productId: prodId,
+        isPrimary: image.isPrimary,
+        hasFile: !!image.file,
+        fileName: image.file.name,
+        fileType: image.file.type,
+        fileSize: image.file.size,
+        sortOrder: image.sortOrder || 0
+      });
+      
       // Envia para API
       const response = await apiRequest("POST", "/api/upload-product-image", formData);
       

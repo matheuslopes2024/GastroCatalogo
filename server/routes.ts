@@ -528,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar se o produto existe
-      const product = await storage.getProduct(parseInt(productId));
+      const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(404).json({ message: "Produto não encontrado" });
       }
@@ -549,6 +549,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Converte a imagem para base64
       const imageData = req.file.buffer.toString('base64');
       const imageType = req.file.mimetype;
+      
+      console.log("Processando imagem:", {
+        productId,
+        mimetype: req.file.mimetype,
+        filename: req.file.originalname,
+        size: req.file.size,
+        isPrimary
+      });
 
       // Cria o registro da imagem no banco
       const productImage = await storage.createProductImage({
@@ -562,8 +570,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true, 
-        message: "Imagem do produto atualizada com sucesso",
-        product: updatedProduct
+        message: "Imagem adicionada com sucesso",
+        image: productImage
       });
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error);
