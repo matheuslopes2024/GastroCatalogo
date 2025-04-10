@@ -36,15 +36,19 @@ import { Badge } from "@/components/ui/badge";
 interface Supplier {
   id: number;
   name: string;
-  companyName: string;
-  description: string;
-  location: string;
-  rating: number;
+  companyName: string | null;
+  email: string;
+  role: string;
+  active: boolean;
+  phone: string | null;
+  cnpj: string | null;
+  createdAt: string;
+  username: string;
+  rating: string;
   productsCount: number;
+  categories: string[];
   verified: boolean;
   joinedDate: string;
-  categoryFocus: string[];
-  imageUrl?: string;
 }
 
 // Componente Hero

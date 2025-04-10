@@ -469,6 +469,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all suppliers for listing
+  app.get("/api/suppliers", async (req, res) => {
+    try {
+      const { category, search, sortBy = "rating" } = req.query;
+      
+      // Get all suppliers
+      const suppliers = await storage.getUsers(UserRole.SUPPLIER);
+      
+      // Remove sensitive data
+      let processedSuppliers = suppliers.map(({ password, ...supplier }) => {
+        // Calculate metrics for each supplier
+        return {
+          ...supplier,
+          productsCount: 0, // Will be calculated
+          avgRating: 0,     // Will be calculated
+          categories: []    // Will be populated
+        };
+      });
+      
+      // Get all products to calculate metrics
+      const allProducts = await storage.getProducts({ active: true });
+      
+      // Create a map to store supplier metrics
+      const supplierMetrics = new Map();
+      const supplierCategories = new Map();
+      
+      // Calculate metrics for each supplier
+      allProducts.forEach(product => {
+        const supplierId = product.supplierId;
+        
+        // Initialize supplier metrics if not exists
+        if (!supplierMetrics.has(supplierId)) {
+          supplierMetrics.set(supplierId, { 
+            productsCount: 0, 
+            ratingsSum: 0, 
+            ratingsCount: 0 
+          });
+        }
+        
+        // Initialize supplier categories if not exists
+        if (!supplierCategories.has(supplierId)) {
+          supplierCategories.set(supplierId, new Set());
+        }
+        
+        // Update metrics
+        const metrics = supplierMetrics.get(supplierId);
+        metrics.productsCount++;
+        
+        // Update categories
+        supplierCategories.get(supplierId).add(product.categoryId);
+        
+        // Update ratings sum
+        if (product.rating) {
+          const ratingValue = parseFloat(product.rating.toString());
+          if (!isNaN(ratingValue)) {
+            metrics.ratingsSum += ratingValue;
+            metrics.ratingsCount++;
+          }
+        }
+      });
+      
+      // Get all categories for category names
+      const allCategories = await storage.getCategories();
+      const categoryMap = new Map();
+      allCategories.forEach(category => {
+        categoryMap.set(category.id, category);
+      });
+      
+      // Apply metrics to suppliers
+      processedSuppliers = processedSuppliers.map(supplier => {
+        const metrics = supplierMetrics.get(supplier.id) || { productsCount: 0, ratingsSum: 0, ratingsCount: 0 };
+        const categoriesSet = supplierCategories.get(supplier.id) || new Set();
+        
+        // Calculate average rating
+        const avgRating = metrics.ratingsCount > 0 
+          ? metrics.ratingsSum / metrics.ratingsCount 
+          : 0;
+        
+        // Get category names
+        const categoryNames = Array.from(categoriesSet)
+          .map(categoryId => {
+            const category = categoryMap.get(categoryId);
+            return category ? category.name : null;
+          })
+          .filter(Boolean);
+        
+        return {
+          ...supplier,
+          productsCount: metrics.productsCount,
+          rating: avgRating.toFixed(1),
+          categories: categoryNames,
+          verified: true, // All suppliers on platform are verified
+          joinedDate: supplier.createdAt.toISOString().split('T')[0]
+        };
+      });
+      
+      // Apply filters if provided
+      let filteredSuppliers = processedSuppliers;
+      
+      // Filter by category
+      if (category) {
+        const categoryLower = (category as string).toLowerCase();
+        filteredSuppliers = filteredSuppliers.filter(supplier => 
+          supplier.categories.some(cat => 
+            cat.toLowerCase().includes(categoryLower)
+          )
+        );
+      }
+      
+      // Filter by search term
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        filteredSuppliers = filteredSuppliers.filter(supplier => 
+          supplier.name.toLowerCase().includes(searchLower) || 
+          supplier.companyName?.toLowerCase().includes(searchLower) ||
+          supplier.categories.some(cat => cat.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      // Sort by specified field
+      if (sortBy === "rating") {
+        filteredSuppliers.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+      } else if (sortBy === "products") {
+        filteredSuppliers.sort((a, b) => b.productsCount - a.productsCount);
+      } else if (sortBy === "newest") {
+        filteredSuppliers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      
+      res.json(filteredSuppliers);
+    } catch (error) {
+      console.error("Erro ao listar fornecedores:", error);
+      res.status(500).json({ message: "Erro ao listar fornecedores" });
+    }
+  });
+  
   // Stripe Payment API
   app.post("/api/create-payment-intent", async (req, res) => {
     if (!stripe) {
