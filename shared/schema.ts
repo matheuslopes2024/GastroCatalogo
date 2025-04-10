@@ -51,6 +51,8 @@ export const products = pgTable("products", {
   ratingsCount: integer("ratings_count").notNull().default(0),
   features: jsonb("features").$type<string[]>(),
   imageUrl: text("image_url").notNull(),
+  imageData: text("image_data"), // Armazenamento de imagem em base64
+  imageType: text("image_type"), // Tipo MIME da imagem
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
