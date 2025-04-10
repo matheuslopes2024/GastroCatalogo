@@ -100,6 +100,10 @@ export class MemStorage implements IStorage {
   private sales: Map<number, Sale>;
   private commissionSettings: Map<number, CommissionSetting>;
   private productImages: Map<number, ProductImage>;
+  private faqCategories: Map<number, FaqCategory>;
+  private faqItems: Map<number, FaqItem>;
+  private chatMessages: Map<number, ChatMessage>;
+  private chatConversations: Map<number, ChatConversation>;
   
   currentUserId: number;
   currentCategoryId: number;
@@ -107,6 +111,10 @@ export class MemStorage implements IStorage {
   currentSaleId: number;
   currentCommissionSettingId: number;
   currentProductImageId: number;
+  currentFaqCategoryId: number;
+  currentFaqItemId: number;
+  currentChatMessageId: number;
+  currentChatConversationId: number;
   
   sessionStore: any;
 
@@ -117,6 +125,10 @@ export class MemStorage implements IStorage {
     this.sales = new Map();
     this.commissionSettings = new Map();
     this.productImages = new Map();
+    this.faqCategories = new Map();
+    this.faqItems = new Map();
+    this.chatMessages = new Map();
+    this.chatConversations = new Map();
     
     this.currentUserId = 1;
     this.currentCategoryId = 1;
@@ -124,6 +136,10 @@ export class MemStorage implements IStorage {
     this.currentSaleId = 1;
     this.currentCommissionSettingId = 1;
     this.currentProductImageId = 1;
+    this.currentFaqCategoryId = 1;
+    this.currentFaqItemId = 1;
+    this.currentChatMessageId = 1;
+    this.currentChatConversationId = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -447,6 +463,176 @@ export class MemStorage implements IStorage {
       await this.updateProductImage(image.id, { isPrimary: false });
     }
   }
+  
+  // FAQ Category methods
+  async getFaqCategory(id: number): Promise<FaqCategory | undefined> {
+    return this.faqCategories.get(id);
+  }
+  
+  async getFaqCategoryBySlug(slug: string): Promise<FaqCategory | undefined> {
+    return Array.from(this.faqCategories.values()).find(
+      (category) => category.slug === slug
+    );
+  }
+  
+  async createFaqCategory(insertCategory: InsertFaqCategory): Promise<FaqCategory> {
+    const id = this.currentFaqCategoryId++;
+    const category: FaqCategory = { ...insertCategory, id, createdAt: new Date() };
+    this.faqCategories.set(id, category);
+    return category;
+  }
+  
+  async updateFaqCategory(id: number, categoryData: Partial<FaqCategory>): Promise<FaqCategory | undefined> {
+    const category = await this.getFaqCategory(id);
+    if (!category) return undefined;
+    
+    const updatedCategory = { ...category, ...categoryData };
+    this.faqCategories.set(id, updatedCategory);
+    return updatedCategory;
+  }
+  
+  async getFaqCategories(): Promise<FaqCategory[]> {
+    return Array.from(this.faqCategories.values())
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+  
+  // FAQ Item methods
+  async getFaqItem(id: number): Promise<FaqItem | undefined> {
+    return this.faqItems.get(id);
+  }
+  
+  async createFaqItem(insertItem: InsertFaqItem): Promise<FaqItem> {
+    const id = this.currentFaqItemId++;
+    const item: FaqItem = { ...insertItem, id, createdAt: new Date() };
+    this.faqItems.set(id, item);
+    return item;
+  }
+  
+  async updateFaqItem(id: number, itemData: Partial<FaqItem>): Promise<FaqItem | undefined> {
+    const item = await this.getFaqItem(id);
+    if (!item) return undefined;
+    
+    const updatedItem = { ...item, ...itemData };
+    this.faqItems.set(id, updatedItem);
+    return updatedItem;
+  }
+  
+  async getFaqItems(categoryId?: number): Promise<FaqItem[]> {
+    let items = Array.from(this.faqItems.values());
+    
+    if (categoryId !== undefined) {
+      items = items.filter(item => item.categoryId === categoryId);
+    }
+    
+    return items.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+  
+  // Chat Message methods
+  async getChatMessage(id: number): Promise<ChatMessage | undefined> {
+    return this.chatMessages.get(id);
+  }
+  
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const id = this.currentChatMessageId++;
+    const message: ChatMessage = { ...insertMessage, id, createdAt: new Date() };
+    this.chatMessages.set(id, message);
+    
+    // Atualizar última atividade e mensagem na conversa se existir
+    if (insertMessage.conversationId) {
+      const conversation = await this.getChatConversation(insertMessage.conversationId);
+      if (conversation) {
+        await this.updateChatConversation(conversation.id, {
+          lastMessageId: id,
+          lastActivityAt: new Date()
+        });
+      }
+    }
+    
+    return message;
+  }
+  
+  async getChatMessages(options: {
+    conversationId?: number;
+    senderId?: number;
+    receiverId?: number;
+    limit?: number;
+    offset?: number;
+    unreadOnly?: boolean;
+  }): Promise<ChatMessage[]> {
+    let messages = Array.from(this.chatMessages.values());
+    
+    if (options) {
+      if (options.conversationId !== undefined) {
+        messages = messages.filter(message => message.conversationId === options.conversationId);
+      }
+      
+      if (options.senderId !== undefined) {
+        messages = messages.filter(message => message.senderId === options.senderId);
+      }
+      
+      if (options.receiverId !== undefined) {
+        messages = messages.filter(message => message.receiverId === options.receiverId);
+      }
+      
+      if (options.unreadOnly) {
+        messages = messages.filter(message => !message.isRead);
+      }
+      
+      // Ordenar por data (mais recentes primeiro)
+      messages = messages.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      if (options.offset !== undefined) {
+        messages = messages.slice(options.offset);
+      }
+      
+      if (options.limit !== undefined) {
+        messages = messages.slice(0, options.limit);
+      }
+    }
+    
+    return messages;
+  }
+  
+  async markMessagesAsRead(messageIds: number[]): Promise<void> {
+    for (const id of messageIds) {
+      const message = await this.getChatMessage(id);
+      if (message) {
+        await this.chatMessages.set(id, { ...message, isRead: true });
+      }
+    }
+  }
+  
+  // Chat Conversation methods
+  async getChatConversation(id: number): Promise<ChatConversation | undefined> {
+    return this.chatConversations.get(id);
+  }
+  
+  async createChatConversation(insertConversation: InsertChatConversation): Promise<ChatConversation> {
+    const id = this.currentChatConversationId++;
+    const conversation: ChatConversation = { 
+      ...insertConversation, 
+      id, 
+      lastActivityAt: new Date(),
+      createdAt: new Date() 
+    };
+    this.chatConversations.set(id, conversation);
+    return conversation;
+  }
+  
+  async updateChatConversation(id: number, conversationData: Partial<ChatConversation>): Promise<ChatConversation | undefined> {
+    const conversation = await this.getChatConversation(id);
+    if (!conversation) return undefined;
+    
+    const updatedConversation = { ...conversation, ...conversationData };
+    this.chatConversations.set(id, updatedConversation);
+    return updatedConversation;
+  }
+  
+  async getChatConversations(userId: number): Promise<ChatConversation[]> {
+    return Array.from(this.chatConversations.values())
+      .filter(conversation => conversation.participantIds.includes(userId))
+      .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -764,6 +950,190 @@ export class DatabaseStorage implements IStorage {
         .set({ isPrimary: false })
         .where(eq(productImages.productId, productId));
     }
+  }
+  
+  // FAQ Category methods
+  async getFaqCategory(id: number): Promise<FaqCategory | undefined> {
+    const [category] = await db.select().from(faqCategories).where(eq(faqCategories.id, id));
+    return category;
+  }
+  
+  async getFaqCategoryBySlug(slug: string): Promise<FaqCategory | undefined> {
+    const [category] = await db.select().from(faqCategories).where(eq(faqCategories.slug, slug));
+    return category;
+  }
+  
+  async createFaqCategory(insertCategory: InsertFaqCategory): Promise<FaqCategory> {
+    const [category] = await db
+      .insert(faqCategories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
+  
+  async updateFaqCategory(id: number, categoryData: Partial<FaqCategory>): Promise<FaqCategory | undefined> {
+    const [updatedCategory] = await db
+      .update(faqCategories)
+      .set(categoryData)
+      .where(eq(faqCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+  
+  async getFaqCategories(): Promise<FaqCategory[]> {
+    return db
+      .select()
+      .from(faqCategories)
+      .orderBy(faqCategories.sortOrder);
+  }
+  
+  // FAQ Item methods
+  async getFaqItem(id: number): Promise<FaqItem | undefined> {
+    const [item] = await db.select().from(faqItems).where(eq(faqItems.id, id));
+    return item;
+  }
+  
+  async createFaqItem(insertItem: InsertFaqItem): Promise<FaqItem> {
+    const [item] = await db
+      .insert(faqItems)
+      .values(insertItem)
+      .returning();
+    return item;
+  }
+  
+  async updateFaqItem(id: number, itemData: Partial<FaqItem>): Promise<FaqItem | undefined> {
+    const [updatedItem] = await db
+      .update(faqItems)
+      .set(itemData)
+      .where(eq(faqItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+  
+  async getFaqItems(categoryId?: number): Promise<FaqItem[]> {
+    let query = db.select().from(faqItems);
+    
+    if (categoryId !== undefined) {
+      query = query.where(eq(faqItems.categoryId, categoryId));
+    }
+    
+    return query.orderBy(faqItems.sortOrder);
+  }
+  
+  // Chat Message methods
+  async getChatMessage(id: number): Promise<ChatMessage | undefined> {
+    const [message] = await db.select().from(chatMessages).where(eq(chatMessages.id, id));
+    return message;
+  }
+  
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const [message] = await db
+      .insert(chatMessages)
+      .values(insertMessage)
+      .returning();
+    
+    // Atualizar última atividade e mensagem na conversa se existir
+    if (insertMessage.conversationId) {
+      const conversation = await this.getChatConversation(insertMessage.conversationId);
+      if (conversation) {
+        await this.updateChatConversation(conversation.id, {
+          lastMessageId: message.id,
+          lastActivityAt: new Date()
+        });
+      }
+    }
+    
+    return message;
+  }
+  
+  async getChatMessages(options: {
+    conversationId?: number;
+    senderId?: number;
+    receiverId?: number;
+    limit?: number;
+    offset?: number;
+    unreadOnly?: boolean;
+  }): Promise<ChatMessage[]> {
+    let query = db.select().from(chatMessages);
+    const conditions = [];
+    
+    if (options) {
+      if (options.conversationId !== undefined) {
+        conditions.push(eq(chatMessages.conversationId, options.conversationId));
+      }
+      
+      if (options.senderId !== undefined) {
+        conditions.push(eq(chatMessages.senderId, options.senderId));
+      }
+      
+      if (options.receiverId !== undefined) {
+        conditions.push(eq(chatMessages.receiverId, options.receiverId));
+      }
+      
+      if (options.unreadOnly) {
+        conditions.push(eq(chatMessages.isRead, false));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      // Ordenar por data (mais recentes primeiro)
+      query = query.orderBy(desc(chatMessages.createdAt));
+      
+      if (options.offset !== undefined) {
+        query = query.offset(options.offset);
+      }
+      
+      if (options.limit !== undefined) {
+        query = query.limit(options.limit);
+      }
+    }
+    
+    return query;
+  }
+  
+  async markMessagesAsRead(messageIds: number[]): Promise<void> {
+    if (messageIds.length === 0) return;
+    
+    await db
+      .update(chatMessages)
+      .set({ isRead: true })
+      .where(inArray(chatMessages.id, messageIds));
+  }
+  
+  // Chat Conversation methods
+  async getChatConversation(id: number): Promise<ChatConversation | undefined> {
+    const [conversation] = await db.select().from(chatConversations).where(eq(chatConversations.id, id));
+    return conversation;
+  }
+  
+  async createChatConversation(insertConversation: InsertChatConversation): Promise<ChatConversation> {
+    const [conversation] = await db
+      .insert(chatConversations)
+      .values({
+        ...insertConversation,
+        lastActivityAt: new Date()
+      })
+      .returning();
+    return conversation;
+  }
+  
+  async updateChatConversation(id: number, conversationData: Partial<ChatConversation>): Promise<ChatConversation | undefined> {
+    const [updatedConversation] = await db
+      .update(chatConversations)
+      .set(conversationData)
+      .where(eq(chatConversations.id, id))
+      .returning();
+    return updatedConversation;
+  }
+  
+  async getChatConversations(userId: number): Promise<ChatConversation[]> {
+    return db
+      .select()
+      .from(chatConversations)
+      .where(sql`${userId} = ANY(${chatConversations.participantIds})`)
+      .orderBy(desc(chatConversations.lastActivityAt));
   }
   
   // Commission Settings methods
