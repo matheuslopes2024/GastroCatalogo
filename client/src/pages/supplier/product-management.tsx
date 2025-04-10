@@ -191,8 +191,30 @@ export default function ProductManagement() {
           throw error;
         });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Atualiza a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      
+      // Adiciona o novo produto diretamente ao cache para atualização imediata
+      const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
+      
+      // Tentar obter o produto adicionado da resposta
+      try {
+        data.text().then(text => {
+          try {
+            const newProduct = JSON.parse(text);
+            if (newProduct && newProduct.id) {
+              queryClient.setQueryData(["/api/products"], [...currentProducts, newProduct]);
+              console.log("Produto adicionado em tempo real:", newProduct);
+            }
+          } catch (e) {
+            console.error("Erro ao processar resposta:", e);
+          }
+        });
+      } catch (e) {
+        console.error("Erro ao ler resposta:", e);
+      }
+      
       setIsAddDialogOpen(false);
       form.reset();
       toast({
@@ -215,8 +237,34 @@ export default function ProductManagement() {
       const { id, ...productData } = data;
       return apiRequest("PATCH", `/api/products/${id}`, productData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta de produtos para atualização
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      
+      // Atualizar o cache com o produto modificado em tempo real
+      try {
+        data.text().then(text => {
+          try {
+            const updatedProduct = JSON.parse(text);
+            const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
+            
+            if (updatedProduct && updatedProduct.id) {
+              // Substituir o produto antigo pelo atualizado na lista
+              const updatedProducts = currentProducts.map(p => 
+                p.id === updatedProduct.id ? updatedProduct : p
+              );
+              
+              queryClient.setQueryData(["/api/products"], updatedProducts);
+              console.log("Produto atualizado em tempo real:", updatedProduct);
+            }
+          } catch (e) {
+            console.error("Erro ao processar resposta de atualização:", e);
+          }
+        });
+      } catch (e) {
+        console.error("Erro ao ler resposta de atualização:", e);
+      }
+      
       setIsEditDialogOpen(false);
       setEditingProduct(null);
       toast({
@@ -238,8 +286,35 @@ export default function ProductManagement() {
     mutationFn: async (id: number) => {
       return apiRequest("PATCH", `/api/products/${id}`, { active: false });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      
+      // Atualizar a interface em tempo real removendo o produto desativado
+      try {
+        data.text().then(text => {
+          try {
+            const deletedProduct = JSON.parse(text);
+            const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
+            
+            if (deletedProduct && deletedProduct.id) {
+              // Atualizar o produto na lista (mudar status para inativo)
+              const updatedProducts = currentProducts.map(p => 
+                p.id === deletedProduct.id ? {...p, active: false} : p
+              );
+              
+              // Como é uma operação de desativação, ainda mantemos o produto na lista mas com status "inativo"
+              queryClient.setQueryData(["/api/products"], updatedProducts);
+              console.log("Produto desativado em tempo real:", deletedProduct);
+            }
+          } catch (e) {
+            console.error("Erro ao processar resposta de exclusão:", e);
+          }
+        });
+      } catch (e) {
+        console.error("Erro ao ler resposta de exclusão:", e);
+      }
+      
       setIsDeleteDialogOpen(false);
       setDeletingProduct(null);
       toast({
