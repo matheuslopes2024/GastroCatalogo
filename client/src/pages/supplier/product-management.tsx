@@ -800,15 +800,41 @@ export default function ProductManagement() {
                           {...field}
                         />
                         {editingProduct?.id ? (
-                          <ImageUpload 
-                            productId={editingProduct.id} 
-                            imageUrl={field.value} 
-                            onImageUploaded={(newUrl) => {
-                              field.onChange(newUrl);
-                              // Recarregar dados do produto para atualizar a imagem
-                              queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-                            }}
-                          />
+                          <div>
+                            {editingProduct.imageData ? (
+                              <div className="mb-4">
+                                <p className="text-sm font-medium mb-2">Imagem atual:</p>
+                                <div className="w-32 h-32 relative border rounded overflow-hidden">
+                                  <img 
+                                    src={`data:${editingProduct.imageType};base64,${editingProduct.imageData}`} 
+                                    alt={editingProduct.name} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+                            <p className="text-sm mb-2">Fazer upload de nova imagem:</p>
+                            <ImageUpload 
+                              productId={editingProduct.id} 
+                              imageUrl={field.value} 
+                              onImageUploaded={(newUrl) => {
+                                field.onChange(newUrl);
+                                // Forçar atualização da interface após o upload
+                                queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+                                
+                                // Fechar o modal de edição e abrir novamente para mostrar a imagem atualizada
+                                setTimeout(() => {
+                                  setEditingProduct(undefined);
+                                  const currentProduct = products?.find(p => p.id === editingProduct.id);
+                                  if (currentProduct) {
+                                    setTimeout(() => {
+                                      setEditingProduct(currentProduct);
+                                    }, 300);
+                                  }
+                                }, 500);
+                              }}
+                            />
+                          </div>
                         ) : (
                           <p className="text-sm text-gray-500">
                             Salve o produto primeiro para adicionar uma imagem.
