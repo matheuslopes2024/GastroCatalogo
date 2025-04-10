@@ -180,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getProducts(options);
       
       // Agrupar produtos por nome para comparar preços entre fornecedores
-      const productGroups: { [key: string]: Product[] } = {};
+      const productGroups: { [key: string]: any[] } = {};
       
       products.forEach(product => {
         // Normalizar nome do produto para agrupar

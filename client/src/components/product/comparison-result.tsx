@@ -1,7 +1,11 @@
 import { Link } from "wouter";
-import { Check, Star } from "lucide-react";
+import { Check, Star, Store } from "lucide-react";
 import { Product } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
 
 interface ComparisonResultProps {
   product: Product;
@@ -9,24 +13,21 @@ interface ComparisonResultProps {
 }
 
 export function ComparisonResult({ product, isBestPrice = false }: ComparisonResultProps) {
-  const formatPrice = (price: string | number) => {
-    return Number(price).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    });
-  };
+  // Buscar informações do fornecedor
+  const { data: supplier, isLoading: isLoadingSupplier } = useQuery({
+    queryKey: ["/api/suppliers-info", product.supplierId],
+    queryFn: async () => {
+      const response = await fetch(`/api/suppliers-info?ids=${product.supplierId}`);
+      if (!response.ok) {
+        throw new Error("Erro ao carregar informações do fornecedor");
+      }
+      const suppliers = await response.json();
+      return suppliers?.length > 0 ? suppliers[0] : null;
+    }
+  });
 
-  // In a real app, we would fetch features from the product data
-  // here we're creating sample features
-  const features = product.features || [
-    "Capacidade: 100 pratos/hora",
-    "Consumo de água: 3,5L por ciclo",
-    "Material: Aço inox AISI 304",
-    "Potência: 6,7 kW",
-    "Garantia: 12 meses"
-  ];
-
-  const supplier = { name: "Fornecedor", logo: "https://via.placeholder.com/30" }; // In a real app, we'd fetch this
+  // Extrair recursos do produto (se disponíveis)
+  const features = product.features || [];
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -45,18 +46,21 @@ export function ComparisonResult({ product, isBestPrice = false }: ComparisonRes
           <h3 className="text-lg font-bold mb-1">{product.name}</h3>
           <div className="flex items-center mb-2">
             <div className="flex text-yellow-400">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`h-4 w-4 ${
-                    i < Math.floor(parseFloat(product.rating.toString()))
-                      ? "fill-current"
-                      : i < Math.ceil(parseFloat(product.rating.toString()))
-                      ? "fill-current"
-                      : ""
-                  }`}
-                />
-              ))}
+              {[...Array(5)].map((_, i) => {
+                const rating = product.rating ? parseFloat(product.rating.toString()) : 0;
+                return (
+                  <Star
+                    key={i}
+                    className={`h-4 w-4 ${
+                      i < Math.floor(rating)
+                        ? "fill-current"
+                        : i < Math.ceil(rating)
+                        ? "fill-current"
+                        : ""
+                    }`}
+                  />
+                );
+              })}
             </div>
             <span className="ml-1 text-sm text-gray-500">
               ({product.ratingsCount} avaliações)
@@ -72,9 +76,17 @@ export function ComparisonResult({ product, isBestPrice = false }: ComparisonRes
             ))}
           </ul>
 
-          <div className="flex items-center">
-            <img src={supplier.logo} alt={`Logo ${supplier.name}`} className="w-6 h-6 rounded mr-2" />
-            <span className="text-sm font-medium">{supplier.name}</span>
+          <div className="flex items-center mt-3">
+            {isLoadingSupplier ? (
+              <Skeleton className="h-6 w-24" />
+            ) : supplier ? (
+              <>
+                <Store className="w-5 h-5 mr-2 text-gray-500" />
+                <span className="text-sm font-medium">{supplier.companyName || supplier.name}</span>
+              </>
+            ) : (
+              <span className="text-sm text-gray-500">Fornecedor não encontrado</span>
+            )}
           </div>
         </div>
 
@@ -82,17 +94,17 @@ export function ComparisonResult({ product, isBestPrice = false }: ComparisonRes
         <div className="md:w-2/5 flex flex-col items-start md:items-end justify-between">
           <div className="flex flex-col items-start md:items-end mb-4">
             {isBestPrice && (
-              <div className="bg-green-500 bg-opacity-10 text-green-500 font-medium text-sm px-2 py-1 rounded mb-2">
+              <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 mb-2">
                 Melhor Preço
-              </div>
+              </Badge>
             )}
             {product.originalPrice && (
               <div className="line-through text-gray-500 text-sm">
-                {formatPrice(product.originalPrice)}
+                {formatCurrency(Number(product.originalPrice))}
               </div>
             )}
             <div className="text-2xl font-bold text-gray-900 relative inline-block">
-              {formatPrice(product.price)}
+              {formatCurrency(Number(product.price))}
               <span className="absolute bottom-1 left-0 w-full h-1 bg-[#FF5A60] bg-opacity-40 -z-10"></span>
             </div>
             <div className="text-sm text-gray-500 mt-1">

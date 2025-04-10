@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { ComparisonResult } from "@/components/product/comparison-result";
-import { Loading } from "@/components/ui/loading";
+import { Loading, ComparisonSkeleton } from "@/components/ui/loading";
 import {
   Select,
   SelectContent,
@@ -67,7 +67,11 @@ export function ComparisonSection() {
     } else if (orderBy === "price-desc") {
       return [...group].sort((a, b) => parseFloat(b.price.toString()) - parseFloat(a.price.toString()));
     } else if (orderBy === "rating") {
-      return [...group].sort((a, b) => parseFloat(b.rating.toString()) - parseFloat(a.rating.toString()));
+      return [...group].sort((a, b) => {
+        const aRating = a.rating ? parseFloat(a.rating.toString()) : 0;
+        const bRating = b.rating ? parseFloat(b.rating.toString()) : 0;
+        return bRating - aRating;
+      });
     }
     return group;
   }) : [];
@@ -120,22 +124,56 @@ export function ComparisonSection() {
           </div>
         </div>
 
+        {/* Barra de pesquisa */}
+        <div className="mb-6 flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Input
+              type="text"
+              placeholder="Buscar produtos (ex: lava-louças, forno, geladeira)"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
+          <Button onClick={handleSearch} className="bg-primary text-white">
+            Buscar
+          </Button>
+        </div>
+        
         {/* Comparison results */}
         {isLoading ? (
-          <Loading />
+          <ComparisonSkeleton />
         ) : (
-          <div className="space-y-4">
-            {products && products.length > 0 ? (
-              products.map((product) => (
-                <ComparisonResult 
-                  key={product.id} 
-                  product={product} 
-                  isBestPrice={product.id === products[0].id} 
-                />
-              ))
+          <div>
+            {sortedProductGroups && sortedProductGroups.length > 0 ? (
+              <div className="space-y-8">
+                {sortedProductGroups.map((productGroup, groupIndex) => (
+                  <div key={groupIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 p-3 border-b border-gray-200">
+                      <h3 className="text-lg font-bold">{productGroup[0].name}</h3>
+                      <p className="text-sm text-gray-500">
+                        Comparando {productGroup.length} ofertas de fornecedores diferentes
+                      </p>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                      {productGroup.map((product, index) => (
+                        <ComparisonResult 
+                          key={product.id} 
+                          product={product} 
+                          isBestPrice={index === 0} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="text-center py-10">
-                <p className="text-gray-500">Nenhum resultado encontrado.</p>
+              <div className="text-center py-10 bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Nenhum resultado de comparação encontrado.</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Tente buscar por outro termo ou categoria de produto.
+                </p>
               </div>
             )}
           </div>
