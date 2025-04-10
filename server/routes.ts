@@ -652,6 +652,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota específica para definir uma imagem como principal
+  app.put("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const imageId = parseInt(req.params.imageId);
+      const image = await storage.getProductImage(imageId);
+      
+      if (!image) {
+        return res.status(404).json({ message: "Imagem não encontrada" });
+      }
+      
+      // Buscar o produto para verificar permissões
+      const product = await storage.getProduct(image.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Fornecedores só podem atualizar imagens de seus próprios produtos
+      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para atualizar esta imagem" });
+      }
+      
+      // Atualizar todas as outras imagens deste produto para não serem principais
+      await storage.updateProductImagesNotPrimary(image.productId, imageId);
+      
+      // Definir esta imagem como principal
+      const updatedImage = await storage.updateProductImage(imageId, { 
+        isPrimary: true,
+        ...req.body  // Permitir outras atualizações enviadas no corpo
+      });
+      
+      res.json(updatedImage);
+    } catch (error) {
+      console.error("Erro ao definir imagem principal:", error);
+      res.status(500).json({ message: "Erro ao definir imagem principal" });
+    }
+  });
+
   app.delete("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
       const imageId = parseInt(req.params.imageId);

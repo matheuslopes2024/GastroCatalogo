@@ -675,15 +675,21 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateProductImagesNotPrimary(productId: number, excludeId?: number): Promise<void> {
-    const query = db
-      .update(productImages)
-      .set({ isPrimary: false })
-      .where(eq(productImages.productId, productId));
-    
     if (excludeId !== undefined) {
-      await query.where(ne(productImages.id, excludeId));
+      await db
+        .update(productImages)
+        .set({ isPrimary: false })
+        .where(
+          and(
+            eq(productImages.productId, productId),
+            ne(productImages.id, excludeId)
+          )
+        );
     } else {
-      await query;
+      await db
+        .update(productImages)
+        .set({ isPrimary: false })
+        .where(eq(productImages.productId, productId));
     }
   }
   
