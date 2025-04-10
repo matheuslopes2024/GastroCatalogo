@@ -139,8 +139,34 @@ export default function AdminSuppliers() {
     mutationFn: async ({ id, data }: { id: number; data: Partial<User> }) => {
       return apiRequest("PATCH", `/api/users/${id}`, data);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta de usuários para atualização
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      
+      // Atualizar o cache com o fornecedor modificado em tempo real
+      try {
+        data.text().then(text => {
+          try {
+            const updatedUser = JSON.parse(text);
+            const currentUsers = queryClient.getQueryData<User[]>(["/api/users", { role: UserRole.SUPPLIER }]) || [];
+            
+            if (updatedUser && updatedUser.id) {
+              // Substituir o fornecedor antigo pelo atualizado na lista
+              const updatedUsers = currentUsers.map(u => 
+                u.id === updatedUser.id ? updatedUser : u
+              );
+              
+              queryClient.setQueryData(["/api/users", { role: UserRole.SUPPLIER }], updatedUsers);
+              console.log("Fornecedor atualizado em tempo real:", updatedUser);
+            }
+          } catch (e) {
+            console.error("Erro ao processar resposta de atualização:", e);
+          }
+        });
+      } catch (e) {
+        console.error("Erro ao ler resposta de atualização:", e);
+      }
+      
       toast({
         title: "Fornecedor atualizado",
         description: "As informações do fornecedor foram atualizadas com sucesso.",
@@ -204,8 +230,32 @@ export default function AdminSuppliers() {
     mutationFn: async (data: z.infer<typeof supplierFormSchema>) => {
       return apiRequest("POST", "/api/register", data);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidar a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      
+      // Adicionar o novo fornecedor ao cache em tempo real
+      try {
+        data.json().then(newSupplier => {
+          try {
+            const currentSuppliers = queryClient.getQueryData<User[]>(["/api/users", { role: UserRole.SUPPLIER }]) || [];
+            
+            // Adicionar o novo fornecedor à lista existente
+            const updatedSuppliers = [...currentSuppliers, newSupplier];
+            
+            // Atualizar o cache
+            queryClient.setQueryData(["/api/users", { role: UserRole.SUPPLIER }], updatedSuppliers);
+            console.log("Novo fornecedor adicionado em tempo real:", newSupplier);
+          } catch (e) {
+            console.error("Erro ao processar dados do novo fornecedor:", e);
+          }
+        }).catch(e => {
+          console.error("Erro ao processar resposta JSON:", e);
+        });
+      } catch (e) {
+        console.error("Erro ao processar resposta do novo fornecedor:", e);
+      }
+      
       setIsNewSupplierOpen(false);
       toast({
         title: "Fornecedor criado",
