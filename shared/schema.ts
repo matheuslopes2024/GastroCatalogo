@@ -170,20 +170,6 @@ export const faqItems = pgTable("faq_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Chat Messages
-export const chatMessages = pgTable("chat_messages", {
-  id: serial("id").primaryKey(),
-  senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  message: text("message").notNull(),
-  isRead: boolean("is_read").notNull().default(false),
-  attachmentUrl: text("attachment_url"),
-  attachmentType: text("attachment_type"),
-  attachmentData: text("attachment_data"), // Base64 do arquivo (para arquivos menores)
-  attachmentSize: integer("attachment_size"), // Tamanho em bytes
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 // Chat Conversations (para agrupar conversas)
 export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
@@ -192,6 +178,21 @@ export const chatConversations = pgTable("chat_conversations", {
   lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(),
   subject: text("subject"),
   isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Chat Messages
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  conversationId: integer("conversation_id").references(() => chatConversations.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: text("attachment_type"),
+  attachmentData: text("attachment_data"), // Base64 do arquivo (para arquivos menores)
+  attachmentSize: integer("attachment_size"), // Tamanho em bytes
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
