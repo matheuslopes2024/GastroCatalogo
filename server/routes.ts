@@ -315,6 +315,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get user by ID
+  app.get("/api/users/:id", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Remove password before sending response
+      const { password, ...sanitizedUser } = user;
+      
+      res.json(sanitizedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar usuário" });
+    }
+  });
+  
+  // Update user
+  app.patch("/api/users/:id", checkRole([UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Update user data
+      const updatedUser = await storage.updateUser(id, req.body);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Erro ao atualizar usuário" });
+      }
+      
+      // Remove password before sending response
+      const { password, ...sanitizedUser } = updatedUser;
+      
+      res.json(sanitizedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar usuário" });
+    }
+  });
+  
   // Suppliers info API (for checkout)
   app.get("/api/suppliers-info", async (req, res) => {
     try {

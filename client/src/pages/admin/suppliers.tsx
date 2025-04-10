@@ -90,6 +90,9 @@ export default function AdminSuppliers() {
   const [viewingSupplier, setViewingSupplier] = useState<User | null>(null);
   const [isSupplierDetailOpen, setIsSupplierDetailOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isNewSupplierOpen, setIsNewSupplierOpen] = useState(false);
+  const [isEditSupplierOpen, setIsEditSupplierOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<User | null>(null);
   const [deletingSupplier, setDeletingSupplier] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   
@@ -215,6 +218,12 @@ export default function AdminSuppliers() {
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
                       </div>
+                      <Button 
+                        onClick={() => setIsNewSupplierOpen(true)}
+                        className="whitespace-nowrap"
+                      >
+                        Novo Fornecedor
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
