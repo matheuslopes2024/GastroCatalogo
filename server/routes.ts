@@ -152,6 +152,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Product Comparison API
+  app.get("/api/compare-products", async (req, res) => {
+    try {
+      const { name, category, limit } = req.query;
+      
+      if (!name && !category) {
+        return res.status(400).json({ message: "É necessário fornecer o nome do produto ou a categoria para comparação" });
+      }
+      
+      // Buscar produtos semelhantes com base no nome ou categoria
+      const options: any = { active: true };
+      const limitNum = limit ? parseInt(limit as string) : 5; // Padrão: 5 melhores ofertas
+      
+      if (category) {
+        const categorySlug = category as string;
+        const categoryObj = await storage.getCategoryBySlug(categorySlug);
+        if (categoryObj) {
+          options.categoryId = categoryObj.id;
+        }
+      }
+      
+      if (name) {
+        options.search = name as string;
+      }
+      
+      const products = await storage.getProducts(options);
+      
+      // Agrupar produtos por nome para comparar preços entre fornecedores
+      const productGroups: { [key: string]: Product[] } = {};
+      
+      products.forEach(product => {
+        // Normalizar nome do produto para agrupar
+        const normalizedName = product.name.toLowerCase().trim();
+        if (!productGroups[normalizedName]) {
+          productGroups[normalizedName] = [];
+        }
+        productGroups[normalizedName].push(product);
+      });
+      
+      // Criar resultado de comparação
+      const comparisonResults = Object.values(productGroups)
+        .map(group => {
+          // Ordenar por preço (do menor para o maior)
+          return group.sort((a, b) => 
+            parseFloat(a.price.toString()) - parseFloat(b.price.toString())
+          );
+        })
+        // Filtrar apenas grupos que têm mais de um fornecedor
+        .filter(group => group.length > 1)
+        // Limitar a quantidade de grupos retornados
+        .slice(0, limitNum);
+      
+      res.json(comparisonResults);
+    } catch (error) {
+      console.error("Erro ao comparar produtos:", error);
+      res.status(500).json({ message: "Erro ao comparar produtos" });
+    }
+  });
+  
   // Sales API
   app.get("/api/sales", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {

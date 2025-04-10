@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 import { ComparisonResult } from "@/components/product/comparison-result";
 import { Loading } from "@/components/ui/loading";
 import {
@@ -11,27 +12,73 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 export function ComparisonSection() {
   const [orderBy, setOrderBy] = useState("price-asc");
+  const [searchTerm, setSearchTerm] = useState("lava-louças");
+  const [searchInput, setSearchInput] = useState("lava-louças");
+  const [limit, setLimit] = useState(5);
+  const { toast } = useToast();
   
-  // In a real app we would fetch and use these filters
+  // Filtros reais baseados nas características dos produtos
   const filters = [
-    { label: "Tipo de Lava-louças", value: "tipo" },
+    { label: "Tipo de produto", value: "tipo" },
     { label: "Capacidade", value: "capacidade" },
     { label: "Fornecedores", value: "fornecedores" },
     { label: "Preço", value: "preco" },
     { label: "Avaliações", value: "avaliacoes" }
   ];
 
-  const { data: products, isLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products", { categoryId: 6, limit: 3 }], // Hard-coded to Lavagem category for demo
+  const { data: productGroups, isLoading, refetch } = useQuery<Product[][]>({
+    queryKey: ["/api/compare-products", { name: searchTerm, limit }],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest(
+          "GET", 
+          `/api/compare-products?name=${encodeURIComponent(searchTerm)}&limit=${limit}`
+        );
+        
+        if (!response.ok) {
+          throw new Error("Falha ao buscar comparações de produtos");
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Erro ao buscar comparações:", error);
+        toast({
+          title: "Erro ao buscar comparações",
+          description: "Não foi possível obter os dados de comparação de produtos",
+          variant: "destructive",
+        });
+        return [];
+      }
+    },
+    enabled: searchTerm.length > 0
   });
 
+  // Aplicar ordenação aos resultados
+  const sortedProductGroups = productGroups ? [...productGroups].map(group => {
+    if (orderBy === "price-asc") {
+      return [...group].sort((a, b) => parseFloat(a.price.toString()) - parseFloat(b.price.toString()));
+    } else if (orderBy === "price-desc") {
+      return [...group].sort((a, b) => parseFloat(b.price.toString()) - parseFloat(a.price.toString()));
+    } else if (orderBy === "rating") {
+      return [...group].sort((a, b) => parseFloat(b.rating.toString()) - parseFloat(a.rating.toString()));
+    }
+    return group;
+  }) : [];
+
+  const handleSearch = () => {
+    setSearchTerm(searchInput);
+  };
+
   const handleLoadMore = () => {
-    // In a real app, we would load more results
-    console.log("Load more results");
+    setLimit(prev => prev + 5);
+    refetch();
   };
 
   return (
