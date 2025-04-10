@@ -125,9 +125,23 @@ export default function ProductDetails() {
               {/* Product Image */}
               <div className="bg-gray-100 rounded-lg overflow-hidden">
                 <img
-                  src={product.imageUrl || "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=500&h=400"}
+                  src={
+                    product.imageData 
+                      ? `/api/product-image/${product.id}` 
+                      : (product.imageUrl || "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=500&h=400")
+                  }
                   alt={product.name}
                   className="w-full h-80 md:h-[400px] object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    // Se houver erro ao carregar a imagem do banco, tenta a URL externa
+                    if (target.src.includes('/api/product-image/') && product.imageUrl) {
+                      target.src = product.imageUrl;
+                    } else {
+                      // Caso também falhe, mostra imagem padrão
+                      target.src = "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=500&h=400";
+                    }
+                  }}
                 />
               </div>
               

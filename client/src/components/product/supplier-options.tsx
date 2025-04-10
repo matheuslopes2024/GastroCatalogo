@@ -124,8 +124,22 @@ export function SupplierOptions({ productSlug }: SupplierOptionsProps) {
                 <div className="bg-gray-50 p-4 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-semibold text-gray-700">
-                        {product.supplier?.companyName?.charAt(0) || "F"}
+                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-semibold text-gray-700 overflow-hidden">
+                        {product.supplier?.logoData ? (
+                          <img 
+                            src={`/api/supplier-logo/${product.supplier.id}`} 
+                            alt={product.supplier?.companyName || "Logo do fornecedor"}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              // Se falhar, mostrar a letra inicial como fallback
+                              target.style.display = 'none';
+                              target.parentElement!.textContent = product.supplier?.companyName?.charAt(0) || "F";
+                            }}
+                          />
+                        ) : (
+                          product.supplier?.companyName?.charAt(0) || "F"
+                        )}
                       </div>
                       <div>
                         <h3 className="font-semibold">
