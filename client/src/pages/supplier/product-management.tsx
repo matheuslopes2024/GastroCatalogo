@@ -635,14 +635,14 @@ export default function ProductManagement() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria</FormLabel>
+                      <FormLabel>Categoria Principal</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(Number(value))}
                         value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
+                            <SelectValue placeholder="Selecione uma categoria principal" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -653,6 +653,46 @@ export default function ProductManagement() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Esta será a categoria principal do produto
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="additionalCategories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categorias Adicionais</FormLabel>
+                      <div className="flex flex-wrap gap-2 p-2 border rounded-md">
+                        {categories?.map((category) => (
+                          <div key={category.id} className="flex items-center">
+                            <Checkbox
+                              id={`cat-${category.id}`}
+                              checked={field.value?.includes(category.id)}
+                              onCheckedChange={(checked) => {
+                                const currentValues = field.value || [];
+                                const newValues = checked
+                                  ? [...currentValues, category.id]
+                                  : currentValues.filter(id => id !== category.id);
+                                field.onChange(newValues);
+                              }}
+                            />
+                            <label
+                              htmlFor={`cat-${category.id}`}
+                              className="ml-2 text-sm font-medium cursor-pointer"
+                            >
+                              {category.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        Selecione categorias adicionais onde o produto também deve aparecer
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -788,14 +828,14 @@ export default function ProductManagement() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria</FormLabel>
+                      <FormLabel>Categoria Principal</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(Number(value))}
                         value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
+                            <SelectValue placeholder="Selecione uma categoria principal" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -806,6 +846,46 @@ export default function ProductManagement() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Esta será a categoria principal do produto
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="additionalCategories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categorias Adicionais</FormLabel>
+                      <div className="flex flex-wrap gap-2 p-2 border rounded-md">
+                        {categories?.map((category) => (
+                          <div key={category.id} className="flex items-center">
+                            <Checkbox
+                              id={`edit-cat-${category.id}`}
+                              checked={field.value?.includes(category.id)}
+                              onCheckedChange={(checked) => {
+                                const currentValues = field.value || [];
+                                const newValues = checked
+                                  ? [...currentValues, category.id]
+                                  : currentValues.filter(id => id !== category.id);
+                                field.onChange(newValues);
+                              }}
+                            />
+                            <label
+                              htmlFor={`edit-cat-${category.id}`}
+                              className="ml-2 text-sm font-medium cursor-pointer"
+                            >
+                              {category.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        Selecione categorias adicionais onde o produto também deve aparecer
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
