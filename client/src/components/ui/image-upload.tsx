@@ -58,12 +58,21 @@ export function ImageUpload({ productId, imageUrl, onImageUploaded }: ImageUploa
       const [prefix, imageData] = base64.split(',');
       const imageType = prefix.split(':')[1].split(';')[0];
 
-      // Fazer upload para o servidor
-      const response = await apiRequest("POST", "/api/upload-product-image", {
-        productId,
-        imageData,
-        imageType
+      // Fazer upload para o servidor usando FormData
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("productId", productId.toString());
+      formData.append("isPrimary", "true");
+      formData.append("sortOrder", "0");
+      
+      console.log("Enviando arquivo para upload:", {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        productId
       });
+      
+      const response = await apiRequest("POST", "/api/upload-product-image", formData);
 
       const result = await response.json();
 
