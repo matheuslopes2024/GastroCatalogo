@@ -89,12 +89,26 @@ function SupplierSidebar() {
 }
 
 // Product form schema
-const productFormSchema = insertProductSchema.extend({
+const productFormSchema = z.object({
+  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+  categoryId: z.number({
+    required_error: "Selecione uma categoria",
+    invalid_type_error: "Categoria inválida"
+  }),
+  supplierId: z.number().optional(),
+  price: z.string().or(z.number()).pipe(
+    z.coerce.number().min(0, "Preço deve ser maior que zero")
+  ),
+  discount: z.number().nullable().optional(),
+  originalPrice: z.string().nullable().optional(),
   features: z.string().optional().transform(val => 
     val ? val.split('\n').filter(line => line.trim().length > 0) : []
-  )
-}).omit({
-  additionalImages: true // Vamos tratar isso separadamente após a criação do produto
+  ),
+  imageUrl: z.string().url("URL da imagem inválida"),
+  imageData: z.string().nullable().optional(),
+  imageType: z.string().nullable().optional(),
+  active: z.boolean().default(true)
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -258,13 +272,19 @@ export default function ProductManagement() {
     const productData = {
       name: data.name,
       description: data.description,
-      slug: slug,
+      slug,
       categoryId: data.categoryId,
       supplierId: data.supplierId || user?.id,
       price: data.price ? data.price.toString() : "0",
       imageUrl: data.imageUrl,
       active: true,
-      features: [] // Array vazio em vez de string
+      features: [],
+      discount: data.discount,
+      originalPrice: data.originalPrice,
+      imageData: data.imageData,
+      imageType: data.imageType,
+      rating: null,
+      ratingsCount: 0
     };
     
     console.log("Dados simplificados para envio:", productData);
@@ -282,12 +302,19 @@ export default function ProductManagement() {
       id: editingProduct.id,
       name: data.name,
       description: data.description,
+      slug: editingProduct.slug,
       categoryId: data.categoryId,
       supplierId: data.supplierId || user?.id,
       price: data.price ? data.price.toString() : "0",
       imageUrl: data.imageUrl,
       active: true,
-      features: [] // Array vazio em vez de string
+      features: [],
+      discount: data.discount,
+      originalPrice: data.originalPrice,
+      imageData: data.imageData,
+      imageType: data.imageType,
+      rating: editingProduct.rating,
+      ratingsCount: editingProduct.ratingsCount || 0
     };
     
     console.log("Dados simplificados para edição:", productData);
