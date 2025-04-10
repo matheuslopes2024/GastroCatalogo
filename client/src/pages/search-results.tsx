@@ -56,13 +56,46 @@ export default function SearchResults() {
     }
   });
   
-  // Get products based on search or category
+  // Filtragem avançada de produtos por categoria e termo de busca
   const {
     data: products,
     isLoading,
     refetch
   } = useQuery<Product[]>({
-    queryKey: ["/api/products", { search: query, categoryId: currentCategory?.id }],
+    queryKey: ["/api/products", { search: query, categoryId: selectedCategory !== "0" ? selectedCategory : undefined }],
+    enabled: true,
+    queryFn: async ({ queryKey }) => {
+      // Extrair parâmetros de consulta da queryKey
+      const [_, params] = queryKey;
+      const queryParams = params as { search?: string; categoryId?: string };
+      
+      // Construir URL de consulta com parâmetros apropriados
+      let url = "/api/products";
+      const urlParams = new URLSearchParams();
+      
+      if (queryParams.search) {
+        urlParams.append("search", queryParams.search);
+      }
+      
+      if (queryParams.categoryId && queryParams.categoryId !== "0") {
+        urlParams.append("categoryId", queryParams.categoryId);
+      }
+      
+      const queryString = urlParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+      
+      // Realizar a busca com os filtros aplicados
+      console.log("Enviando request para:", url, "com método:", "GET", "e corpo do tipo:", typeof undefined);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error("Falha ao buscar produtos");
+      }
+      
+      return response.json();
+    }
   });
   
   // Search form handling

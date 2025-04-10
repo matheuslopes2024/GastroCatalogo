@@ -249,20 +249,36 @@ export class MemStorage implements IStorage {
     let products = Array.from(this.products.values());
     
     if (options) {
+      // Aplicação avançada de filtro por categoria
       if (options.categoryId !== undefined) {
-        products = products.filter(product => product.categoryId === options.categoryId);
+        console.log(`Filtrando produtos por categoria ID: ${options.categoryId}`);
+        products = products.filter(product => {
+          // Garantir que o produto pertence exatamente à categoria especificada
+          const categoryMatch = product.categoryId === options.categoryId;
+          
+          if (categoryMatch) {
+            console.log(`Produto "${product.name}" (ID: ${product.id}) corresponde à categoria ${options.categoryId}`);
+          }
+          
+          return categoryMatch;
+        });
       }
       
+      // Aplicação de filtro por fornecedor
       if (options.supplierId !== undefined) {
+        console.log(`Filtrando produtos por fornecedor ID: ${options.supplierId}`);
         products = products.filter(product => product.supplierId === options.supplierId);
       }
       
+      // Filtro de produtos ativos/inativos
       if (options.active !== undefined) {
         products = products.filter(product => product.active === options.active);
       }
       
+      // Aplicação de filtro por termo de busca
       if (options.search) {
         const searchTerm = options.search.toLowerCase();
+        console.log(`Filtrando produtos pelo termo de busca: "${searchTerm}"`);
         products = products.filter(product => 
           product.name.toLowerCase().includes(searchTerm) || 
           product.description.toLowerCase().includes(searchTerm)
@@ -569,20 +585,31 @@ export class DatabaseStorage implements IStorage {
     if (options) {
       const conditions = [];
       
+      // Filtragem avançada por categoria
       if (options.categoryId !== undefined) {
+        console.log(`Filtrando produtos no banco de dados por categoria ID: ${options.categoryId}`);
+        
+        // Garantir que o produto pertença exatamente à categoria especificada
         conditions.push(eq(products.categoryId, options.categoryId));
       }
       
+      // Filtragem por fornecedor
       if (options.supplierId !== undefined) {
+        console.log(`Filtrando produtos no banco de dados por fornecedor ID: ${options.supplierId}`);
         conditions.push(eq(products.supplierId, options.supplierId));
       }
       
+      // Filtragem de produtos ativos/inativos
       if (options.active !== undefined) {
         conditions.push(eq(products.active, options.active));
       }
       
+      // Filtragem por termo de busca com pesquisa avançada
       if (options.search) {
         const searchTerm = `%${options.search}%`;
+        console.log(`Filtrando produtos no banco de dados pelo termo de busca: "${options.search}"`);
+        
+        // Pesquisa em nome, descrição e recursos do produto
         conditions.push(
           or(
             like(products.name, searchTerm),
@@ -591,10 +618,12 @@ export class DatabaseStorage implements IStorage {
         );
       }
       
+      // Aplicar todas as condições de filtro
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
       
+      // Aplicar limite de resultados, se especificado
       if (options.limit) {
         query = query.limit(options.limit);
       }

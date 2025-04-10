@@ -63,21 +63,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories/:idOrSlug", async (req, res) => {
     try {
       const idOrSlug = req.params.idOrSlug;
+      
+      // Caso especial para "Todas as categorias" (ID 0)
+      if (idOrSlug === "0") {
+        return res.json({
+          id: 0,
+          name: "Todas as categorias",
+          slug: "todas-categorias",
+          description: "Exibe produtos de todas as categorias",
+          icon: "grid",
+          productsCount: -1  // valor especial para indicar "todos os produtos"
+        });
+      }
+      
       let category;
       
       // Verifica se é um ID (número) ou slug (string)
       if (!isNaN(Number(idOrSlug))) {
+        console.log(`Buscando categoria pelo ID: ${idOrSlug}`);
         category = await storage.getCategory(parseInt(idOrSlug));
       } else {
+        console.log(`Buscando categoria pelo slug: ${idOrSlug}`);
         category = await storage.getCategoryBySlug(idOrSlug);
       }
       
       if (!category) {
+        console.log(`Categoria não encontrada: ${idOrSlug}`);
         return res.status(404).json({ message: "Categoria não encontrada" });
       }
       
+      console.log(`Categoria encontrada: ${category.name} (ID: ${category.id})`);
       res.json(category);
     } catch (error) {
+      console.error("Erro ao buscar categoria:", error);
       res.status(500).json({ message: "Erro ao buscar categoria" });
     }
   });
