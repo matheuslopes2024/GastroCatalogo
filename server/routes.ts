@@ -143,6 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getProducts(options);
       res.json(products);
     } catch (error) {
+      console.error("Erro detalhado ao buscar produtos:", error);
       res.status(500).json({ message: "Erro ao buscar produtos" });
     }
   });
