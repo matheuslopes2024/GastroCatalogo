@@ -122,10 +122,28 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    // Remove password before sending response
-    const { password, ...userWithoutPassword } = req.user as SelectUser;
-    res.status(200).json(userWithoutPassword);
+  app.post("/api/login", (req, res, next) => {
+    console.log("Recebendo requisição de login:", req.body);
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        console.error("Erro durante autenticação:", err);
+        return next(err);
+      }
+      if (!user) {
+        console.log("Usuário não encontrado ou senha inválida");
+        return res.status(401).json({ message: "Usuário ou senha incorretos" });
+      }
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Erro ao estabelecer sessão:", err);
+          return next(err);
+        }
+        console.log("Login bem-sucedido para:", user.username);
+        // Remove password before sending response
+        const { password, ...userWithoutPassword } = user as SelectUser;
+        return res.status(200).json(userWithoutPassword);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
