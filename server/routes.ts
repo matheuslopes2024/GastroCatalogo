@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
 import { insertCategorySchema, insertProductSchema, insertSaleSchema, insertCommissionSettingSchema, UserRole } from "@shared/schema";
+import bodyParser from "body-parser";
 
 // Inicialização do Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
@@ -481,6 +482,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Erro ao processar pagamento", 
         error: error.message 
       });
+    }
+  });
+  
+  // Configurando o limite de tamanho do payload para suportar uploads maiores
+  app.use(bodyParser.json({ limit: '10mb' }));
+  
+  // Rota para upload de imagem de produto
+  app.post("/api/upload-product-image", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const { productId, imageData, imageType } = req.body;
+      
+      if (!productId || !imageData || !imageType) {
+        return res.status(400).json({ message: "ID do produto, dados da imagem e tipo da imagem são obrigatórios" });
+      }
+      
+      // Verificar se o produto existe
+      const product = await storage.getProduct(parseInt(productId));
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Verificar se o fornecedor tem permissão para editar este produto
+      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para editar este produto" });
+      }
+      
+      // Atualizar o produto com os dados da imagem
+      const updatedProduct = await storage.updateProduct(product.id, {
+        imageData,
+        imageType
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Imagem do produto atualizada com sucesso",
+        product: updatedProduct
+      });
+    } catch (error) {
+      console.error("Erro ao fazer upload da imagem:", error);
+      res.status(500).json({ message: "Erro ao fazer upload da imagem" });
+    }
+  });
+  
+  // Rota para recuperar imagem do produto
+  app.get("/api/product-image/:productId", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      
+      // Buscar o produto
+      const product = await storage.getProduct(productId);
+      if (!product || !product.imageData || !product.imageType) {
+        return res.status(404).json({ message: "Imagem não encontrada" });
+      }
+      
+      // Enviar dados da imagem
+      res.set('Content-Type', product.imageType);
+      res.send(Buffer.from(product.imageData, 'base64'));
+    } catch (error) {
+      console.error("Erro ao buscar imagem do produto:", error);
+      res.status(500).json({ message: "Erro ao buscar imagem do produto" });
     }
   });
   
