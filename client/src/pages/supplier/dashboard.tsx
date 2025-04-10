@@ -25,23 +25,17 @@ function SupplierSidebar() {
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
       <nav className="space-y-2">
-        <Link href="/fornecedor">
-          <a className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
-            <BarChart className="mr-2 h-5 w-5" />
-            Dashboard
-          </a>
+        <Link href="/fornecedor" className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
+          <BarChart className="mr-2 h-5 w-5" />
+          Dashboard
         </Link>
-        <Link href="/fornecedor/produtos">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <Package className="mr-2 h-5 w-5" />
-            Meus Produtos
-          </a>
+        <Link href="/fornecedor/produtos" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <Package className="mr-2 h-5 w-5" />
+          Meus Produtos
         </Link>
-        <Link href="/fornecedor/vendas">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <DollarSign className="mr-2 h-5 w-5" />
-            Vendas e Comissões
-          </a>
+        <Link href="/fornecedor/vendas" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <DollarSign className="mr-2 h-5 w-5" />
+          Vendas e Comissões
         </Link>
       </nav>
     </div>
