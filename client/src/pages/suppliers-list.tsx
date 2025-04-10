@@ -110,11 +110,7 @@ const SupplierCard = ({ supplier }: { supplier: Supplier }) => {
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
               <div className="w-20 h-20 rounded-full bg-white p-1">
                 <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-gray-700 overflow-hidden">
-                  {supplier.imageUrl ? (
-                    <img src={supplier.imageUrl} alt={supplier.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Store className="h-10 w-10" />
-                  )}
+                  <Store className="h-10 w-10" />
                 </div>
               </div>
             </div>
@@ -124,22 +120,22 @@ const SupplierCard = ({ supplier }: { supplier: Supplier }) => {
           <div className="pt-12 px-6 pb-6">
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold text-gray-900 mb-1">
-                {supplier.companyName}
+                {supplier.companyName || supplier.name}
               </h3>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                 <MapPin className="h-4 w-4 text-gray-400" />
-                <span>{supplier.location}</span>
+                <span>{supplier.cnpj ? `CNPJ: ${supplier.cnpj}` : "Fornecedor Verificado"}</span>
               </div>
             </div>
             
             <p className="text-gray-600 text-center mb-4 line-clamp-2">
-              {supplier.description}
+              {`Fornecedor especializado que oferece produtos de qualidade desde ${new Date(supplier.createdAt).getFullYear()}.`}
             </p>
             
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center">
                 <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                <span className="ml-1 font-medium">{supplier.rating.toFixed(1)}</span>
+                <span className="ml-1 font-medium">{parseFloat(supplier.rating).toFixed(1)}</span>
               </div>
               <div className="flex items-center text-gray-600 text-sm">
                 <Store className="h-4 w-4 mr-1" />
@@ -148,14 +144,14 @@ const SupplierCard = ({ supplier }: { supplier: Supplier }) => {
             </div>
             
             <div className="flex flex-wrap gap-1 mb-4">
-              {supplier.categoryFocus.slice(0, 3).map((category, idx) => (
+              {supplier.categories.slice(0, 3).map((category, idx) => (
                 <Badge key={idx} variant="secondary" className="font-normal">
                   {category}
                 </Badge>
               ))}
-              {supplier.categoryFocus.length > 3 && (
+              {supplier.categories.length > 3 && (
                 <Badge variant="outline" className="font-normal text-gray-500">
-                  +{supplier.categoryFocus.length - 3}
+                  +{supplier.categories.length - 3}
                 </Badge>
               )}
             </div>
@@ -230,129 +226,27 @@ export default function SuppliersListPage() {
     sortBy: "rating"
   });
   
-  // Dados simulados de fornecedores para demonstração
-  const dummySuppliers: Supplier[] = [
-    {
-      id: 1,
-      name: "equipment_world",
-      companyName: "Equipment World",
-      description: "Especialistas em equipamentos industriais para cozinhas profissionais, com mais de 20 anos no mercado.",
-      location: "São Paulo, SP",
-      rating: 4.8,
-      productsCount: 423,
-      verified: true,
-      joinedDate: "2018-05-12",
-      categoryFocus: ["Fornos", "Fogões", "Refrigeração"]
-    },
-    {
-      id: 2,
-      name: "kitchenware_pro",
-      companyName: "KitchenWare Pro",
-      description: "Utensílios e pequenos equipamentos para restaurantes e bares com entrega expressa.",
-      location: "Rio de Janeiro, RJ",
-      rating: 4.6,
-      productsCount: 312,
-      verified: true,
-      joinedDate: "2019-10-25",
-      categoryFocus: ["Utensílios", "Panelas", "Facas"]
-    },
-    {
-      id: 3,
-      name: "cool_systems",
-      companyName: "Cool Systems",
-      description: "Especialistas em sistemas de refrigeração comercial e industrial para restaurantes, hotéis e supermercados.",
-      location: "Curitiba, PR",
-      rating: 4.7,
-      productsCount: 187,
-      verified: true,
-      joinedDate: "2020-02-15",
-      categoryFocus: ["Refrigeração", "Congeladores", "Câmaras Frias"]
-    },
-    {
-      id: 4,
-      name: "chef_supplies",
-      companyName: "Chef Supplies",
-      description: "Fornecedor completo de produtos para chefs, com foco em qualidade e durabilidade.",
-      location: "Belo Horizonte, MG",
-      rating: 4.5,
-      productsCount: 278,
-      verified: true,
-      joinedDate: "2019-07-03",
-      categoryFocus: ["Utensílios", "Uniformes", "Acessórios"]
-    },
-    {
-      id: 5,
-      name: "smart_kitchen",
-      companyName: "Smart Kitchen Solutions",
-      description: "Tecnologia de ponta para cozinhas modernas, fornecendo equipamentos inteligentes e conectados.",
-      location: "São Paulo, SP",
-      rating: 4.9,
-      productsCount: 156,
-      verified: true,
-      joinedDate: "2021-01-10",
-      categoryFocus: ["Automação", "Equipamentos", "IoT"]
-    },
-    {
-      id: 6,
-      name: "barista_pro",
-      companyName: "Barista Pro",
-      description: "Tudo para cafeterias e espaços gourmet, desde máquinas profissionais até acessórios especializados.",
-      location: "Porto Alegre, RS",
-      rating: 4.7,
-      productsCount: 203,
-      verified: true,
-      joinedDate: "2019-11-20",
-      categoryFocus: ["Café", "Bebidas", "Máquinas"]
-    },
-    {
-      id: 7,
-      name: "pizza_tools",
-      companyName: "Pizza Tools Brasil",
-      description: "Fornecedor especializado em equipamentos para pizzarias e restaurantes italianos.",
-      location: "Campinas, SP",
-      rating: 4.6,
-      productsCount: 145,
-      verified: true,
-      joinedDate: "2020-06-18",
-      categoryFocus: ["Fornos", "Pizzaria", "Utensílios"]
-    },
-    {
-      id: 8,
-      name: "hotel_supplies",
-      companyName: "Hotel Supplies",
-      description: "Produtos e equipamentos para hotelaria, com foco em restaurantes, bares e áreas de serviço.",
-      location: "Florianópolis, SC",
-      rating: 4.5,
-      productsCount: 320,
-      verified: true,
-      joinedDate: "2018-09-12",
-      categoryFocus: ["Hotelaria", "Serviço", "Buffet"]
-    }
-  ];
-  
   // Efeito para carregar fornecedores
   useEffect(() => {
     const fetchSuppliers = async () => {
-      // Em uma implementação real, aqui faria uma chamada à API
-      // Aqui estamos usando dados dummy para demonstração
       setLoading(true);
       
-      // Simular um atraso de carregamento
-      setTimeout(() => {
-        setSuppliers(dummySuppliers);
+      try {
+        const response = await apiRequest('GET', '/api/suppliers');
+        const data = await response.json();
+        
+        // Adicionar a propriedade "verified" a todos os fornecedores 
+        const enhancedSuppliers = data.map((supplier: any) => ({
+          ...supplier,
+          verified: true // Todos os fornecedores na plataforma são verificados
+        }));
+        
+        setSuppliers(enhancedSuppliers);
+      } catch (error) {
+        console.error('Erro ao buscar fornecedores:', error);
+      } finally {
         setLoading(false);
-      }, 800);
-      
-      // Na implementação real:
-      // try {
-      //   const response = await apiRequest('GET', '/api/suppliers');
-      //   const data = await response.json();
-      //   setSuppliers(data);
-      // } catch (error) {
-      //   console.error('Erro ao buscar fornecedores:', error);
-      // } finally {
-      //   setLoading(false);
-      // }
+      }
     };
     
     fetchSuppliers();
@@ -362,22 +256,19 @@ export default function SuppliersListPage() {
   const getSortedSuppliers = () => {
     const filtered = [...suppliers];
     
-    if (filters.category) {
-      filtered.filter(s => s.categoryFocus.some(c => 
-        c.toLowerCase().includes(filters.category.toLowerCase())));
-    }
-    
-    if (filters.location) {
-      filtered.filter(s => 
-        s.location.toLowerCase().includes(filters.location.toLowerCase()));
+    if (filters.category && filtered.length > 0 && filtered[0].categories) {
+      return filtered.filter(s => 
+        s.categories.some((c: string) => 
+          c.toLowerCase().includes(filters.category.toLowerCase()))
+      );
     }
     
     if (filters.sortBy === 'rating') {
-      filtered.sort((a, b) => b.rating - a.rating);
+      return filtered.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
     } else if (filters.sortBy === 'products') {
-      filtered.sort((a, b) => b.productsCount - a.productsCount);
+      return filtered.sort((a, b) => b.productsCount - a.productsCount);
     } else if (filters.sortBy === 'newest') {
-      filtered.sort((a, b) => new Date(b.joinedDate).getTime() - new Date(a.joinedDate).getTime());
+      return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     
     return filtered;
