@@ -546,6 +546,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API para gerenciar imagens de produtos (múltiplas imagens)
+  app.get("/api/products/:productId/images", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const images = await storage.getProductImages(productId);
+      res.json(images);
+    } catch (error) {
+      console.error("Erro ao buscar imagens do produto:", error);
+      res.status(500).json({ message: "Erro ao buscar imagens do produto" });
+    }
+  });
+
+  app.post("/api/products/:productId/images", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const product = await storage.getProduct(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Fornecedores só podem adicionar imagens aos seus próprios produtos
+      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para adicionar imagens a este produto" });
+      }
+      
+      // Validar dados
+      const validatedData = insertProductImageSchema.parse({
+        ...req.body,
+        productId
+      });
+      
+      // Verificar se esta imagem está marcada como principal
+      if (validatedData.isPrimary) {
+        // Atualizar todas as outras imagens deste produto para não serem principais
+        await storage.updateProductImagesNotPrimary(productId, undefined);
+      }
+      
+      // Criar a imagem do produto
+      const image = await storage.createProductImage(validatedData);
+      res.status(201).json(image);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Erro ao adicionar imagem ao produto:", error);
+      res.status(500).json({ message: "Erro ao adicionar imagem ao produto" });
+    }
+  });
+
+  app.get("/api/products/images/:imageId", async (req, res) => {
+    try {
+      const imageId = parseInt(req.params.imageId);
+      const image = await storage.getProductImage(imageId);
+      
+      if (!image) {
+        return res.status(404).json({ message: "Imagem não encontrada" });
+      }
+      
+      // Se a imagem contém dados brutos, enviá-los como imagem
+      if (image.imageData && image.imageType) {
+        res.set('Content-Type', image.imageType);
+        return res.send(Buffer.from(image.imageData, 'base64'));
+      }
+      
+      res.json(image);
+    } catch (error) {
+      console.error("Erro ao buscar imagem:", error);
+      res.status(500).json({ message: "Erro ao buscar imagem" });
+    }
+  });
+
+  app.patch("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const imageId = parseInt(req.params.imageId);
+      const image = await storage.getProductImage(imageId);
+      
+      if (!image) {
+        return res.status(404).json({ message: "Imagem não encontrada" });
+      }
+      
+      // Buscar o produto para verificar permissões
+      const product = await storage.getProduct(image.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Fornecedores só podem atualizar imagens de seus próprios produtos
+      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para atualizar esta imagem" });
+      }
+      
+      // Verificar se está sendo marcada como principal
+      if (req.body.isPrimary) {
+        // Atualizar todas as outras imagens deste produto para não serem principais
+        await storage.updateProductImagesNotPrimary(image.productId, imageId);
+      }
+      
+      const updatedImage = await storage.updateProductImage(imageId, req.body);
+      res.json(updatedImage);
+    } catch (error) {
+      console.error("Erro ao atualizar imagem do produto:", error);
+      res.status(500).json({ message: "Erro ao atualizar imagem do produto" });
+    }
+  });
+
+  app.delete("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const imageId = parseInt(req.params.imageId);
+      const image = await storage.getProductImage(imageId);
+      
+      if (!image) {
+        return res.status(404).json({ message: "Imagem não encontrada" });
+      }
+      
+      // Buscar o produto para verificar permissões
+      const product = await storage.getProduct(image.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Fornecedores só podem excluir imagens de seus próprios produtos
+      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
+        return res.status(403).json({ message: "Sem permissão para excluir esta imagem" });
+      }
+      
+      await storage.deleteProductImage(imageId);
+      
+      // Se a imagem excluída era principal, definir outra imagem como principal
+      if (image.isPrimary) {
+        const remainingImages = await storage.getProductImages(image.productId);
+        if (remainingImages.length > 0) {
+          await storage.updateProductImage(remainingImages[0].id, { isPrimary: true });
+        }
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Erro ao excluir imagem do produto:", error);
+      res.status(500).json({ message: "Erro ao excluir imagem do produto" });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }
