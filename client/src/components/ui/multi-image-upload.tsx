@@ -119,7 +119,7 @@ export function MultiImageUpload({
       try {
         for (let i = images.length; i < newImages.length; i++) {
           const image = newImages[i];
-          const response = await fetch(`/api/product-images/${productId}`, {
+          const response = await fetch(`/api/products/${productId}/images`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -192,7 +192,7 @@ export function MultiImageUpload({
     try {
       // Se a imagem tem ID, excluí-la do servidor
       if (imageToDelete.id) {
-        const response = await fetch(`/api/product-images/${imageToDelete.id}`, {
+        const response = await fetch(`/api/products/images/${imageToDelete.id}`, {
           method: 'DELETE',
         });
         
@@ -233,7 +233,7 @@ export function MultiImageUpload({
         throw new Error('Imagem inválida');
       }
       
-      const response = await fetch(`/api/product-images/${imageToSetPrimary.id}/set-primary`, {
+      const response = await fetch(`/api/products/images/${imageToSetPrimary.id}`, {
         method: 'PUT',
       });
       
@@ -284,7 +284,7 @@ export function MultiImageUpload({
       
       for (const img of imagesToUpdate) {
         if (img.id) {
-          await fetch(`/api/product-images/${img.id}/reorder`, {
+          await fetch(`/api/products/images/${img.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sortOrder: img.sortOrder }),
@@ -305,7 +305,7 @@ export function MultiImageUpload({
     // Prioridade: URL externa > Dados em base64 > Endpoint da API
     if (image.url) return image.url;
     if (image.data) return image.data;
-    if (image.id) return `/api/product-images/${image.id}`;
+    if (image.id) return `/api/products/images/${image.id}`;
     return "";
   };
 

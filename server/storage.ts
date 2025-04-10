@@ -675,16 +675,16 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateProductImagesNotPrimary(productId: number, excludeId?: number): Promise<void> {
-    let query = db
+    const query = db
       .update(productImages)
       .set({ isPrimary: false })
       .where(eq(productImages.productId, productId));
     
     if (excludeId !== undefined) {
-      query = query.where(ne(productImages.id, excludeId));
+      await query.where(ne(productImages.id, excludeId));
+    } else {
+      await query;
     }
-    
-    await query;
   }
   
   // Commission Settings methods
