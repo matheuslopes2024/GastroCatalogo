@@ -1,6 +1,6 @@
 import { Link } from "wouter";
-import { Check, Star, Store } from "lucide-react";
-import { Product } from "@shared/schema";
+import { Check, Star, Store, Tag } from "lucide-react";
+import { Product, Category } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,14 @@ import { formatCurrency } from "@/lib/utils";
 interface ComparisonResultProps {
   product: Product;
   isBestPrice?: boolean;
+  showDebugInfo?: boolean;
 }
 
-export function ComparisonResult({ product, isBestPrice = false }: ComparisonResultProps) {
+export function ComparisonResult({ 
+  product, 
+  isBestPrice = false,
+  showDebugInfo = true // Habilitar depuração por padrão para identificar problemas
+}: ComparisonResultProps) {
   // Buscar informações do fornecedor
   const { data: supplier, isLoading: isLoadingSupplier } = useQuery({
     queryKey: ["/api/suppliers-info", product.supplierId],
@@ -25,9 +30,26 @@ export function ComparisonResult({ product, isBestPrice = false }: ComparisonRes
       return suppliers?.length > 0 ? suppliers[0] : null;
     }
   });
+  
+  // Buscar informações da categoria principal
+  const { data: category } = useQuery<Category>({
+    queryKey: ["/api/categories", product.categoryId],
+    queryFn: async () => {
+      const response = await fetch(`/api/categories/${product.categoryId}`);
+      if (!response.ok) {
+        throw new Error("Erro ao carregar informações da categoria");
+      }
+      return response.json();
+    }
+  });
 
   // Extrair recursos do produto (se disponíveis)
   const features = product.features || [];
+  
+  // Determinar as categorias adicionais (usado para depuração)
+  const hasAdditionalCategories = product.additionalCategories && 
+                                 Array.isArray(product.additionalCategories) && 
+                                 product.additionalCategories.length > 0;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -67,6 +89,29 @@ export function ComparisonResult({ product, isBestPrice = false }: ComparisonRes
             </span>
           </div>
 
+          {/* Informações da categoria - Adicionada para debug e visibilidade */}
+          {showDebugInfo && (
+            <div className="border border-gray-200 rounded p-2 mb-3 bg-gray-50">
+              <div className="flex items-center mb-1">
+                <Tag className="w-4 h-4 mr-1 text-primary" />
+                <span className="text-xs font-semibold">Categoria Principal:</span>
+                <span className="text-xs ml-1">{category?.name || `ID ${product.categoryId}`}</span>
+              </div>
+              
+              {hasAdditionalCategories && (
+                <div className="text-xs">
+                  <span className="font-semibold">Categorias adicionais:</span>
+                  <span className="ml-1">{product.additionalCategories.join(', ')}</span>
+                </div>
+              )}
+              
+              {/* ID do produto - útil para debug */}
+              <div className="text-xs text-gray-500 mt-1">
+                ID: {product.id}
+              </div>
+            </div>
+          )}
+          
           <ul className="text-sm space-y-1 text-gray-500 mb-3">
             {features.map((feature, index) => (
               <li key={index} className="flex items-center">

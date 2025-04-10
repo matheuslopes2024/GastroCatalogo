@@ -77,8 +77,15 @@ export default function SearchResults() {
         urlParams.append("search", queryParams.search);
       }
       
-      if (queryParams.categoryId && queryParams.categoryId !== "0") {
+      // CORREÇÃO CRÍTICA: Verificar explicitamente se a categoria existe e não é "0" 
+      // antes de incluir na consulta
+      const hasCategoryFilter = queryParams.categoryId && queryParams.categoryId !== "0";
+      
+      if (hasCategoryFilter) {
         urlParams.append("categoryId", queryParams.categoryId);
+        console.log(`[DEBUG] Filtrando por categoria ID: ${queryParams.categoryId}`);
+      } else {
+        console.log("[DEBUG] Sem filtro de categoria - mostrando todos os produtos");
       }
       
       const queryString = urlParams.toString();
@@ -87,17 +94,25 @@ export default function SearchResults() {
       }
       
       // Realizar a busca com os filtros aplicados
-      console.log("Enviando request para:", url, "com método:", "GET", "e corpo do tipo:", typeof undefined);
+      console.log("[DEBUG] Enviando request para:", url, "com método:", "GET");
       const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error("Falha ao buscar produtos");
       }
       
-      return response.json();
+      const result = await response.json();
+      
+      // Log detalhado dos resultados para solução de problemas
+      console.log(`[DEBUG] Recebidos ${result.length} produtos da API com filtro${hasCategoryFilter ? ` de categoria ${queryParams.categoryId}` : ' sem categoria'}`);
+      
+      // Retorna os produtos já filtrados corretamente pelo backend
+      return result;
     },
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Nunca considerar dados em cache como "recentes"
+    cacheTime: 1000, // Manter em cache por apenas 1 segundo
   });
   
   // Search form handling
