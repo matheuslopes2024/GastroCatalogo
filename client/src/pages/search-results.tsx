@@ -95,7 +95,9 @@ export default function SearchResults() {
       }
       
       return response.json();
-    }
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
   
   // Search form handling
