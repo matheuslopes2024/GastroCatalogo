@@ -3,11 +3,155 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary-color: #0369a1;
+    --secondary-color: #0284c7;
+    --accent-color: #0ea5e9;
+    --background-light: #f1f5f9;
+    --text-primary: #334155;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --radius: 0.5rem;
+    --header-height: 4rem;
+    --mobile-nav-height: 3.5rem;
+  }
+
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Mobile app-like styles */
+  @media (max-width: 768px) {
+    /* Estilo app para dispositivos móveis */
+    body {
+      overscroll-behavior: none;
+      user-select: none;
+    }
+
+    /* Estilo para botões em mobile */
+    .mobile-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--mobile-nav-height);
+      background: white;
+      box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+      border-top: 1px solid var(--border-color);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-nav-item.active {
+      color: var(--primary-color);
+    }
+
+    .mobile-nav-icon {
+      margin-bottom: 4px;
+      font-size: 1.25rem;
+    }
+    
+    /* Fixa o header no topo */
+    .mobile-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      height: var(--header-height);
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Adiciona padding inferior para o conteúdo não ficar embaixo da navegação */
+    .mobile-container {
+      padding-bottom: calc(var(--mobile-nav-height) + 1rem);
+    }
+    
+    /* Aumenta tamanho de toque para botões */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Estilo para cargas nativas/app */
+    .app-like-card {
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      background: white;
+      margin-bottom: 1rem;
+    }
+    
+    /* Efeito de pressionar botão */
+    .press-effect {
+      transition: transform 0.1s ease;
+    }
+    
+    .press-effect:active {
+      transform: scale(0.96);
+    }
+  }
+}
+
+/* Componentes personalizados */
+@layer components {
+  .main-container {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .title-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+  
+  .btn-primary {
+    @apply bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .btn-outline {
+    @apply border border-primary text-primary hover:bg-primary/10 px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .btn-ghost {
+    @apply text-primary hover:bg-primary/10 px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
   }
 }
