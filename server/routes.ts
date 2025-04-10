@@ -60,12 +60,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/categories/:slug", async (req, res) => {
+  app.get("/api/categories/:idOrSlug", async (req, res) => {
     try {
-      const category = await storage.getCategoryBySlug(req.params.slug);
+      const idOrSlug = req.params.idOrSlug;
+      let category;
+      
+      // Verifica se é um ID (número) ou slug (string)
+      if (!isNaN(Number(idOrSlug))) {
+        category = await storage.getCategory(parseInt(idOrSlug));
+      } else {
+        category = await storage.getCategoryBySlug(idOrSlug);
+      }
+      
       if (!category) {
         return res.status(404).json({ message: "Categoria não encontrada" });
       }
+      
       res.json(category);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar categoria" });

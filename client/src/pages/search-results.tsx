@@ -41,6 +41,19 @@ export default function SearchResults() {
   const { data: currentCategory } = useQuery<Category>({
     queryKey: ["/api/categories", selectedCategory],
     enabled: !!selectedCategory,
+    queryFn: async ({ queryKey }) => {
+      const [_, categoryId] = queryKey;
+      // Se o categoryId for numérico, buscar por id
+      if (!isNaN(Number(categoryId))) {
+        const response = await fetch(`/api/categories/${categoryId}`);
+        if (!response.ok) throw new Error('Categoria não encontrada');
+        return response.json();
+      }
+      // Caso contrário, buscar por slug
+      const response = await fetch(`/api/categories/${categoryId}`);
+      if (!response.ok) throw new Error('Categoria não encontrada');
+      return response.json();
+    }
   });
   
   // Get products based on search or category
@@ -74,7 +87,7 @@ export default function SearchResults() {
   // Update search term when URL changes
   useEffect(() => {
     setSearchTerm(query);
-    setSelectedCategory(categoryParam);
+    setSelectedCategory(categoryParam || "0");
   }, [query, categoryParam]);
 
   return (
@@ -151,11 +164,17 @@ export default function SearchResults() {
                     value={selectedCategory} 
                     onValueChange={(value) => {
                       setSelectedCategory(value);
-                      window.history.pushState(
-                        {}, 
-                        '', 
-                        `/busca?${query ? `q=${encodeURIComponent(query)}&` : ''}categoria=${value}`
-                      );
+                      let url = `/busca`;
+                      if (query || value !== "0") {
+                        url += "?";
+                        if (query) {
+                          url += `q=${encodeURIComponent(query)}`;
+                        }
+                        if (value !== "0") {
+                          url += `${query ? '&' : ''}categoria=${value}`;
+                        }
+                      }
+                      window.history.pushState({}, '', url);
                       refetch();
                     }}
                   >
@@ -163,9 +182,9 @@ export default function SearchResults() {
                       <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as categorias</SelectItem>
+                      <SelectItem value="0">Todas as categorias</SelectItem>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.slug}>
+                        <SelectItem key={category.id} value={category.id.toString()}>
                           {category.name}
                         </SelectItem>
                       ))}
