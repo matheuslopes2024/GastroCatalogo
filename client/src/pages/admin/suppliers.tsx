@@ -4,13 +4,25 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
-import { User, UserRole, Product } from "@shared/schema";
+import { User, UserRole, Product, InsertUser } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/ui/loading";
+import { 
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
 import { 
   BarChart, 
   Users, 
@@ -22,7 +34,9 @@ import {
   X, 
   Eye, 
   AlertCircle, 
-  Loader2
+  Loader2,
+  PlusCircle,
+  Edit
 } from "lucide-react";
 import {
   Dialog,
@@ -82,6 +96,19 @@ function AdminSidebar() {
     </div>
   );
 }
+
+// Esquema de validação para o formulário de fornecedor
+const supplierFormSchema = z.object({
+  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  email: z.string().email("Email inválido"),
+  username: z.string().min(3, "Nome de usuário deve ter pelo menos 3 caracteres"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  companyName: z.string().min(3, "Nome da empresa deve ter pelo menos 3 caracteres"),
+  cnpj: z.string().min(14, "CNPJ inválido").max(18, "CNPJ inválido").optional().or(z.literal("")),
+  phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido").optional().or(z.literal("")),
+  role: z.literal(UserRole.SUPPLIER),
+  active: z.boolean().default(true),
+});
 
 export default function AdminSuppliers() {
   const { user } = useAuth();
@@ -171,6 +198,49 @@ export default function AdminSuppliers() {
        (activeTab === "active" && supplier.active) || 
        (activeTab === "inactive" && !supplier.active))
     ) || [];
+  
+  // Mutation para criar novos fornecedores
+  const createSupplierMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof supplierFormSchema>) => {
+      return apiRequest("POST", "/api/register", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsNewSupplierOpen(false);
+      toast({
+        title: "Fornecedor criado",
+        description: "O fornecedor foi criado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao criar fornecedor",
+        description: "Ocorreu um erro ao criar o fornecedor. Verifique se o email ou nome de usuário já estão em uso.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Form para novo fornecedor
+  const supplierForm = useForm<z.infer<typeof supplierFormSchema>>({
+    resolver: zodResolver(supplierFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      username: "",
+      password: "",
+      companyName: "",
+      cnpj: "",
+      phone: "",
+      role: UserRole.SUPPLIER,
+      active: true,
+    },
+  });
+  
+  // Handler para submissão do formulário de novo fornecedor
+  const onSubmitNewSupplier = (values: z.infer<typeof supplierFormSchema>) => {
+    createSupplierMutation.mutate(values);
+  };
   
   // Format date
   const formatDate = (date: Date) => {
@@ -487,6 +557,144 @@ export default function AdminSuppliers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* New Supplier Form Dialog */}
+      <Dialog open={isNewSupplierOpen} onOpenChange={(open) => {
+        setIsNewSupplierOpen(open);
+        if (!open) {
+          supplierForm.reset();
+        }
+      }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Novo Fornecedor</DialogTitle>
+            <DialogDescription>
+              Preencha o formulário abaixo para adicionar um novo fornecedor.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...supplierForm}>
+            <form onSubmit={supplierForm.handleSubmit(onSubmitNewSupplier)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={supplierForm.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Empresa</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome da empresa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={supplierForm.control}
+                  name="cnpj"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CNPJ</FormLabel>
+                      <FormControl>
+                        <Input placeholder="CNPJ da empresa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={supplierForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Responsável</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome completo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={supplierForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Email para contato" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={supplierForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Telefone para contato" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={supplierForm.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome de Usuário</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome de usuário para login" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={supplierForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Senha para login" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  onClick={() => setIsNewSupplierOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={createSupplierMutation.isPending}
+                >
+                  {createSupplierMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Adicionar Fornecedor
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
