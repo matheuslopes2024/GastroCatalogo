@@ -38,6 +38,14 @@ export interface IStorage {
     search?: string;
   }): Promise<Product[]>;
   
+  // Product Image methods
+  getProductImage(id: number): Promise<ProductImage | undefined>;
+  createProductImage(image: InsertProductImage): Promise<ProductImage>;
+  updateProductImage(id: number, imageData: Partial<ProductImage>): Promise<ProductImage | undefined>;
+  deleteProductImage(id: number): Promise<void>;
+  getProductImages(productId: number): Promise<ProductImage[]>;
+  updateProductImagesNotPrimary(productId: number, excludeId?: number): Promise<void>;
+  
   // Sale methods
   getSale(id: number): Promise<Sale | undefined>;
   createSale(sale: InsertSale): Promise<Sale>;
@@ -59,12 +67,14 @@ export class MemStorage implements IStorage {
   private products: Map<number, Product>;
   private sales: Map<number, Sale>;
   private commissionSettings: Map<number, CommissionSetting>;
+  private productImages: Map<number, ProductImage>;
   
   currentUserId: number;
   currentCategoryId: number;
   currentProductId: number;
   currentSaleId: number;
   currentCommissionSettingId: number;
+  currentProductImageId: number;
   
   sessionStore: any;
 
@@ -579,6 +589,54 @@ export class DatabaseStorage implements IStorage {
     }
     
     return query;
+  }
+  
+  // Product Image methods
+  async getProductImage(id: number): Promise<ProductImage | undefined> {
+    const [image] = await db.select().from(productImages).where(eq(productImages.id, id));
+    return image;
+  }
+  
+  async createProductImage(image: InsertProductImage): Promise<ProductImage> {
+    const [createdImage] = await db.insert(productImages).values({
+      ...image,
+      createdAt: new Date(),
+    }).returning();
+    return createdImage;
+  }
+  
+  async updateProductImage(id: number, imageData: Partial<ProductImage>): Promise<ProductImage | undefined> {
+    const [updatedImage] = await db
+      .update(productImages)
+      .set(imageData)
+      .where(eq(productImages.id, id))
+      .returning();
+    return updatedImage;
+  }
+  
+  async deleteProductImage(id: number): Promise<void> {
+    await db.delete(productImages).where(eq(productImages.id, id));
+  }
+  
+  async getProductImages(productId: number): Promise<ProductImage[]> {
+    return db
+      .select()
+      .from(productImages)
+      .where(eq(productImages.productId, productId))
+      .orderBy(productImages.sortOrder);
+  }
+  
+  async updateProductImagesNotPrimary(productId: number, excludeId?: number): Promise<void> {
+    let query = db
+      .update(productImages)
+      .set({ isPrimary: false })
+      .where(eq(productImages.productId, productId));
+    
+    if (excludeId !== undefined) {
+      query = query.where(ne(productImages.id, excludeId));
+    }
+    
+    await query;
   }
   
   // Commission Settings methods
