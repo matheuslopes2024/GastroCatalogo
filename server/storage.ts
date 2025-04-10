@@ -586,11 +586,23 @@ export class DatabaseStorage implements IStorage {
       const conditions = [];
       
       // Filtragem avançada por categoria
-      if (options.categoryId !== undefined) {
+      if (options.categoryId !== undefined && options.categoryId !== 0) {
         console.log(`Filtrando produtos no banco de dados por categoria ID: ${options.categoryId}`);
         
-        // Garantir que o produto pertença exatamente à categoria especificada
-        conditions.push(eq(products.categoryId, options.categoryId));
+        // Para categoria 0 (Todas as categorias), não aplicamos filtro de categoria
+        if (options.categoryId > 0) {
+          // Buscamos produtos onde:
+          // 1. A categoria principal seja a selecionada OU
+          // 2. A categoria esteja presente no array de categorias adicionais
+          conditions.push(
+            or(
+              // Categoria principal
+              eq(products.categoryId, options.categoryId),
+              // Busca em array JSON de categorias adicionais
+              sql`${products.additionalCategories} @> ${JSON.stringify([options.categoryId])}`
+            )
+          );
+        }
       }
       
       // Filtragem por fornecedor

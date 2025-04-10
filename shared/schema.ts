@@ -42,7 +42,7 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   slug: text("slug").notNull().unique(),
-  categoryId: integer("category_id").notNull(),
+  categoryId: integer("category_id").notNull(), // Categoria principal (para retrocompatibilidade)
   supplierId: integer("supplier_id").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
@@ -55,6 +55,8 @@ export const products = pgTable("products", {
   imageType: text("image_type"), // Tipo MIME da imagem principal
   additionalImages: jsonb("additional_images").$type<{url?: string, data?: string, type?: string}[]>(), // Lista de até 8 imagens adicionais
   active: boolean("active").notNull().default(true),
+  // Armazenar categorias múltiplas como uma matriz de IDs
+  additionalCategories: jsonb("additional_categories").$type<number[]>().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

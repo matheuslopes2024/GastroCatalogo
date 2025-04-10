@@ -92,10 +92,13 @@ function SupplierSidebar() {
 const productFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+  // Categoria principal (obrigatória)
   categoryId: z.number({
-    required_error: "Selecione uma categoria",
+    required_error: "Selecione uma categoria principal",
     invalid_type_error: "Categoria inválida"
   }),
+  // Categorias adicionais (opcional)
+  additionalCategories: z.array(z.number()).optional().default([]),
   supplierId: z.number().optional(),
   price: z.string().or(z.number()).pipe(
     z.coerce.number().min(0, "Preço deve ser maior que zero")
