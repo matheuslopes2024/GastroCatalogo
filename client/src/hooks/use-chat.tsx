@@ -138,12 +138,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       return conversations;
     }
 
-    return conversations.filter(conversation => {
+    return conversations.filter((conversation: ChatConversation) => {
       const participants = conversation._participants || [];
       if (conversationType === "supplier") {
-        return participants.some(p => p.role === UserRole.SUPPLIER);
+        return participants.some((p: {role: string}) => p.role === UserRole.SUPPLIER);
       } else if (conversationType === "user") {
-        return participants.every(p => p.role !== UserRole.SUPPLIER);
+        return participants.every((p: {role: string}) => p.role !== UserRole.SUPPLIER);
       }
       return true;
     });
@@ -151,8 +151,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   // Calcular o número total de mensagens não lidas
   const unreadCount = useMemo(() => {
-    return filteredConversations.reduce((total, conv) => {
-      const unreadCount = conv._participants?.find(p => p.id !== user?.id)?.unreadCount || 0;
+    return filteredConversations.reduce((total: number, conv: ChatConversation) => {
+      const unreadCount = conv._participants?.find((p: {id: number}) => p.id !== user?.id)?.unreadCount || 0;
       return total + unreadCount;
     }, 0);
   }, [filteredConversations, user?.id]);
@@ -278,13 +278,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!activeConversation || !messages.length) return;
     
+    // Buffering para agrupar mensagens não lidas e marcá-las em uma única requisição
     const unreadMessages = messages.filter(
-      m => !m.isRead && m.senderId !== user?.id
+      (m: ChatMessage) => !m.isRead && m.senderId !== user?.id
     );
     
+    // Se existem mensagens não lidas
     if (unreadMessages.length > 0) {
-      const messageIds = unreadMessages.map(m => m.id);
-      markAsReadMutation.mutate(messageIds);
+      const messageIds = unreadMessages.map((m: ChatMessage) => m.id);
+      
+      // Debounce da marcação de leitura para evitar múltiplas requisições
+      const handler = setTimeout(() => {
+        markAsReadMutation.mutate(messageIds);
+      }, 300);
+      
+      return () => clearTimeout(handler);
     }
   }, [activeConversation, messages, user?.id, markAsReadMutation]);
   
@@ -436,8 +444,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const openChatWithAdmin = useCallback(() => {
     setIsOpen(true);
     // Verificamos se já existe uma conversa com o admin
-    const adminConversation = conversations.find(conv => {
-      return conv._participants?.some(p => p.role === UserRole.ADMIN);
+    const adminConversation = conversations.find((conv: ChatConversation) => {
+      return conv._participants?.some((p: {role: string}) => p.role === UserRole.ADMIN);
     });
     
     if (adminConversation) {
@@ -446,20 +454,46 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Se não existir, o usuário verá a lista de conversas e poderá iniciar uma nova
   }, [conversations, setIsOpen]);
 
+  // Buffer para acumular mensagens a serem marcadas como lidas
+  const messagesToMarkRef = useRef<Set<number>>(new Set());
+  const markingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Versão otimizada da função markMessagesAsRead
   const markMessagesAsRead = useCallback(async (messageIds: number[]) => {
     if (!messageIds.length) return;
     
-    // 1. Marcar via API REST
-    await markAsReadMutation.mutateAsync(messageIds);
+    // Adicionar IDs ao buffer
+    messageIds.forEach(id => messagesToMarkRef.current.add(id));
     
-    // 2. Notificar via WebSocket que mensagens foram lidas
-    if (wsConnected && user) {
-      wsSendMessage({
-        type: "message_read",
-        userId: user.id,
-        messageIds: messageIds
-      });
+    // Cancelar timeout anterior se existir
+    if (markingTimeoutRef.current) {
+      clearTimeout(markingTimeoutRef.current);
     }
+    
+    // Configurar novo timeout para processar em lote
+    markingTimeoutRef.current = setTimeout(async () => {
+      const idsToMark = Array.from(messagesToMarkRef.current);
+      
+      if (idsToMark.length) {
+        // Limpar buffer
+        messagesToMarkRef.current.clear();
+        
+        // 1. Marcar via API REST
+        await markAsReadMutation.mutateAsync(idsToMark);
+        
+        // 2. Notificar via WebSocket que mensagens foram lidas
+        if (wsConnected && user) {
+          wsSendMessage({
+            type: "message_read",
+            userId: user.id,
+            messageIds: idsToMark
+          });
+        }
+      }
+      
+      markingTimeoutRef.current = null;
+    }, 300); // Esperar 300ms para agrupar múltiplas chamadas
+    
   }, [markAsReadMutation, wsConnected, wsSendMessage, user]);
 
   // Para compatibilidade com componentes existentes

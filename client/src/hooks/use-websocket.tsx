@@ -91,10 +91,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
                 description: `${message.message.substring(0, 50)}${message.message.length > 50 ? '...' : ''}`,
               });
               
-              // Reproduzir som de notificação
-              const audio = new Audio('/notification.mp3');
-              audio.volume = 0.5;
-              audio.play().catch(err => console.log('Erro ao reproduzir notificação: ', err));
+              // Reproduzir som de notificação usando o gerador de som
+              playNotificationSound(0.5);
             }
           } else if (message.type === "conversation_update") {
             // Notificar sobre uma nova conversa iniciada
