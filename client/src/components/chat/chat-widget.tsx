@@ -373,7 +373,7 @@ function ChatMessage({
                 {message.attachmentType?.startsWith('video/') && (
                   <div className="mt-2">
                     <video 
-                      src={message.attachmentData} 
+                      src={message.attachmentData || ''} 
                       controls 
                       className="max-h-60 rounded w-full"
                     />
