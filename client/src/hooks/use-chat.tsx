@@ -5,13 +5,15 @@ import {
   useState, 
   useEffect,
   useCallback,
-  useMemo
+  useMemo,
+  useRef
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@shared/schema";
+import { useWebSocket, WebSocketMessage } from "@/hooks/use-websocket";
 
 export interface ChatMessage {
   id: number;
@@ -87,6 +89,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
   const [conversationType, setConversationType] = useState<"all" | "user" | "supplier">("all");
+  
+  // Integração com WebSocket
+  const { 
+    connected: wsConnected, 
+    sendMessage: wsSendMessage, 
+    lastMessage: wsLastMessage,
+    connectionError: wsError
+  } = useWebSocket();
+  const lastHandledMessageId = useRef<string | null>(null);
 
   const { 
     data: conversations = [], 
@@ -276,6 +287,49 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       markAsReadMutation.mutate(messageIds);
     }
   }, [activeConversation, messages, user?.id, markAsReadMutation]);
+  
+  // Integrar com WebSocket para notificações em tempo real
+  useEffect(() => {
+    if (!wsConnected || !user) return;
+    
+    // Avisar ao servidor que este cliente está pronto para receber mensagens
+    wsSendMessage({ 
+      type: "chat_register",
+      userId: user.id
+    });
+    
+  }, [wsConnected, user, wsSendMessage]);
+  
+  // Processar mensagens recebidas por WebSocket
+  useEffect(() => {
+    if (!wsLastMessage || !user) return;
+    
+    // Garantir que não processamos a mesma mensagem duas vezes
+    const messageId = `${wsLastMessage.type}_${wsLastMessage.timestamp || Date.now()}`;
+    if (lastHandledMessageId.current === messageId) return;
+    lastHandledMessageId.current = messageId;
+    
+    // Processar diferentes tipos de mensagens
+    if (wsLastMessage.type === "new_message") {
+      // Recebemos uma nova mensagem
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/messages", activeConversation?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
+      
+      // Se a mensagem for para a conversa ativa, marcá-la como lida
+      if (activeConversation && wsLastMessage.conversationId === activeConversation.id) {
+        if (wsLastMessage.messageId) {
+          markAsReadMutation.mutate([wsLastMessage.messageId]);
+        }
+      }
+    } else if (wsLastMessage.type === "message_read") {
+      // Alguém leu uma mensagem
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
+    } else if (wsLastMessage.type === "conversation_update") {
+      // Uma conversa foi atualizada
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
+    }
+    
+  }, [wsLastMessage, activeConversation, user, queryClient, markAsReadMutation]);
 
   // Métodos de interface pública
   const sendMessage = useCallback(async (message: string, attachment?: Attachment) => {
@@ -292,13 +346,30 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       throw new Error("Destinatário não encontrado");
     }
     
-    await sendMessageMutation.mutateAsync({ 
+    const messageData = { 
       message, 
       conversationId: activeConversation.id,
       receiverId: otherParticipant.id,
       attachment
-    });
-  }, [activeConversation, user?.id, sendMessageMutation]);
+    };
+    
+    // 1. Enviar via API REST
+    const result = await sendMessageMutation.mutateAsync(messageData);
+    
+    // 2. Notificar via WebSocket (envio instantâneo para outros clientes conectados)
+    if (wsConnected) {
+      wsSendMessage({
+        type: "send_message",
+        messageData: {
+          ...messageData,
+          id: result.id,
+          senderId: user?.id
+        }
+      });
+    }
+    
+    return result;
+  }, [activeConversation, user?.id, sendMessageMutation, wsConnected, wsSendMessage]);
 
   const startNewConversation = useCallback(async (receiverId: number, initialMessage: string, attachment?: Attachment) => {
     await startConversationMutation.mutateAsync({ receiverId, message: initialMessage, attachment });
@@ -345,8 +416,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [conversations, setIsOpen]);
 
   const markMessagesAsRead = useCallback(async (messageIds: number[]) => {
+    if (!messageIds.length) return;
+    
+    // 1. Marcar via API REST
     await markAsReadMutation.mutateAsync(messageIds);
-  }, [markAsReadMutation]);
+    
+    // 2. Notificar via WebSocket que mensagens foram lidas
+    if (wsConnected && user) {
+      wsSendMessage({
+        type: "message_read",
+        userId: user.id,
+        messageIds: messageIds
+      });
+    }
+  }, [markAsReadMutation, wsConnected, wsSendMessage, user]);
 
   // Para compatibilidade com componentes existentes
   const activeConversationId = activeConversation?.id;

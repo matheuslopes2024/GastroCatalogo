@@ -1,7 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./use-auth";
-import { Toast, toast as showToast } from "@/components/ui/use-toast";
-import { useToast } from "./use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Tipos para as mensagens do WebSocket
 export type WebSocketMessage = {
