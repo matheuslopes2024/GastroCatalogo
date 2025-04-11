@@ -64,6 +64,9 @@ export function ChatMessageItem({
     locale: ptBR
   });
   
+  // Debug
+  console.log(`Renderizando mensagem ${message.id} - isOwnMessage: ${isOwnMessage}`);
+  
   return (
     <div className={cn(
       "flex gap-2 max-w-[85%] my-2", 
@@ -211,15 +214,18 @@ export function MessageHistory({
   // A referência a messagesRef é usada para rolar para baixo automaticamente
   return (
     <div className="space-y-1 p-2" ref={messagesRef}>
-      {messagesData && messagesData.map((msg: ExtendedChatMessage) => (
-        <ChatMessageItem 
-          key={msg.id} 
-          message={msg} 
-          isOwnMessage={msg.senderId === user?.id}
-          showAttachmentPreview={showAttachmentPreview}
-          isAdmin={isAdmin}
-        />
-      ))}
+      {messagesData && messagesData.map((msg: ExtendedChatMessage) => {
+        console.log('Verificando mensagem:', msg.id, 'senderId:', msg.senderId, 'userId:', user?.id, 'admin?:', isAdmin);
+        return (
+          <ChatMessageItem 
+            key={msg.id} 
+            message={msg} 
+            isOwnMessage={msg.senderId === user?.id}
+            showAttachmentPreview={showAttachmentPreview}
+            isAdmin={isAdmin}
+          />
+        );
+      })}
     </div>
   );
 }
