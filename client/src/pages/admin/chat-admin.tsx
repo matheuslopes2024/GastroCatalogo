@@ -74,11 +74,16 @@ export default function ChatAdminPage() {
   }, [chatType, setConversationType]);
   
   // Função para atualizar dados
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
-    refreshConversations().then(() => {
+    try {
+      // refreshConversations retorna o resultado da query
+      await refreshConversations();
+    } catch (error) {
+      console.error("Erro ao atualizar conversas:", error);
+    } finally {
       setTimeout(() => setIsLoading(false), 300);
-    });
+    }
   };
   
   // Verificar se o usuário é administrador
@@ -128,8 +133,8 @@ export default function ChatAdminPage() {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" size="icon" onClick={() => setIsLoading(true)}>
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
           
           <DropdownMenu>
@@ -224,7 +229,7 @@ export default function ChatAdminPage() {
               <TabsTrigger value="all" className="data-[state=active]:bg-primary/10">
                 Todas
                 <Badge variant="secondary" className="ml-2">
-                  {isLoading ? "..." : "42"}
+                  {isLoading || isLoadingConversations ? "..." : stats.total}
                   {chatType !== "all" && (
                     <span className="ml-1 text-xs text-red-500 font-bold">•</span>
                   )}
@@ -233,8 +238,8 @@ export default function ChatAdminPage() {
               <TabsTrigger value="user" className="data-[state=active]:bg-primary/10">
                 Usuários
                 <Badge variant="secondary" className="ml-2">
-                  {isLoading ? "..." : "28"}
-                  {chatType !== "user" && (
+                  {isLoading || isLoadingConversations ? "..." : stats.users}
+                  {chatType !== "user" && stats.users > 0 && (
                     <span className="ml-1 text-xs text-red-500 font-bold">•</span>
                   )}
                 </Badge>
@@ -242,16 +247,22 @@ export default function ChatAdminPage() {
               <TabsTrigger value="supplier" className="data-[state=active]:bg-primary/10">
                 Fornecedores
                 <Badge variant="secondary" className="ml-2">
-                  {isLoading ? "..." : "14"}
-                  {chatType !== "supplier" && (
+                  {isLoading || isLoadingConversations ? "..." : stats.suppliers}
+                  {chatType !== "supplier" && stats.suppliers > 0 && (
                     <span className="ml-1 text-xs text-red-500 font-bold">•</span>
                   )}
                 </Badge>
               </TabsTrigger>
             </TabsList>
             
-            <Button variant="ghost" size="sm" className="gap-1" onClick={() => setIsLoading(true)}>
-              <RefreshCw className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1" 
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="sr-only md:not-sr-only md:inline-block">Atualizar</span>
             </Button>
           </div>
