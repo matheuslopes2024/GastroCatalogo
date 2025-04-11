@@ -5,6 +5,10 @@ import ChatWidget from "./chat-widget";
 import ChatConversationsList from "./chat-conversations-list";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@shared/schema";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { FileText, X, MessageCircle, UserCircle, Building2 } from "lucide-react";
 
 type ChatDashboardProps = {
   className?: string;
@@ -87,22 +91,104 @@ export default function ChatDashboard({
                 <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
               </div>
             )}
-            <ChatWidget 
-              hideToggle 
-              fullHeight 
-              isAdmin={user?.role === UserRole.ADMIN}
-              className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
-              showAttachmentPreview={showAttachmentPreview}
-              allowLargeAttachments={allowLargeAttachments}
-              showEmojis={showEmojis}
-            />
+            
+            {/* Versão especial para administradores */}
+            {user?.role === UserRole.ADMIN ? (
+              <div className="w-full h-full rounded-lg border-0 overflow-hidden shadow-xl flex flex-col bg-gradient-to-br from-white to-gray-50">
+                <div className="bg-gradient-to-r from-primary to-primary/90 text-white p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border-2 border-white/30">
+                      <AvatarFallback className="bg-primary-foreground text-primary font-semibold">
+                        {activeConversation._participants?.find(p => p.id !== user.id)?.name?.[0] || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        {activeConversation._participants?.find(p => p.id !== user.id)?.name || 'Usuário'} 
+                        <Badge variant="outline" className="ml-2 bg-white/10 text-white border-white/20 text-xs">
+                          {activeConversation._participants?.find(p => p.id !== user.id)?.role === 'SUPPLIER' ? 'Fornecedor' : 'Cliente'}
+                        </Badge>
+                      </h3>
+                      <p className="text-xs text-white/70">
+                        Conversa #{activeConversation.id} · Iniciada em {new Date(activeConversation.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-white hover:bg-white/10 h-8 w-8 rounded-full p-0"
+                      onClick={() => {
+                        // Função para fazer anotações sobre o cliente (implementação futura)
+                        console.log("Anotações sobre o cliente:", activeConversation.id);
+                      }}
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-white hover:bg-white/10 h-8 w-8 rounded-full p-0"
+                      onClick={() => setActiveConversation(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex-1 relative overflow-hidden flex flex-col">
+                  <div className="absolute inset-0 w-full h-full">
+                    <ChatWidget 
+                      hideToggle 
+                      fullHeight 
+                      isAdmin={true}
+                      className="static inset-auto shadow-none w-full h-full rounded-none max-h-full bg-transparent border-0"
+                      showAttachmentPreview={showAttachmentPreview}
+                      allowLargeAttachments={allowLargeAttachments}
+                      showEmojis={true}
+                      adminEnhanced={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Versão padrão para usuários normais
+              <ChatWidget 
+                hideToggle 
+                fullHeight 
+                isAdmin={user?.role === UserRole.ADMIN}
+                className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
+                showAttachmentPreview={showAttachmentPreview}
+                allowLargeAttachments={allowLargeAttachments}
+                showEmojis={showEmojis}
+              />
+            )}
           </>
         ) : (
           <div className="text-center p-8">
-            <h3 className="text-lg font-medium mb-2">Selecione uma conversa</h3>
-            <p className="text-muted-foreground text-sm">
-              {emptyMessage}
-            </p>
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Selecione uma conversa</h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                {emptyMessage}
+              </p>
+              {user?.role === UserRole.ADMIN && (
+                <div className="grid grid-cols-2 gap-4 text-center mt-6">
+                  <div className="border rounded-lg p-4 bg-blue-50 hover:bg-blue-100 transition-colors">
+                    <UserCircle className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                    <p className="text-sm font-medium">Conversas com Clientes</p>
+                    <p className="text-xs text-gray-500 mt-1">Selecione na aba Usuários</p>
+                  </div>
+                  <div className="border rounded-lg p-4 bg-amber-50 hover:bg-amber-100 transition-colors">
+                    <Building2 className="h-6 w-6 mx-auto mb-2 text-amber-500" />
+                    <p className="text-sm font-medium">Conversas com Fornecedores</p>
+                    <p className="text-xs text-gray-500 mt-1">Selecione na aba Fornecedores</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

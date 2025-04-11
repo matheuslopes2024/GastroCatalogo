@@ -678,6 +678,7 @@ type ChatWidgetProps = {
   showAttachmentPreview?: boolean;
   allowLargeAttachments?: boolean;
   showEmojis?: boolean;
+  adminEnhanced?: boolean;
 };
 
 export default function ChatWidget({ 
@@ -687,7 +688,8 @@ export default function ChatWidget({
   isAdmin = false,
   showAttachmentPreview = true,
   allowLargeAttachments = true,
-  showEmojis = false
+  showEmojis = false,
+  adminEnhanced = false
 }: ChatWidgetProps) {
   const { isOpen, activeConversation, openChat } = useChat();
   
@@ -721,12 +723,26 @@ export default function ChatWidget({
             
             <div className="flex-1 flex flex-col overflow-hidden">
               {activeConversation ? (
-                <ChatConversation 
-                  isAdmin={isAdmin}
-                  showAttachmentPreview={showAttachmentPreview}
-                  allowLargeAttachments={allowLargeAttachments}
-                  showEmojis={showEmojis}
-                />
+                <div className={cn("flex-1 flex flex-col", adminEnhanced && "rounded-lg shadow-inner")}>
+                  {/* Componente de histórico de mensagens */}
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3 pt-2">
+                    <MessageHistory 
+                      isAdmin={isAdmin} 
+                      showAttachmentPreview={showAttachmentPreview}
+                      adminEnhanced={adminEnhanced}
+                    />
+                  </div>
+                  
+                  {/* Componente de entrada de mensagem */}
+                  <div className={cn("p-3 pt-0", adminEnhanced && "p-4 pt-0 pb-3")}>
+                    <MessageInput 
+                      isAdmin={isAdmin} 
+                      showEmojis={showEmojis} 
+                      allowLargeAttachments={allowLargeAttachments}
+                      adminEnhanced={adminEnhanced}
+                    />
+                  </div>
+                </div>
               ) : (
                 <ConversationsList 
                   isAdmin={isAdmin}
