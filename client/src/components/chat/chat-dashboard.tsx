@@ -1,15 +1,10 @@
 import React, { useEffect } from "react";
 import { useChat } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
+import { UserRole } from "@shared/schema";
 import ChatWidget from "./chat-widget";
 import ChatConversationsList from "./chat-conversations-list";
 import { cn } from "@/lib/utils";
-// Definindo string constantes para os papéis de usuário para compatibilidade
-const UserRoles = {
-  ADMIN: "admin",
-  USER: "user",
-  SUPPLIER: "supplier"
-};
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +44,7 @@ export default function ChatDashboard({
   useEffect(() => {
     if (conversationType) {
       setConversationType(conversationType);
-    } else if (user?.role === UserRoles.ADMIN) {
+    } else if (user?.role === UserRole.ADMIN) {
       // Verificar se estamos na página de chat-admin
       const pathname = window.location.pathname;
       if (pathname.includes("/admin/chat")) {
@@ -98,7 +93,7 @@ export default function ChatDashboard({
             )}
             
             {/* Versão especial para administradores */}
-            {user?.role === UserRoles.ADMIN ? (
+            {user?.role === UserRole.ADMIN ? (
               <div className="w-full h-full rounded-lg border-0 overflow-hidden shadow-xl flex flex-col bg-gradient-to-br from-white to-gray-50">
                 <div className="bg-gradient-to-r from-primary to-primary/90 text-white p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -170,7 +165,7 @@ export default function ChatDashboard({
               <ChatWidget 
                 hideToggle 
                 fullHeight 
-                isAdmin={user?.role === UserRoles.ADMIN}
+                isAdmin={user?.role === UserRole.ADMIN}
                 className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
                 showAttachmentPreview={showAttachmentPreview}
                 allowLargeAttachments={allowLargeAttachments}
@@ -188,7 +183,7 @@ export default function ChatDashboard({
               <p className="text-muted-foreground text-sm mb-6">
                 {emptyMessage}
               </p>
-              {user?.role === UserRoles.ADMIN && (
+              {user?.role === UserRole.ADMIN && (
                 <div className="grid grid-cols-2 gap-4 text-center mt-6">
                   <div className="border rounded-lg p-4 bg-blue-50 hover:bg-blue-100 transition-colors">
                     <UserCircle className="h-6 w-6 mx-auto mb-2 text-blue-500" />
