@@ -335,15 +335,22 @@ function ChatMessage({
                 <span className="truncate">{"Arquivo anexado"}</span>
               </div>
               
-              <a 
-                href={message.attachmentData} 
-                download="download" 
-                className="text-primary-foreground/80 hover:text-primary-foreground"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => {
+                  if (message.attachmentData) {
+                    const link = document.createElement('a');
+                    link.href = message.attachmentData;
+                    link.download = 'download';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+                className="text-primary-foreground/80 hover:text-primary-foreground cursor-pointer p-1"
               >
                 <Paperclip className="h-4 w-4" />
-              </a>
+              </button>
             </div>
             
             {showAttachmentPreview && (

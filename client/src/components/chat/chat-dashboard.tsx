@@ -148,7 +148,7 @@ export default function ChatDashboard({
                   </div>
                   
                   <div className="p-4 pt-2">
-                    <MessageInput
+                    <MessageInputComponent
                       isAdmin={true}
                       showEmojis={true}
                       allowLargeAttachments={allowLargeAttachments}
