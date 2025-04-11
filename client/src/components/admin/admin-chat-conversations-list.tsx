@@ -24,7 +24,7 @@ function AdminConversationItem({
   onClick: () => void; 
 }) {
   const { usersOnline } = useAdminChat();
-  const isOnline = usersOnline.has(conversation.participantId);
+  const isOnline = conversation.participantId ? usersOnline.has(conversation.participantId) : false;
   
   // Formatação da data da última mensagem
   const formattedLastMessageTime = (() => {
@@ -241,7 +241,7 @@ export function AdminChatConversationsList() {
         
         <TabsContent value="clients" className="mt-0 flex-1 flex overflow-hidden">
           <ConversationsList
-            conversations={displayedConversations}
+            conversations={displayedConversations.filter(c => c.participantRole === UserRole.CLIENT)}
             isLoading={isLoadingConversations}
             activeConversationId={activeConversation?.id}
             onSelectConversation={setActiveConversation}
@@ -252,7 +252,7 @@ export function AdminChatConversationsList() {
         
         <TabsContent value="suppliers" className="mt-0 flex-1 flex overflow-hidden">
           <ConversationsList
-            conversations={displayedConversations}
+            conversations={displayedConversations.filter(c => c.participantRole === UserRole.SUPPLIER)}
             isLoading={isLoadingConversations}
             activeConversationId={activeConversation?.id}
             onSelectConversation={setActiveConversation}

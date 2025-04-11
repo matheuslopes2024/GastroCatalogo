@@ -123,7 +123,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         type: 'admin_chat_message',
         message: data,
         conversationId: data.conversationId,
-        recipientId: activeConversation?.participantId || 0
+        recipientId: activeConversation?.participantId ?? 0
       });
     },
     onError: (error: Error) => {
@@ -170,7 +170,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     const newMessage: InsertChatMessage = {
       conversationId: activeConversation.id,
       senderId: user.id,
-      receiverId: activeConversation.participantId,
+      receiverId: activeConversation.participantId ?? 0,
       text,
       attachments,
       read: false,

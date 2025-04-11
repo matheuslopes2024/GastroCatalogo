@@ -42,7 +42,7 @@ export function AdminChatDashboard() {
   }, [messages]);
 
   // Verificar se o usuário ativo está online
-  const isParticipantOnline = activeConversation
+  const isParticipantOnline = activeConversation && activeConversation.participantId
     ? usersOnline.has(activeConversation.participantId)
     : false;
   
