@@ -1646,12 +1646,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // e disponível para receber mensagens
         }
         
-        // Admin solicita todas as conversas
+        // Admin solicita todas as conversas - modificado para evitar loops
         else if (data.type === 'admin_request_conversations' && userId && userRole === UserRole.ADMIN) {
           try {
+            // Usar variável para controlar envio duplicado
+            const requestTimestamp = data.timestamp || new Date().toISOString();
+            const requestId = `${userId}_${requestTimestamp}`;
+            
+            // Cache para evitar envios duplicados em curto período
+            if (recentConversationRequests.has(requestId)) {
+              console.log(`Solicitação duplicada ignorada: ${requestId}`);
+              return;
+            }
+            
+            // Registrar esta solicitação por 2 segundos para evitar duplicação
+            recentConversationRequests.set(requestId, true);
+            setTimeout(() => {
+              recentConversationRequests.delete(requestId);
+            }, 2000);
+            
+            // Buscar e enviar as conversas
             const allConversations = await storage.getAllChatConversations();
             ws.send(JSON.stringify({
-              type: 'admin_conversations_list',
+              type: 'conversations_update', // Alterado para usar o mesmo tipo de outras atualizações
               conversations: allConversations,
               timestamp: new Date().toISOString()
             }));
