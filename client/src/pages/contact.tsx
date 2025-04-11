@@ -386,13 +386,27 @@ export default function ContactPage() {
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <FAQCard
-                  icon={<MessageCircle className="h-5 w-5" />}
-                  title="Chat ao Vivo"
-                  description="Converse em tempo real com nossa equipe de suporte para obter ajuda imediata com suas dúvidas."
-                  buttonText="Iniciar Chat"
-                  link="#" // Será substituído quando implementarmos o chat
-                />
+                <div className="h-full">
+                  <Card className="border-none shadow-sm hover:shadow-md transition-shadow duration-300 h-full">
+                    <CardContent className="p-6 flex flex-col h-full">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+                        <MessageCircle className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2 text-gray-900">Chat ao Vivo</h3>
+                      <p className="text-gray-600 mb-6 flex-grow">
+                        Converse em tempo real com nossa equipe de suporte para obter ajuda imediata com suas dúvidas.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full group"
+                        onClick={() => useChat().openChat()}
+                      >
+                        Iniciar Chat
+                        <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
               </motion.div>
               
               <motion.div
@@ -415,6 +429,9 @@ export default function ContactPage() {
       </main>
       
       <Footer />
+      
+      {/* Chat Widget flutuante */}
+      <ChatWidget />
     </div>
   );
 }

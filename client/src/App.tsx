@@ -11,6 +11,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { UserRole } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
 import { CartProvider } from "./hooks/use-cart";
+import { ChatProvider } from "./hooks/use-chat";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/dashboard";

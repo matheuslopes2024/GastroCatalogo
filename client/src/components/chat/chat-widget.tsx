@@ -1,414 +1,437 @@
-import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useChat } from "@/hooks/use-chat";
-import { ChatMessage } from "@shared/schema";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { MessageCircle, X, Send, Paperclip, User, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  MessageSquare,
-  X,
-  Send,
-  Paperclip,
-  Image as ImageIcon,
-  File,
-  Smile,
-  ChevronDown,
-  Loader2,
-  Check,
-  Clock
-} from "lucide-react";
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useChat, type ChatMessage, type Attachment } from "@/hooks/use-chat";
+import { useAuth } from "@/hooks/use-auth";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { UserRole } from "@shared/schema";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Tipos
-type ChatWidgetProps = {
-  fixedRecipientId?: number;
-  fixedRecipientName?: string;
-  hideToggle?: boolean;
-  fullHeight?: boolean;
-  className?: string;
-};
-
-// Componente para cada mensagem individual
-const MessageBubble = ({ message, isCurrentUser }: { message: ChatMessage; isCurrentUser: boolean }) => {
-  // Formatar a data da mensagem
-  const formattedDate = format(new Date(message.createdAt), "dd 'de' MMMM, HH:mm", { locale: ptBR });
-  
-  // Verificar se tem anexo e determinar o tipo
-  const hasAttachment = message.attachmentUrl || message.attachmentData;
-  const isImage = hasAttachment && (message.attachmentType?.startsWith('image/') || false);
-  const isDocument = hasAttachment && !isImage;
+function ChatHeader() {
+  const { closeChat, activeConversation, setActiveConversation, unreadCount } = useChat();
   
   return (
-    <div className={cn(
-      "flex mb-4 w-full max-w-[85%]",
-      isCurrentUser ? "self-end ml-auto" : "self-start mr-auto"
-    )}>
-      {!isCurrentUser && (
-        <Avatar className="h-8 w-8 mr-2 mt-1">
-          <AvatarFallback>{message.senderId.toString()[0]}</AvatarFallback>
-        </Avatar>
-      )}
-      
-      <div className={cn(
-        "flex flex-col rounded-2xl p-3",
-        isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-      )}>
-        <div className="text-sm break-words">
-          {message.message}
-          
-          {/* Renderização de anexos */}
-          {isImage && (
-            <div className="mt-2 max-w-[200px]">
-              <img 
-                src={message.attachmentUrl || message.attachmentData || ''} 
-                alt="Imagem anexada" 
-                className="rounded-md max-w-full max-h-[250px] object-contain"
-              />
-            </div>
+    <div className="bg-primary p-3 text-white flex items-center justify-between rounded-t-lg">
+      <div className="flex items-center gap-2">
+        {activeConversation ? (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-primary/20 h-8 w-8"
+            onClick={() => setActiveConversation(null)}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        ) : null}
+        
+        <h3 className="font-semibold flex items-center gap-2">
+          <MessageCircle className="h-5 w-5" />
+          Chat ao Vivo
+          {!activeConversation && unreadCount > 0 && (
+            <Badge variant="destructive" className="h-5 min-w-[20px] px-1">
+              {unreadCount}
+            </Badge>
           )}
-          
-          {isDocument && (
-            <div className="mt-2 flex items-center bg-background/20 rounded-md p-2">
-              <File className="h-4 w-4 mr-2" />
-              <span className="text-xs truncate flex-1">
-                {message.attachmentType?.split('/')[1] || 'Arquivo'}
-              </span>
-              <span className="text-xs">
-                {message.attachmentSize && `${Math.round(message.attachmentSize / 1024)} KB`}
-              </span>
-            </div>
+        </h3>
+      </div>
+      
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="text-white hover:bg-primary/20 h-8 w-8"
+        onClick={closeChat}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+function ConversationItem({ conversation, onSelect }: { 
+  conversation: any; 
+  onSelect: () => void;
+}) {
+  const { user } = useAuth();
+  
+  // Encontrar o outro participante
+  const otherParticipant = conversation._participants?.find(
+    (p: any) => p.id !== user?.id
+  );
+  
+  const unreadCount = otherParticipant?.unreadCount || 0;
+  const lastMessage = conversation._lastMessage;
+  
+  return (
+    <div 
+      className="p-3 hover:bg-gray-100 cursor-pointer flex gap-3 items-center border-b"
+      onClick={onSelect}
+    >
+      <Avatar>
+        <AvatarFallback className="bg-primary/10 text-primary">
+          {otherParticipant?.name?.[0] || "U"}
+        </AvatarFallback>
+      </Avatar>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between">
+          <p className="font-medium truncate">{otherParticipant?.name || "Usuário"}</p>
+          {lastMessage && (
+            <span className="text-xs text-gray-500">
+              {formatDistanceToNow(new Date(lastMessage.createdAt), { 
+                addSuffix: true,
+                locale: ptBR
+              })}
+            </span>
           )}
         </div>
         
-        <div className="flex items-center justify-end mt-1 gap-1 text-xs opacity-70">
-          <span>{formattedDate}</span>
-          {isCurrentUser && (
-            message.isRead 
-              ? <Check className="h-3 w-3" /> 
-              : <Clock className="h-3 w-3" />
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 truncate">
+            {lastMessage ? (
+              lastMessage.attachmentData 
+                ? "📎 Arquivo anexado" 
+                : lastMessage.message
+            ) : "Iniciar conversa"}
+          </p>
+          
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1">
+              {unreadCount}
+            </Badge>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ConversationsList() {
+  const { conversations, setActiveConversation, isLoadingConversations } = useChat();
+  
+  if (isLoadingConversations) {
+    return (
+      <div className="p-4 text-center">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+        <p className="mt-2 text-sm text-gray-500">Carregando conversas...</p>
+      </div>
+    );
+  }
+  
+  if (conversations.length === 0) {
+    return (
+      <div className="p-6 text-center">
+        <MessageCircle className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+        <h3 className="font-medium text-lg mb-1">Nenhuma conversa</h3>
+        <p className="text-sm text-gray-500">
+          Suas conversas aparecerão aqui. Inicie uma conversa clicando no botão de chat.
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="divide-y divide-gray-100">
+      {conversations.map(conversation => (
+        <ConversationItem
+          key={conversation.id}
+          conversation={conversation}
+          onSelect={() => setActiveConversation(conversation)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ChatMessage({ message, isMine }: { message: ChatMessage; isMine: boolean }) {
+  const { user } = useAuth();
+  
+  const formattedTime = formatDistanceToNow(new Date(message.createdAt), {
+    addSuffix: true,
+    locale: ptBR
+  });
+  
+  return (
+    <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-4`}>
+      {!isMine && (
+        <Avatar className="h-8 w-8 mr-2">
+          <AvatarFallback className="bg-primary/10 text-primary">
+            U
+          </AvatarFallback>
+        </Avatar>
+      )}
       
-      {isCurrentUser && (
-        <Avatar className="h-8 w-8 ml-2 mt-1">
-          <AvatarFallback>{message.senderId.toString()[0]}</AvatarFallback>
+      <div className={`max-w-[70%] ${isMine ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'} p-3 rounded-lg`}>
+        {message.attachmentData && (
+          <div className="mb-2 p-2 bg-white/10 rounded border border-white/20 text-sm">
+            <div className="flex items-center">
+              <Paperclip className="h-4 w-4 mr-2" />
+              <span className="truncate">Arquivo anexado</span>
+            </div>
+            
+            {message.attachmentType?.startsWith('image/') && (
+              <div className="mt-1">
+                <img 
+                  src={message.attachmentData} 
+                  alt="Anexo" 
+                  className="max-h-40 rounded object-cover"
+                />
+              </div>
+            )}
+          </div>
+        )}
+        
+        {message.message && (
+          <p className="whitespace-pre-wrap break-words">{message.message}</p>
+        )}
+        
+        <div className={`text-xs ${isMine ? 'text-white/70' : 'text-gray-500'} mt-1 text-right`}>
+          {formattedTime}
+        </div>
+      </div>
+      
+      {isMine && (
+        <Avatar className="h-8 w-8 ml-2">
+          <AvatarImage src={user?.profileImage || ''} alt={user?.name || 'Usuário'} />
+          <AvatarFallback className="bg-primary/10 text-primary">
+            {user?.name?.[0] || 'U'}
+          </AvatarFallback>
         </Avatar>
       )}
     </div>
   );
-};
+}
 
-// Componente principal do widget de chat
-export default function ChatWidget({
-  fixedRecipientId,
-  fixedRecipientName,
-  hideToggle = false,
-  fullHeight = false,
-  className
-}: ChatWidgetProps) {
-  const {
-    isOpen,
-    messages,
-    openChat,
-    closeChat,
-    toggleChat,
-    sendMessage,
-    unreadCount,
-    isLoading,
-    loadMoreMessages,
-    createConversation,
-    activeConversationId
+function ChatConversation() {
+  const { 
+    activeConversation, 
+    messages, 
+    isLoadingMessages, 
+    sendMessage 
   } = useChat();
-  
   const { user } = useAuth();
   const [messageText, setMessageText] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [isSending, setIsSending] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const messagesRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Efeito para rolar para o fim quando novas mensagens chegarem
+  // Rolar para o final das mensagens quando elas mudam
   useEffect(() => {
-    if (messagesRef.current && messages.length > 0) {
-      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  // Efeito para carregar mais mensagens quando o usuário rolar para cima
-  useEffect(() => {
-    const handleScroll = () => {
-      if (messagesRef.current && messagesRef.current.scrollTop === 0 && !isLoading) {
-        loadMoreMessages();
-      }
-    };
+  // Manipular o upload de arquivos
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    const messagesElement = messagesRef.current;
-    if (messagesElement) {
-      messagesElement.addEventListener('scroll', handleScroll);
-      return () => messagesElement.removeEventListener('scroll', handleScroll);
+    // Verificar tamanho (1GB max)
+    if (file.size > 1024 * 1024 * 1024) {
+      alert("Arquivo muito grande. O tamanho máximo é 1GB.");
+      return;
     }
-  }, [loadMoreMessages, isLoading]);
-  
-  // Criar conversa com o destinatário fixo, se necessário
-  useEffect(() => {
-    const initializeConversation = async () => {
-      if (fixedRecipientId && user && isOpen && !activeConversationId) {
-        try {
-          await createConversation(fixedRecipientId);
-        } catch (error) {
-          console.error('Erro ao inicializar conversa:', error);
-        }
-      }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const data = event.target?.result as string;
+      setAttachment({
+        data,
+        type: file.type,
+        name: file.name,
+        size: file.size
+      });
     };
-    
-    initializeConversation();
-  }, [fixedRecipientId, user, isOpen, activeConversationId, createConversation]);
+    reader.readAsDataURL(file);
+  };
   
-  // Manipuladores de eventos
-  const handleSendMessage = async () => {
-    if (!messageText.trim() && !attachment) return;
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    setIsSending(true);
+    if ((!messageText.trim() && !attachment) || isSending) return;
     
     try {
-      await sendMessage(messageText.trim() || 'Enviou um anexo', attachment);
+      setIsSending(true);
+      await sendMessage(messageText, attachment || undefined);
       setMessageText("");
       setAttachment(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      console.error("Erro ao enviar mensagem:", error);
     } finally {
       setIsSending(false);
     }
   };
   
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  if (!activeConversation) return null;
   
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    if (file) {
-      // Verificar tamanho do arquivo (máximo 1GB)
-      if (file.size > 1024 * 1024 * 1024) {
-        alert('O arquivo é muito grande. O tamanho máximo é 1GB.');
-        return;
-      }
-      setAttachment(file);
-    }
-  };
+  const otherParticipant = activeConversation._participants?.find(
+    p => p.id !== user?.id
+  );
   
-  const handleAttachmentClick = () => {
-    fileInputRef.current?.click();
-  };
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-3 border-b flex items-center gap-2">
+        <Avatar>
+          <AvatarFallback className="bg-primary/10 text-primary">
+            {otherParticipant?.name?.[0] || "U"}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <h3 className="font-medium">{otherParticipant?.name || "Usuário"}</h3>
+          <p className="text-xs text-gray-500">
+            {otherParticipant?.role === "SUPPLIER" ? "Fornecedor" : "Usuário"}
+          </p>
+        </div>
+      </div>
+      
+      <ScrollArea className="flex-1 p-3">
+        {isLoadingMessages ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-center p-6">
+            <div>
+              <MessageCircle className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+              <h3 className="font-medium">Inicie uma conversa</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Envie uma mensagem para começar a conversar.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="py-2">
+            {messages.map(message => (
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                isMine={message.senderId === user?.id} 
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </ScrollArea>
+      
+      <form onSubmit={handleSendMessage} className="p-3 border-t">
+        {attachment && (
+          <div className="mb-2 p-2 bg-gray-100 rounded text-sm flex justify-between items-center">
+            <div className="flex items-center truncate">
+              <Paperclip className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{attachment.name}</span>
+            </div>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={() => setAttachment(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            className="flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="h-4 w-4" />
+            <input 
+              type="file" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+            />
+          </Button>
+          
+          <Textarea
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+            placeholder="Digite sua mensagem..."
+            className="min-h-[40px] resize-none"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e);
+              }
+            }}
+          />
+          
+          <Button 
+            type="submit" 
+            className="flex-shrink-0"
+            disabled={(!messageText.trim() && !attachment) || isSending}
+          >
+            {isSending ? (
+              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ChatToggleButton() {
+  const { openChat, unreadCount } = useChat();
   
-  const removeAttachment = () => {
-    setAttachment(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
-  // Renderização condicional do botão de abrir chat
-  if (!isOpen && hideToggle) {
-    return null;
-  }
+  return (
+    <Button
+      onClick={openChat}
+      size="icon"
+      className="h-12 w-12 rounded-full shadow-lg fixed bottom-6 right-6 z-50"
+    >
+      <MessageCircle className="h-6 w-6" />
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[18px] h-[18px] text-xs flex items-center justify-center">
+          {unreadCount}
+        </span>
+      )}
+    </Button>
+  );
+}
+
+export default function ChatWidget() {
+  const { isOpen } = useChat();
   
   return (
     <>
-      {/* Botão flutuante para abrir o chat (apenas se não for escondido) */}
-      {!isOpen && !hideToggle && (
-        <motion.div 
-          className="fixed bottom-6 right-6 z-50"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Button 
-            onClick={toggleChat}
-            size="lg"
-            className="h-14 w-14 rounded-full shadow-lg"
-          >
-            <MessageSquare className="h-6 w-6" />
-            {unreadCount > 0 && (
-              <Badge 
-                className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full"
-                variant="destructive"
-              >
-                {unreadCount}
-              </Badge>
-            )}
-          </Button>
-        </motion.div>
-      )}
-      
-      {/* Widget de chat */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
-            className={cn(
-              "fixed bottom-6 right-6 w-80 sm:w-96 bg-background rounded-lg shadow-xl flex flex-col z-50 overflow-hidden",
-              fullHeight ? "h-[calc(100vh-6rem)] top-24 bottom-6" : "h-[30rem] max-h-[calc(100vh-6rem)]",
-              className
-            )}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-20 right-6 w-80 sm:w-96 h-[500px] bg-white rounded-lg shadow-xl z-50 flex flex-col overflow-hidden border"
           >
-            {/* Cabeçalho */}
-            <div className="bg-primary text-primary-foreground p-3 flex items-center justify-between">
-              <div className="flex items-center">
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarFallback>
-                    {user?.role === UserRole.ADMIN ? 'A' : 'S'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-medium">
-                    {fixedRecipientName || "Atendimento"}
-                  </h3>
-                  <p className="text-xs opacity-80">
-                    {user?.role === UserRole.ADMIN 
-                      ? "Administrador" 
-                      : (user?.role === UserRole.SUPPLIER 
-                        ? "Fornecedor" 
-                        : "Suporte ao Cliente")}
-                  </p>
-                </div>
-              </div>
-              {!hideToggle && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={closeChat}
-                  className="h-8 w-8 rounded-full hover:bg-primary-foreground/20"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <ChatHeader />
             
-            {/* Corpo de mensagens */}
-            <div 
-              ref={messagesRef}
-              className="flex-1 overflow-y-auto p-4 flex flex-col-reverse space-y-reverse space-y-2"
-            >
-              {isLoading && (
-                <div className="flex justify-center items-center py-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
-              )}
-              
-              {messages.length === 0 && !isLoading ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mb-2 opacity-20" />
-                  <p className="text-sm">
-                    Envie uma mensagem para iniciar a conversa
-                  </p>
-                </div>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {!!useChat().activeConversation ? (
+                <ChatConversation />
               ) : (
-                <>
-                  {messages.map((message) => (
-                    <MessageBubble 
-                      key={message.id}
-                      message={message}
-                      isCurrentUser={message.senderId === user?.id}
-                    />
-                  ))}
-                </>
+                <ConversationsList />
               )}
-            </div>
-            
-            {/* Área de anexo */}
-            {attachment && (
-              <div className="px-4 pt-2">
-                <div className="bg-muted rounded-md p-2 flex items-center justify-between">
-                  <div className="flex items-center text-sm truncate">
-                    {attachment.type.startsWith('image/') ? (
-                      <ImageIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                    ) : (
-                      <File className="h-4 w-4 mr-2 flex-shrink-0" />
-                    )}
-                    <span className="truncate">{attachment.name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      ({Math.round(attachment.size / 1024)} KB)
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={removeAttachment}
-                    className="h-6 w-6"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Área de input */}
-            <div className="p-3 border-t">
-              <div className="flex items-center space-x-2">
-                <Textarea
-                  placeholder="Digite sua mensagem..."
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  className="min-h-[60px] max-h-[120px] resize-none"
-                  disabled={isSending}
-                />
-                <div className="flex flex-col space-y-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleAttachmentClick}
-                    className="h-8 w-8 rounded-full"
-                    disabled={isSending}
-                    title="Anexar arquivo"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={handleSendMessage}
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    disabled={isSending || (!messageText.trim() && !attachment)}
-                    title="Enviar mensagem"
-                  >
-                    {isSending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <input 
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
-                accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              />
-              <div className="text-xs text-muted-foreground mt-1">
-                <span>Anexos: máx. 1GB (imagens, PDF, DOCX)</span>
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      <ChatToggleButton />
     </>
   );
 }
