@@ -689,7 +689,12 @@ export default function ChatWidget({
   allowLargeAttachments = true,
   showEmojis = false
 }: ChatWidgetProps) {
-  const { isOpen } = useChat();
+  const { isOpen, activeConversation } = useChat();
+  
+  // Log para debug
+  useEffect(() => {
+    console.log("ChatWidget renderizado com conversa ativa:", activeConversation?.id || "nenhuma");
+  }, [activeConversation]);
   
   return (
     <>
