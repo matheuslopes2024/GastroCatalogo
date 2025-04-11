@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { UserRole } from "@shared/schema";
 import ChatDashboard from "@/components/chat/chat-dashboard";
 import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/hooks/use-chat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -30,12 +31,55 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ChatAdminPage() {
   const { user } = useAuth();
+  const { conversations, setConversationType, refreshConversations, isLoadingConversations } = useChat();
   const [chatType, setChatType] = useState<"all" | "user" | "supplier">("all");
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
   const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    users: 0,
+    suppliers: 0
+  });
+  
+  // Calcular estatísticas com base nas conversas reais
+  useEffect(() => {
+    if (!isLoadingConversations && conversations.length > 0) {
+      // Classificar conversas
+      const suppliersConversations = conversations.filter(conv => 
+        conv._participants?.some(p => p.role === UserRole.SUPPLIER)
+      );
+      
+      const usersConversations = conversations.filter(conv => 
+        conv._participants?.every(p => p.role !== UserRole.SUPPLIER)
+      );
+      
+      // Atualizar estatísticas
+      setStats({
+        total: conversations.length,
+        suppliers: suppliersConversations.length,
+        users: usersConversations.length
+      });
+      
+      setIsLoading(false);
+    }
+  }, [conversations, isLoadingConversations]);
+  
+  // Atualizar tipo de conversa no contexto global quando mudar aqui localmente
+  useEffect(() => {
+    setConversationType(chatType);
+  }, [chatType, setConversationType]);
+  
+  // Função para atualizar dados
+  const handleRefresh = () => {
+    setIsLoading(true);
+    refreshConversations().then(() => {
+      setTimeout(() => setIsLoading(false), 300);
+    });
+  };
   
   // Verificar se o usuário é administrador
   if (!user || user.role !== UserRole.ADMIN) {
@@ -118,13 +162,13 @@ export default function ChatAdminPage() {
               <h3 className="text-lg font-medium">Total de Conversas</h3>
               <MessageCircle className="h-5 w-5 text-primary" />
             </div>
-            {isLoading ? (
+            {isLoading || isLoadingConversations ? (
               <Skeleton className="h-10 w-20 mt-2" />
             ) : (
-              <div className="text-3xl font-bold">42</div>
+              <div className="text-3xl font-bold">{stats.total}</div>
             )}
             <p className="text-sm text-muted-foreground mt-1">
-              +12% em relação ao período anterior
+              {conversations.length ? 'Dados em tempo real' : 'Nenhuma conversa encontrada'}
             </p>
           </CardContent>
         </Card>
@@ -135,13 +179,15 @@ export default function ChatAdminPage() {
               <h3 className="text-lg font-medium">Conversas com Usuários</h3>
               <UserCircle className="h-5 w-5 text-blue-500" />
             </div>
-            {isLoading ? (
+            {isLoading || isLoadingConversations ? (
               <Skeleton className="h-10 w-20 mt-2" />
             ) : (
-              <div className="text-3xl font-bold">28</div>
+              <div className="text-3xl font-bold">{stats.users}</div>
             )}
             <p className="text-sm text-muted-foreground mt-1">
-              +8% em relação ao período anterior
+              {stats.users > 0 
+                ? `${Math.round((stats.users / stats.total) * 100)}% do total` 
+                : 'Nenhuma conversa com usuários'}
             </p>
           </CardContent>
         </Card>
@@ -152,13 +198,15 @@ export default function ChatAdminPage() {
               <h3 className="text-lg font-medium">Conversas com Fornecedores</h3>
               <Building2 className="h-5 w-5 text-amber-500" />
             </div>
-            {isLoading ? (
+            {isLoading || isLoadingConversations ? (
               <Skeleton className="h-10 w-20 mt-2" />
             ) : (
-              <div className="text-3xl font-bold">14</div>
+              <div className="text-3xl font-bold">{stats.suppliers}</div>
             )}
             <p className="text-sm text-muted-foreground mt-1">
-              +20% em relação ao período anterior
+              {stats.suppliers > 0 
+                ? `${Math.round((stats.suppliers / stats.total) * 100)}% do total` 
+                : 'Nenhuma conversa com fornecedores'}
             </p>
           </CardContent>
         </Card>

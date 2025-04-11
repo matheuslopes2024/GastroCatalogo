@@ -20,6 +20,7 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import AdminSuppliers from "@/pages/admin/suppliers";
 import AdminCommissions from "@/pages/admin/commissions";
 import AdminCategories from "@/pages/admin/categories";
+import ChatAdminPage from "@/pages/admin/chat-admin";
 
 // Supplier pages
 import SupplierDashboard from "@/pages/supplier/dashboard";
@@ -79,6 +80,11 @@ function Router() {
       <ProtectedRoute 
         path="/admin/comissoes" 
         component={AdminCommissions} 
+        allowedRoles={[UserRole.ADMIN]}
+      />
+      <ProtectedRoute 
+        path="/admin/chat" 
+        component={ChatAdminPage} 
         allowedRoles={[UserRole.ADMIN]}
       />
       <ProtectedRoute 
