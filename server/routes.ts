@@ -1241,6 +1241,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mapa para rastrear status online dos usuários
   const onlineStatus = new Map();
   
+  // Mapa para evitar solicitações duplicadas em curto período
+  const recentConversationRequests = new Map();
+  
   // Função auxiliar para notificar outros clientes sobre status online
   const broadcastUserStatus = (userId, isOnline) => {
     // Obter todas as conversas do usuário
@@ -1646,26 +1649,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // e disponível para receber mensagens
         }
         
-        // Admin solicita todas as conversas - modificado para evitar loops
+        // Admin solicita todas as conversas
         else if (data.type === 'admin_request_conversations' && userId && userRole === UserRole.ADMIN) {
           try {
-            // Usar variável para controlar envio duplicado
-            const requestTimestamp = data.timestamp || new Date().toISOString();
-            const requestId = `${userId}_${requestTimestamp}`;
-            
-            // Cache para evitar envios duplicados em curto período
-            if (recentConversationRequests.has(requestId)) {
-              console.log(`Solicitação duplicada ignorada: ${requestId}`);
-              return;
-            }
-            
-            // Registrar esta solicitação por 2 segundos para evitar duplicação
-            recentConversationRequests.set(requestId, true);
-            setTimeout(() => {
-              recentConversationRequests.delete(requestId);
-            }, 2000);
-            
-            // Buscar e enviar as conversas
+            // Buscar e enviar as conversas - simplificado para evitar loops
             const allConversations = await storage.getAllChatConversations();
             ws.send(JSON.stringify({
               type: 'conversations_update', // Alterado para usar o mesmo tipo de outras atualizações
