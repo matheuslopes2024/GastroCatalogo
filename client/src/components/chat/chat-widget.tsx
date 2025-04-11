@@ -3,13 +3,15 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   MessageCircle, X, Send, Paperclip, User, ChevronLeft,
-  Download, FileIcon, ImageIcon, VideoIcon, FileTextIcon, Smile
+  Download, FileIcon, ImageIcon, VideoIcon, FileTextIcon, Smile,
+  CheckCircle2, Clock, UserCog, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat, type ChatMessage, type Attachment } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
+import { useAdminStatus } from "@/hooks/use-admin-status";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";

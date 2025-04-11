@@ -15,6 +15,7 @@ import { ChatProvider } from "./hooks/use-chat";
 import { WebSocketProvider } from "./hooks/use-websocket";
 import ChatWidget from "./components/chat/chat-widget";
 import { AdminChatProvider } from "./hooks/use-admin-chat";
+import { AdminStatusProvider } from "./hooks/use-admin-status";
 import { AdminLayout } from "@/components/admin/admin-layout";
 
 // Admin pages
@@ -148,10 +149,12 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <WebSocketProvider>
-          <ChatProvider>
-            <Toaster />
-            {isAdminPage ? <AdminRoutes /> : <MainRoutes />}
-          </ChatProvider>
+          <AdminStatusProvider>
+            <ChatProvider>
+              <Toaster />
+              {isAdminPage ? <AdminRoutes /> : <MainRoutes />}
+            </ChatProvider>
+          </AdminStatusProvider>
         </WebSocketProvider>
       </CartProvider>
     </AuthProvider>

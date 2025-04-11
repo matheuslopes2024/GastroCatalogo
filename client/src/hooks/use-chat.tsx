@@ -50,6 +50,9 @@ export interface ChatConversation {
     companyName: string | null;
     unreadCount?: number;
   }[];
+  // Campos adicionais para o status da conversa
+  acceptedByAdmin?: boolean;
+  adminId?: number;
 }
 
 export interface Attachment {
