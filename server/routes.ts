@@ -1443,6 +1443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Atualizar a última atividade da conversa
             await storage.updateChatConversation(actualConversationId, {
               lastMessageId: newMessage.id,
+              lastMessageText: messageText, // Adicionar o texto da mensagem aqui
               lastActivityAt: new Date()
             });
             
