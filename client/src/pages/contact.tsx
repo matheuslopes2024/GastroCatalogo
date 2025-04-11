@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useChat } from "@/hooks/use-chat";
+import ChatWidget from "@/components/chat/chat-widget";
 
 // Informações de contato
 const contactInfo = [
