@@ -27,7 +27,13 @@ export default function ChatDashboard({
   showAttachmentPreview = true,
   allowLargeAttachments = true
 }: ChatDashboardProps) {
-  const { activeConversation, setConversationType } = useChat();
+  const { 
+    activeConversation, 
+    setActiveConversation, 
+    setConversationType,
+    isOpen,
+    openChat 
+  } = useChat();
   const { user } = useAuth();
   
   // Definir o tipo de conversa com base na prop recebida ou parâmetros da URL
@@ -50,8 +56,12 @@ export default function ChatDashboard({
   useEffect(() => {
     if (activeConversation) {
       console.log("ChatDashboard: Conversa ativa definida:", activeConversation.id);
+      // Forçar a abertura do chat quando uma conversa é selecionada
+      if (!isOpen) {
+        openChat();
+      }
     }
-  }, [activeConversation]);
+  }, [activeConversation, isOpen, openChat]);
   
   if (!user) return null;
   

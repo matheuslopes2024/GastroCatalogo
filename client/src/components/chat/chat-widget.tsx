@@ -689,17 +689,24 @@ export default function ChatWidget({
   allowLargeAttachments = true,
   showEmojis = false
 }: ChatWidgetProps) {
-  const { isOpen, activeConversation } = useChat();
+  const { isOpen, activeConversation, openChat } = useChat();
   
   // Log para debug
   useEffect(() => {
     console.log("ChatWidget renderizado com conversa ativa:", activeConversation?.id || "nenhuma");
   }, [activeConversation]);
   
+  // Garantir que o widget apareça quando for chamado de outros componentes (como ChatDashboard)
+  useEffect(() => {
+    if (hideToggle && !isOpen) {
+      openChat();
+    }
+  }, [hideToggle, isOpen, openChat]);
+
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {(isOpen || hideToggle) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -713,7 +720,7 @@ export default function ChatWidget({
             <ChatHeader />
             
             <div className="flex-1 flex flex-col overflow-hidden">
-              {!!useChat().activeConversation ? (
+              {activeConversation ? (
                 <ChatConversation 
                   isAdmin={isAdmin}
                   showAttachmentPreview={showAttachmentPreview}
@@ -725,6 +732,13 @@ export default function ChatWidget({
                   isAdmin={isAdmin}
                   allowLargeAttachments={allowLargeAttachments}
                 />
+              )}
+              
+              {/* Debug info - remover em produção */}
+              {process.env.NODE_ENV === "development" && (
+                <div className="absolute bottom-0 right-0 z-50 bg-black/70 text-white text-xs p-1 rounded m-1">
+                  Conversa ID: {activeConversation?.id || "nenhuma"}
+                </div>
               )}
             </div>
           </motion.div>
