@@ -99,6 +99,8 @@ export interface IStorage {
   createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
   updateChatConversation(id: number, conversationData: Partial<ChatConversation>): Promise<ChatConversation | undefined>;
   getChatConversations(userId: number): Promise<ChatConversation[]>;
+  getAllChatConversations(): Promise<ChatConversation[]>;
+  updateChatConversationLastMessage(conversationId: number, message: ChatMessage): Promise<void>;
   
   // Session store
   sessionStore: any;
@@ -644,6 +646,23 @@ export class MemStorage implements IStorage {
       .filter(conversation => conversation.participantIds.includes(userId))
       .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
   }
+  
+  async getAllChatConversations(): Promise<ChatConversation[]> {
+    return Array.from(this.chatConversations.values())
+      .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+  }
+  
+  async updateChatConversationLastMessage(conversationId: number, message: ChatMessage): Promise<void> {
+    const conversation = await this.getChatConversation(conversationId);
+    if (!conversation) return;
+    
+    await this.updateChatConversation(conversation.id, {
+      lastMessageId: message.id,
+      lastMessageText: message.text,
+      lastMessageDate: message.createdAt,
+      lastActivityAt: new Date()
+    });
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1146,6 +1165,25 @@ export class DatabaseStorage implements IStorage {
       .from(chatConversations)
       .where(sql`${chatConversations.participantIds}::text LIKE '%' || ${userId} || '%'`)
       .orderBy(desc(chatConversations.lastActivityAt));
+  }
+  
+  async getAllChatConversations(): Promise<ChatConversation[]> {
+    return db
+      .select()
+      .from(chatConversations)
+      .orderBy(desc(chatConversations.lastActivityAt));
+  }
+  
+  async updateChatConversationLastMessage(conversationId: number, message: ChatMessage): Promise<void> {
+    await db
+      .update(chatConversations)
+      .set({
+        lastMessageId: message.id,
+        lastMessageText: message.text,
+        lastMessageDate: message.createdAt,
+        lastActivityAt: new Date()
+      })
+      .where(eq(chatConversations.id, conversationId));
   }
   
   // Commission Settings methods
