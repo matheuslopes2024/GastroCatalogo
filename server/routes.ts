@@ -1235,6 +1235,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mapa para rastrear conexões de usuários
   const clients = new Map();
   
+  // Mapa para rastrear conexões de administradores
+  const adminClients = new Map();
+  
   // Mapa para rastrear status online dos usuários
   const onlineStatus = new Map();
   
@@ -1319,6 +1322,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Armazenar cliente no mapa com userId como chave
           clients.set(userId, { ws, userId, userRole });
+          
+          // Se for admin, adicionar também no mapa de administradores
+          if (userRole === UserRole.ADMIN) {
+            adminClients.set(userId, { ws, userId, userRole });
+            console.log(`Admin ${userId} adicionado ao mapa de adminClients`);
+          }
           
           // Marcar usuário como online
           onlineStatus.set(userId, true);
@@ -1465,9 +1474,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const isAdminMessage = await isAdminConversation(actualConversationId);
             if (isAdminMessage) {
               console.log("Notificando administradores sobre nova mensagem");
+              console.log("Tamanho do mapa adminClients:", adminClients.size);
+              
               // Notificar todos os admins conectados
-              for (const [adminId, adminClient] of adminClients) {
+              adminClients.forEach((adminClient, adminId) => {
                 if (adminClient.ws.readyState === WebSocket.OPEN && adminId !== Number(userId)) {
+                  console.log(`Enviando notificação para admin ${adminId}`);
                   adminClient.ws.send(JSON.stringify({
                     type: 'new_message_received',
                     message: newMessage,
@@ -1476,7 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     timestamp: new Date().toISOString()
                   }));
                 }
-              }
+              });
             }
             
             // Atualizar conversas para ambas as partes
@@ -1623,6 +1635,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (data.type === 'admin_chat_register' && userId && userRole === UserRole.ADMIN) {
           console.log(`Administrador ${userId} registrado para receber chats`);
           
+          // Registrar admin no mapa adminClients se ainda não estiver
+          if (!adminClients.has(userId)) {
+            adminClients.set(userId, { ws, userId, userRole });
+            console.log(`Admin ${userId} adicionado ao mapa de adminClients (via admin_chat_register)`);
+          }
+          
           // Não precisamos fazer nada especial aqui, apenas registrar que o admin está online
           // e disponível para receber mensagens
         }
@@ -1767,6 +1785,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (userId) {
         // Remover cliente do mapa de conexões
         clients.delete(Number(userId));
+        
+        // Se for admin, remover também do mapa de administradores
+        if (userRole === UserRole.ADMIN) {
+          adminClients.delete(Number(userId));
+          console.log(`Admin ${userId} removido do mapa de adminClients`);
+        }
         
         // Marcar usuário como offline
         onlineStatus.set(userId, false);
