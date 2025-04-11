@@ -53,7 +53,11 @@ export default function ChatDashboard({
           <ChatWidget 
             hideToggle 
             fullHeight 
-            className="static inset-auto shadow-none w-full h-full rounded-none max-h-full" 
+            isAdmin={user?.role === UserRole.ADMIN}
+            className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
+            showAttachmentPreview
+            allowLargeAttachments
+            showEmojis
           />
         ) : (
           <div className="text-center p-8">
