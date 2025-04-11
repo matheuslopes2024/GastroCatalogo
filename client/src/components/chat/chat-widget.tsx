@@ -689,13 +689,13 @@ type ChatWidgetProps = {
 // Componente para exibir ícones de anexos 
 function GetAttachmentIcon({ type }: { type: string }) {
   if (type.startsWith('image/')) {
-    return <Image className="h-3 w-3" />;
+    return <ImageIcon className="h-3 w-3" />;
   } else if (type.startsWith('video/')) {
-    return <Video className="h-3 w-3" />;
+    return <VideoIcon className="h-3 w-3" />;
   } else if (type.includes('pdf')) {
-    return <FileText className="h-3 w-3" />;
+    return <FileTextIcon className="h-3 w-3" />;
   } else {
-    return <File className="h-3 w-3" />;
+    return <FileIcon className="h-3 w-3" />;
   }
 }
 
@@ -816,19 +816,25 @@ function MessageHistory({
     }, 100);
   }, [activeConversation]);
   
+  const { messages, isLoadingMessages } = useChat();
+  
   return (
     <div className={cn("h-full", adminEnhanced ? "bg-slate-50/50" : "")} ref={messagesRef}>
-      {activeConversation?.messages?.map((msg) => (
-        <ChatMessageItem 
-          key={msg.id} 
-          message={msg} 
-          isOwnMessage={msg.senderId === user?.id}
-          showAttachmentPreview={showAttachmentPreview}
-          isAdmin={isAdmin}
-        />
-      ))}
-      
-      {activeConversation?.messages?.length === 0 && (
+      {isLoadingMessages ? (
+        <div className="h-full flex items-center justify-center">
+          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : messages.length > 0 ? (
+        messages.map((msg) => (
+          <ChatMessageItem 
+            key={msg.id} 
+            message={msg} 
+            isOwnMessage={msg.senderId === user?.id}
+            showAttachmentPreview={showAttachmentPreview}
+            isAdmin={isAdmin}
+          />
+        ))
+      ) : (
         <div className="h-full flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <p>Nenhuma mensagem ainda.</p>
