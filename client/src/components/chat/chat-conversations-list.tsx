@@ -458,7 +458,7 @@ export default function ChatConversationsList() {
           ) : (
             <ScrollArea className="h-full">
               <div className="p-3 space-y-1">
-                {filteredConversations.map((conversation: ExtendedChatConversation) => (
+                {filteredConversations.map((conversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}
@@ -486,7 +486,7 @@ export default function ChatConversationsList() {
           ) : (
             <ScrollArea className="h-full">
               <div className="p-3 space-y-1">
-                {userConversations.map((conversation: ExtendedChatConversation) => (
+                {userConversations.map((conversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}
@@ -514,7 +514,7 @@ export default function ChatConversationsList() {
           ) : (
             <ScrollArea className="h-full">
               <div className="p-3 space-y-1">
-                {supplierConversations.map((conversation: ExtendedChatConversation) => (
+                {supplierConversations.map((conversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}

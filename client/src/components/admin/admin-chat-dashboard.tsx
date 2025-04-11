@@ -48,9 +48,9 @@ export function AdminChatDashboard() {
   
   // Função para agrupar mensagens por data
   const getMessageGroups = () => {
-    const groups = [];
+    const groups: {date: string, messages: ChatMessage[]}[] = [];
     let currentDate = '';
-    let currentGroup = [];
+    let currentGroup: ChatMessage[] = [];
     
     for (const message of messages) {
       const messageDate = format(new Date(message.createdAt), 'yyyy-MM-dd');
