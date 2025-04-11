@@ -49,6 +49,23 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+// Interface para a conversa com campos adicionais opcionais
+interface ExtendedChatConversation extends ChatConversation {
+  _participants?: Array<{
+    id: number;
+    name?: string;
+    username?: string;
+    email?: string;
+    role?: string;
+    companyName?: string | null;
+    unreadCount?: number;
+  }>;
+  _lastMessage?: {
+    message: string;
+    attachmentData?: string | null;
+  };
+}
+
 // Componente de item da conversa
 const ConversationItem = ({
   conversation,
@@ -56,38 +73,44 @@ const ConversationItem = ({
   onSelect,
   userId
 }: {
-  conversation: ChatConversation;
+  conversation: ExtendedChatConversation;
   activeId: number | null | undefined;
-  onSelect: (conversation: ChatConversation) => void;
+  onSelect: (conversation: ExtendedChatConversation) => void;
   userId: number;
 }) => {
-  // Obter informações do outro participante (em um ambiente real, estes dados viriam da API)
-  const otherParticipantId = conversation.participantIds.find(id => id !== userId) || 0;
+  // Obter informações do outro participante
+  const otherParticipant = conversation._participants?.find(p => p.id !== userId);
+  const otherParticipantId = otherParticipant?.id || 
+    conversation.participantIds.find(id => id !== userId) || 0;
   
   // Formatação de data/hora
   const lastMessageTime = conversation.lastActivityAt 
     ? format(new Date(conversation.lastActivityAt), "dd/MM/yy HH:mm", { locale: ptBR })
     : "-";
   
-  // Na implementação real, precisaríamos buscar o papel do usuário a partir do otherParticipantId
-  // Simulando apenas para fins de interface
-  const isSupplier = conversation.subject?.includes("Fornecedor") || false;
+  // Determinar se é um fornecedor usando dados reais ou fallback para subject
+  const isSupplier = otherParticipant?.role === "supplier" || 
+    conversation.subject?.includes("Fornecedor") || false;
   
-  // Simulando para a interface
-  const hasUnreadMessages = !conversation.isActive; // Apenas ilustrativo
+  // Verificar mensagens não lidas
+  const unreadCount = otherParticipant?.unreadCount || 0;
+  const hasUnreadMessages = unreadCount > 0;
   
-  // Em uma implementação real, você buscaria a última mensagem a partir do lastMessageId
-  // Simulando para a interface
-  const lastMessage = {
-    message: "...",
+  // Determinar a última mensagem (real ou simulada para a interface)
+  const lastMessage = conversation._lastMessage || {
+    message: conversation.subject || "Nova conversa",
     attachmentData: conversation.lastMessageId ? null : undefined
   };
   
-  // Função de manipulação de clique
-  const handleClick = () => {
-    console.log("Selecionando conversa:", conversation.id);
-    onSelect(conversation);
-  };
+  // Função de manipulação de clique com tratamento de erro
+  const handleClick = useCallback(() => {
+    try {
+      console.log("Selecionando conversa:", conversation.id);
+      onSelect(conversation);
+    } catch (error) {
+      console.error("Erro ao selecionar conversa:", error);
+    }
+  }, [conversation, onSelect]);
   
   return (
     <div 
@@ -189,6 +212,51 @@ export default function ChatConversationsList() {
   const { toast } = useToast();
   
   if (!user) return null;
+  
+  // Função para criar conversa (extraída para reduzir código duplicado)
+  const createConversation = useCallback((participantIds: number[], subject: string, initialMessage: string) => {
+    if (isCreatingConversation) return;
+    
+    setIsCreatingConversation(true);
+    
+    fetch('/api/chat/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participantIds, subject }),
+    })
+    .then(response => response.json())
+    .then(conversation => {
+      // Enviar mensagem inicial
+      return fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: initialMessage,
+          senderId: user.id,
+          receiverId: participantIds.find(id => id !== user.id),
+          conversationId: conversation.id,
+        }),
+      }).then(() => conversation);
+    })
+    .then(conversation => {
+      setActiveConversation(conversation);
+      toast({
+        title: "Conversa criada",
+        description: "Nova conversa iniciada com sucesso"
+      });
+    })
+    .catch(error => {
+      console.error("Erro ao criar conversa:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar a conversa",
+        variant: "destructive"
+      });
+    })
+    .finally(() => {
+      setIsCreatingConversation(false);
+    });
+  }, [user, setActiveConversation, toast, isCreatingConversation]);
   
   // Filtrar conversas por tipo e termo de busca
   const filteredConversations = useMemo(() => {
@@ -302,42 +370,15 @@ export default function ChatConversationsList() {
                     // Cria uma nova conversa com um usuário
                     const targetUserId = 7; // ID padrão para um usuário comum
                     const initialMessage = "Olá, estou iniciando uma nova conversa!";
-                    fetch('/api/chat/conversations', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        participantIds: [user.id, targetUserId],
-                        subject: "Nova conversa com usuário",
-                      }),
-                    })
-                    .then(response => response.json())
-                    .then(conversation => {
-                      // Enviar mensagem inicial
-                      return fetch('/api/chat/messages', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          message: initialMessage,
-                          senderId: user.id,
-                          receiverId: targetUserId,
-                          conversationId: conversation.id,
-                        }),
-                      }).then(() => conversation);
-                    })
-                    .then(conversation => {
-                      // Definir a conversa como ativa
-                      setActiveConversation(conversation);
-                    })
-                    .catch(error => {
-                      console.error("Erro ao criar conversa:", error);
-                    });
+                    createConversation([user.id, targetUserId], "Nova conversa com usuário", initialMessage);
                   }}
+                  disabled={isCreatingConversation}
                 >
-                  <UserCircle className="h-4 w-4 mr-2 text-blue-500" />
+                  {isCreatingConversation ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <UserCircle className="h-4 w-4 mr-2 text-blue-500" />
+                  )}
                   <span>Com Usuário</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
@@ -345,42 +386,15 @@ export default function ChatConversationsList() {
                     // Cria uma nova conversa com um fornecedor
                     const targetSupplierId = 3; // ID padrão para um fornecedor
                     const initialMessage = "Olá, preciso de informações sobre seus produtos.";
-                    fetch('/api/chat/conversations', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        participantIds: [user.id, targetSupplierId],
-                        subject: "Nova conversa com Fornecedor",
-                      }),
-                    })
-                    .then(response => response.json())
-                    .then(conversation => {
-                      // Enviar mensagem inicial
-                      return fetch('/api/chat/messages', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          message: initialMessage,
-                          senderId: user.id,
-                          receiverId: targetSupplierId,
-                          conversationId: conversation.id,
-                        }),
-                      }).then(() => conversation);
-                    })
-                    .then(conversation => {
-                      // Definir a conversa como ativa
-                      setActiveConversation(conversation);
-                    })
-                    .catch(error => {
-                      console.error("Erro ao criar conversa:", error);
-                    });
+                    createConversation([user.id, targetSupplierId], "Nova conversa com Fornecedor", initialMessage);
                   }}
+                  disabled={isCreatingConversation}
                 >
-                  <Building2 className="h-4 w-4 mr-2 text-amber-500" />
+                  {isCreatingConversation ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Building2 className="h-4 w-4 mr-2 text-amber-500" />
+                  )}
                   <span>Com Fornecedor</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -389,40 +403,9 @@ export default function ChatConversationsList() {
                     // Cria uma nova conversa em grupo (usuário + fornecedor + admin)
                     const participants = [user.id, 3, 7, 1]; // Inclui o usuário atual, um fornecedor, um usuário comum e o admin
                     const initialMessage = "Olá a todos! Estou criando esta conversa em grupo para discutirmos o próximo pedido.";
-                    fetch('/api/chat/conversations', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        participantIds: participants,
-                        subject: "Conversa em grupo",
-                      }),
-                    })
-                    .then(response => response.json())
-                    .then(conversation => {
-                      // Enviar mensagem inicial
-                      return fetch('/api/chat/messages', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          message: initialMessage,
-                          senderId: user.id,
-                          receiverId: null, // Em um grupo, não há um único receptor
-                          conversationId: conversation.id,
-                        }),
-                      }).then(() => conversation);
-                    })
-                    .then(conversation => {
-                      // Definir a conversa como ativa
-                      setActiveConversation(conversation);
-                    })
-                    .catch(error => {
-                      console.error("Erro ao criar conversa em grupo:", error);
-                    });
+                    createConversation(participants, "Conversa em grupo", initialMessage);
                   }}
+                  disabled={isCreatingConversation}
                 >
                   <Users className="h-4 w-4 mr-2 text-primary" />
                   <span>Conversa em Grupo</span>
@@ -475,12 +458,12 @@ export default function ChatConversationsList() {
           ) : (
             <ScrollArea className="h-full">
               <div className="p-3 space-y-1">
-                {filteredConversations.map(conversation => (
+                {filteredConversations.map((conversation: ExtendedChatConversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}
                     activeId={activeConversationId}
-                    onSelect={setActiveConversation}
+                    onSelect={setActiveConversation as any}
                     userId={user.id}
                   />
                 ))}
@@ -500,7 +483,7 @@ export default function ChatConversationsList() {
           ) : (
             <ScrollArea className="h-full">
               <div className="p-3 space-y-1">
-                {userConversations.map(conversation => (
+                {userConversations.map((conversation: ExtendedChatConversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}
@@ -525,12 +508,12 @@ export default function ChatConversationsList() {
           ) : (
             <ScrollArea className="h-full">
               <div className="p-3 space-y-1">
-                {supplierConversations.map(conversation => (
+                {supplierConversations.map((conversation: ExtendedChatConversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}
                     activeId={activeConversationId}
-                    onSelect={setActiveConversation}
+                    onSelect={setActiveConversation as any}
                     userId={user.id}
                   />
                 ))}
