@@ -12,6 +12,9 @@ type ChatDashboardProps = {
   contentClassName?: string;
   conversationType?: 'all' | 'user' | 'supplier';
   emptyMessage?: string;
+  showEmojis?: boolean;
+  showAttachmentPreview?: boolean;
+  allowLargeAttachments?: boolean;
 };
 
 export default function ChatDashboard({
@@ -19,7 +22,10 @@ export default function ChatDashboard({
   sidebarClassName,
   contentClassName,
   conversationType = 'all',
-  emptyMessage = 'Escolha uma conversa da lista para começar a interagir.'
+  emptyMessage = 'Escolha uma conversa da lista para começar a interagir.',
+  showEmojis = true,
+  showAttachmentPreview = true,
+  allowLargeAttachments = true
 }: ChatDashboardProps) {
   const { activeConversation, setConversationType } = useChat();
   const { user } = useAuth();
@@ -55,9 +61,9 @@ export default function ChatDashboard({
             fullHeight 
             isAdmin={user?.role === UserRole.ADMIN}
             className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
-            showAttachmentPreview
-            allowLargeAttachments
-            showEmojis
+            showAttachmentPreview={showAttachmentPreview}
+            allowLargeAttachments={allowLargeAttachments}
+            showEmojis={showEmojis}
           />
         ) : (
           <div className="text-center p-8">

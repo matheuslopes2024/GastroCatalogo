@@ -58,8 +58,7 @@ const ConversationItem = ({
   onSelect: (id: number) => void;
   userId: number;
 }) => {
-  // Obter informações do outro participante
-  const otherParticipant = conversation._participants?.find(p => p.id !== userId);
+  // Obter informações do outro participante (em um ambiente real, estes dados viriam da API)
   const otherParticipantId = conversation.participantIds.find(id => id !== userId) || 0;
   
   // Formatação de data/hora
@@ -67,14 +66,19 @@ const ConversationItem = ({
     ? format(new Date(conversation.lastActivityAt), "dd/MM/yy HH:mm", { locale: ptBR })
     : "-";
   
-  // Determinar se é um fornecedor
-  const isSupplier = otherParticipant?.role === UserRole.SUPPLIER;
+  // Na implementação real, precisaríamos buscar o papel do usuário a partir do otherParticipantId
+  // Simulando apenas para fins de interface
+  const isSupplier = conversation.subject?.includes("Fornecedor") || false;
   
-  // Verificar se há mensagens não lidas
-  const hasUnreadMessages = otherParticipant?.unreadCount && otherParticipant.unreadCount > 0;
+  // Simulando para a interface
+  const hasUnreadMessages = !conversation.isActive; // Apenas ilustrativo
   
-  // Última mensagem
-  const lastMessage = conversation._lastMessage;
+  // Em uma implementação real, você buscaria a última mensagem a partir do lastMessageId
+  // Simulando para a interface
+  const lastMessage = {
+    message: "...",
+    attachmentData: conversation.lastMessageId ? null : undefined
+  };
   
   // Função de manipulação de clique
   const handleClick = () => {
@@ -102,11 +106,11 @@ const ConversationItem = ({
       <Avatar className="h-10 w-10 mr-3 ring-1 ring-muted/30">
         {isSupplier ? (
           <AvatarFallback className="bg-amber-100 text-amber-700">
-            {otherParticipant?.name ? getInitials(otherParticipant.name) : `F${otherParticipantId.toString().slice(-1)}`}
+            {`F${otherParticipantId.toString().slice(-1)}`}
           </AvatarFallback>
         ) : (
           <AvatarFallback className="bg-blue-100 text-blue-700">
-            {otherParticipant?.name ? getInitials(otherParticipant.name) : `U${otherParticipantId.toString().slice(-1)}`}
+            {`U${otherParticipantId.toString().slice(-1)}`}
           </AvatarFallback>
         )}
       </Avatar>

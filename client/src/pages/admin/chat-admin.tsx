@@ -304,6 +304,9 @@ export default function ChatAdminPage() {
                 conversationType="user"
                 key="user-conversations"
                 emptyMessage="Não há conversas com usuários para exibir"
+                showEmojis={true}
+                showAttachmentPreview={true}
+                allowLargeAttachments={true}
               />
             )}
           </TabsContent>
@@ -323,6 +326,9 @@ export default function ChatAdminPage() {
                 conversationType="supplier"
                 key="supplier-conversations"
                 emptyMessage="Não há conversas com fornecedores para exibir"
+                showEmojis={true}
+                showAttachmentPreview={true}
+                allowLargeAttachments={true}
               />
             )}
           </TabsContent>
