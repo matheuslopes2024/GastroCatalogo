@@ -325,24 +325,53 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (lastHandledMessageId.current === messageId) return;
     lastHandledMessageId.current = messageId;
     
+    console.log("Processando mensagem WebSocket:", wsLastMessage);
+    
     // Processar diferentes tipos de mensagens
-    if (wsLastMessage.type === "new_message") {
+    if (wsLastMessage.type === "new_message_received") {
       // Recebemos uma nova mensagem
+      console.log("Nova mensagem recebida via WebSocket:", wsLastMessage.message);
+      
+      // Atualizar mensagens e conversas
       queryClient.invalidateQueries({ queryKey: ["/api/chat/messages", activeConversation?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
       
       // Se a mensagem for para a conversa ativa, marcá-la como lida
       if (activeConversation && wsLastMessage.conversationId === activeConversation.id) {
-        if (wsLastMessage.messageId) {
-          markAsReadMutation.mutate([wsLastMessage.messageId]);
+        if (wsLastMessage.message?.id) {
+          markAsReadMutation.mutate([wsLastMessage.message.id]);
         }
       }
-    } else if (wsLastMessage.type === "message_read") {
-      // Alguém leu uma mensagem
+      
+      // Atualizar notificações de som ou visuais
+      if (wsLastMessage.message?.senderId !== user.id) {
+        // Tocar som ou mostrar notificação
+        // ...
+      }
+    } else if (wsLastMessage.type === "message_sent") {
+      console.log("Mensagem enviada confirmada pelo servidor:", wsLastMessage.message);
+      // A mensagem que enviamos foi confirmada pelo servidor
+      // Atualizar o estado local
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/messages", activeConversation?.id] });
+      
+    } else if (wsLastMessage.type === "messages_marked_read") {
+      // Mensagens marcadas como lidas
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
-    } else if (wsLastMessage.type === "conversation_update") {
-      // Uma conversa foi atualizada
+    } else if (wsLastMessage.type === "conversations_update") {
+      // Lista de conversas foi atualizada
+      console.log("Lista de conversas atualizada:", wsLastMessage.conversations);
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
+    } else if (wsLastMessage.type === "conversation_accepted_by_admin") {
+      // Um administrador aceitou a conversa
+      console.log("Conversa aceita pelo administrador:", wsLastMessage);
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/messages", wsLastMessage.conversationId] });
+      
+      toast({
+        title: "Administrador online",
+        description: "Um administrador aceitou sua conversa e está disponível para ajudar",
+        variant: "default",
+      });
     }
     
   }, [wsLastMessage, activeConversation, user, queryClient, markAsReadMutation]);
