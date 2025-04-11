@@ -1,0 +1,55 @@
+Selecionando conversa: 7
+chat-dashboard.tsx:142 Uncaught ReferenceError: require is not defined
+    at ChatDashboard (chat-dashboard.tsx:142:28)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=44f00644:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=44f00644:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=44f00644:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=44f00644:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=44f00644:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=44f00644:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=44f00644:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=44f00644:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=44f00644:19137:13)
+ChatDashboard @ chat-dashboard.tsx:142
+renderWithHooks @ chunk-RPCDYKBN.js?v=44f00644:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=44f00644:14926
+beginWork @ chunk-RPCDYKBN.js?v=44f00644:15914
+callCallback2 @ chunk-RPCDYKBN.js?v=44f00644:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=44f00644:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=44f00644:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=44f00644:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=44f00644:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=44f00644:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=44f00644:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=44f00644:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=44f00644:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=44f00644:18627Understand this error
+chat-dashboard.tsx:142 Uncaught ReferenceError: require is not defined
+    at ChatDashboard (chat-dashboard.tsx:142:28)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=44f00644:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=44f00644:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=44f00644:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=44f00644:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=44f00644:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=44f00644:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=44f00644:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=44f00644:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=44f00644:19137:13)
+ChatDashboard @ chat-dashboard.tsx:142
+renderWithHooks @ chunk-RPCDYKBN.js?v=44f00644:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=44f00644:14926
+beginWork @ chunk-RPCDYKBN.js?v=44f00644:15914
+callCallback2 @ chunk-RPCDYKBN.js?v=44f00644:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=44f00644:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=44f00644:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=44f00644:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=44f00644:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=44f00644:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=44f00644:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=44f00644:18736
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=44f00644:18879
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=44f00644:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=44f00644:18627Understand this error
+chunk-RPCDYKBN.js?v=44f00644:14032 The above error occurred in the <ChatDashboard> component:
+
+    at ChatDashboard (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/chat/chat-dashboard.tsx:30:3)

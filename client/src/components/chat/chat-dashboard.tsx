@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
 import ChatWidget from "./chat-widget";
 import ChatConversationsList from "./chat-conversations-list";
+import { MessageHistory, MessageInput } from "./chat-message-components";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -139,24 +140,20 @@ export default function ChatDashboard({
                 <div className="flex-1 relative overflow-hidden flex flex-col">
                   {/* Usando diretamente os componentes do chat-message-components */}
                   <div className="flex-1 overflow-y-auto p-2">
-                    {React.createElement(
-                      require('./chat-message-components').MessageHistory, {
-                        isAdmin: true,
-                        showAttachmentPreview,
-                        adminEnhanced: true
-                      }
-                    )}
+                    <MessageHistory
+                      isAdmin={true}
+                      showAttachmentPreview={showAttachmentPreview}
+                      adminEnhanced={true}
+                    />
                   </div>
                   
                   <div className="p-4 pt-2">
-                    {React.createElement(
-                      require('./chat-message-components').MessageInput, {
-                        isAdmin: true,
-                        showEmojis: true,
-                        allowLargeAttachments,
-                        adminEnhanced: true
-                      }
-                    )}
+                    <MessageInput
+                      isAdmin={true}
+                      showEmojis={true}
+                      allowLargeAttachments={allowLargeAttachments}
+                      adminEnhanced={true}
+                    />
                   </div>
                 </div>
               </div>
@@ -165,7 +162,7 @@ export default function ChatDashboard({
               <ChatWidget 
                 hideToggle 
                 fullHeight 
-                isAdmin={user?.role === UserRole.ADMIN}
+                isAdmin={true}
                 className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
                 showAttachmentPreview={showAttachmentPreview}
                 allowLargeAttachments={allowLargeAttachments}
