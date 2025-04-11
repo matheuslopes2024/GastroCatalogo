@@ -240,6 +240,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // 2. Enviar mensagem inicial
       const messagePayload: any = {
         message,
+        text: message, // Campo text é obrigatório pelo schema
         senderId: user.id,
         receiverId,
         conversationId: conversation.id,
