@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { UserRole } from '@shared/schema';
+import { UserRole, ChatMessage } from '@shared/schema';
 
 // Componente principal do dashboard de chat
 export function AdminChatDashboard() {

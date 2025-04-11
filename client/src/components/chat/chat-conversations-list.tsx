@@ -64,6 +64,13 @@ interface ExtendedChatConversation extends ChatConversation {
     message: string;
     attachmentData?: string | null;
   };
+  // Campos adicionais que vêm do servidor
+  participantId?: number;
+  participantName?: string;
+  participantRole?: string;
+  lastMessageText?: string | null;
+  lastMessageDate?: string | null;
+  unreadCount?: number;
 }
 
 // Componente de item da conversa
@@ -73,9 +80,9 @@ const ConversationItem = ({
   onSelect,
   userId
 }: {
-  conversation: ExtendedChatConversation;
+  conversation: any; // Atualizando tipo para aceitar qualquer objeto com os campos necessários
   activeId: number | null | undefined;
-  onSelect: (conversation: ExtendedChatConversation) => void;
+  onSelect: (conversation: any) => void;
   userId: number;
 }) => {
   // Obter informações do outro participante
