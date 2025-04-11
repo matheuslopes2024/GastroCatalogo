@@ -484,10 +484,39 @@ function ChatConversation({
     
     try {
       setIsSending(true);
+      
+      // Adicionar mensagem temporária na interface antes da resposta do servidor
+      const tempMessage = {
+        id: Date.now(), // ID temporário
+        message: messageText,
+        content: messageText,
+        senderId: user?.id || 0,
+        receiverId: otherParticipant?.id || 0,
+        conversationId: activeConversation?.id || null,
+        isRead: false,
+        createdAt: new Date(),
+        attachmentUrl: attachment?.data || null,
+        attachmentType: attachment?.type || null,
+        attachmentData: attachment?.data || null,
+        attachmentSize: attachment?.size || null,
+        senderName: user?.name || '',
+        // Indicar que esta é uma mensagem temporária (ainda não confirmada pelo servidor)
+        isPending: true
+      };
+      
+      // Para debug
+      console.log("Enviando mensagem:", {
+        message: messageText,
+        attachment: attachment ? "com anexo" : "sem anexo",
+        conversationId: activeConversation?.id
+      });
+      
+      // Enviar para o servidor
       await sendMessage({
         message: messageText,
         attachment: attachment || undefined
       });
+      
       setMessageText("");
       setAttachment(null);
       if (fileInputRef.current) {
