@@ -172,6 +172,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       senderId: user.id,
       receiverId: activeConversation.participantId ?? 0,
       text,
+      message: text, // Campo obrigatório que estava faltando
       attachments,
       read: false,
     };

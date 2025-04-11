@@ -464,10 +464,8 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               
               {breadcrumbs && breadcrumbs.length > 0 && (
                 <nav className="flex mt-1 text-sm">
-                  <Link href="/admin">
-                    <a className="text-muted-foreground hover:text-foreground">
+                  <Link href="/admin" className="text-muted-foreground hover:text-foreground">
                       Dashboard
-                    </a>
                   </Link>
                   
                   {breadcrumbs.map((crumb, index) => (
@@ -476,10 +474,8 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
                       {index === breadcrumbs.length - 1 ? (
                         <span className="font-medium">{crumb.title}</span>
                       ) : (
-                        <Link href={crumb.href}>
-                          <a className="text-muted-foreground hover:text-foreground">
-                            {crumb.title}
-                          </a>
+                        <Link href={crumb.href} className="text-muted-foreground hover:text-foreground">
+                          {crumb.title}
                         </Link>
                       )}
                     </React.Fragment>

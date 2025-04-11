@@ -239,7 +239,7 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
               "flex flex-wrap gap-2",
               !message.text && "mt-0"
             )}>
-              {message.attachments.map((attachment, index) => {
+              {(message.attachments || []).map((attachment, index) => {
                 // Detectar se é uma imagem
                 let isImage = false;
                 try {
@@ -316,7 +316,7 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
         </Avatar>
       )}
       
-      {viewerOpen && message.attachments && (
+      {viewerOpen && message.attachments && message.attachments.length > 0 && (
         <AdminChatAttachmentViewer 
           attachments={message.attachments} 
           onClose={() => setViewerOpen(false)} 
