@@ -10,7 +10,9 @@ import {
   Clock,
   MessageSquare,
   Filter,
-  Users
+  Users,
+  Paperclip,
+  PencilLine
 } from "lucide-react";
 import { UserRole } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -21,7 +23,8 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ChatConversation } from "@shared/schema";
@@ -55,56 +58,111 @@ const ConversationItem = ({
   onSelect: (id: number) => void;
   userId: number;
 }) => {
-  // Simulação de dados - na implementação real estes dados viriam da API
+  // Obter informações do outro participante
+  const otherParticipant = conversation._participants?.find(p => p.id !== userId);
   const otherParticipantId = conversation.participantIds.find(id => id !== userId) || 0;
+  
+  // Formatação de data/hora
   const lastMessageTime = conversation.lastActivityAt 
     ? format(new Date(conversation.lastActivityAt), "dd/MM/yy HH:mm", { locale: ptBR })
     : "-";
   
-  // Simplificação - em um sistema real você buscaria dados dos usuários
-  const isSupplier = conversation.subject?.includes("Fornecedor") || false;
+  // Determinar se é um fornecedor
+  const isSupplier = otherParticipant?.role === UserRole.SUPPLIER;
+  
+  // Verificar se há mensagens não lidas
+  const hasUnreadMessages = otherParticipant?.unreadCount && otherParticipant.unreadCount > 0;
+  
+  // Última mensagem
+  const lastMessage = conversation._lastMessage;
+  
+  // Função de manipulação de clique
+  const handleClick = () => {
+    console.log("Selecionando conversa:", conversation.id);
+    onSelect(conversation.id);
+  };
   
   return (
     <div 
       className={cn(
-        "flex items-center p-3 hover:bg-muted/40 cursor-pointer rounded-md transition-colors",
-        activeId === conversation.id && "bg-muted"
+        "flex items-center p-3 hover:bg-primary/5 cursor-pointer rounded-md transition-colors mb-2 border border-transparent",
+        activeId === conversation.id && "bg-primary/10 border-primary",
+        hasUnreadMessages && "font-semibold bg-blue-50/50"
       )}
-      onClick={() => onSelect(conversation.id)}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-selected={activeId === conversation.id}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          handleClick();
+        }
+      }}
     >
-      <Avatar className="h-10 w-10 mr-3">
+      <Avatar className="h-10 w-10 mr-3 ring-1 ring-muted/30">
         {isSupplier ? (
           <AvatarFallback className="bg-amber-100 text-amber-700">
-            F{otherParticipantId.toString().slice(-1)}
+            {otherParticipant?.name ? getInitials(otherParticipant.name) : `F${otherParticipantId.toString().slice(-1)}`}
           </AvatarFallback>
         ) : (
           <AvatarFallback className="bg-blue-100 text-blue-700">
-            U{otherParticipantId.toString().slice(-1)}
+            {otherParticipant?.name ? getInitials(otherParticipant.name) : `U${otherParticipantId.toString().slice(-1)}`}
           </AvatarFallback>
         )}
       </Avatar>
       
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start mb-1">
-          <h4 className="font-medium text-sm truncate">
-            {conversation.subject || `Conversa #${conversation.id}`}
+          <h4 className={cn(
+            "font-medium text-sm truncate", 
+            activeId === conversation.id && "text-primary font-semibold"
+          )}>
+            {otherParticipant?.name || conversation.subject || `Conversa #${conversation.id}`}
+            <span className="inline-flex ml-1.5 items-center text-xs font-normal">
+              {isSupplier ? (
+                <Badge variant="outline" className="bg-amber-50 h-5 px-1 border-amber-200">
+                  <Building2 className="h-3 w-3 mr-1 text-amber-500" />
+                  <span className="text-amber-700">Fornecedor</span>
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-blue-50 h-5 px-1 border-blue-200">
+                  <UserCircle className="h-3 w-3 mr-1 text-blue-500" />
+                  <span className="text-blue-700">Usuário</span>
+                </Badge>
+              )}
+            </span>
           </h4>
-          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2 flex-shrink-0">
             {lastMessageTime}
           </span>
         </div>
         
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-            {isSupplier ? "Fornecedor" : "Usuário"} #{otherParticipantId}
+            {lastMessage ? (
+              lastMessage.attachmentData ? (
+                <span className="flex items-center">
+                  <Paperclip className="h-3 w-3 mr-1 inline" />
+                  Arquivo anexado
+                </span>
+              ) : (
+                lastMessage.message
+              )
+            ) : (
+              "Iniciar conversa"
+            )}
           </p>
           
           {/* Status de leitura ou contagem de não lidas */}
-          <div className="flex items-center">
-            {conversation.lastMessageId && (
-              <Badge variant="outline" className="h-5 px-1 text-xs">
-                <Check className="h-3 w-3 mr-1" />
-                <span>Lido</span>
+          <div className="flex items-center ml-1">
+            {hasUnreadMessages ? (
+              <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-primary">
+                {otherParticipant.unreadCount}
+              </Badge>
+            ) : conversation.lastMessageId && (
+              <Badge variant="outline" className="h-5 px-1 text-xs bg-muted/30">
+                <Check className="h-3 w-3 mr-1 text-green-500" />
+                <span className="text-muted-foreground">Lido</span>
               </Badge>
             )}
           </div>
@@ -197,10 +255,61 @@ export default function ChatConversationsList() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button size="sm" className="h-8">
-            <Plus className="h-3.5 w-3.5 mr-2" />
-            Novo
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="h-8">
+                <Plus className="h-3.5 w-3.5 mr-2" />
+                Novo
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    // Aqui você chamaria uma função para criar uma nova conversa com um usuário
+                    // Por exemplo, abrir um modal de seleção de usuário
+                    console.log("Iniciando nova conversa com usuário");
+                    // Exemplo de como você pode implementar:
+                    const randomId = Math.floor(Math.random() * 1000) + 1;
+                    const newConversation = {
+                      id: randomId,
+                      participantIds: [user.id, 3], // Selecionar um usuário específico (ID 3 neste exemplo)
+                      subject: "Nova conversa com usuário",
+                      createdAt: new Date().toISOString(),
+                      lastActivityAt: new Date().toISOString()
+                    };
+                    // Adicionar a nova conversa ao estado global (você precisaria implementar esta função)
+                    // addConversation(newConversation);
+                    // Selecionar a nova conversa
+                    // setActiveConversation(newConversation.id);
+                  }}
+                >
+                  <UserCircle className="h-4 w-4 mr-2 text-blue-500" />
+                  <span>Com Usuário</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    // Aqui você chamaria uma função para criar uma nova conversa com um fornecedor
+                    console.log("Iniciando nova conversa com fornecedor");
+                    // Exemplo similar ao anterior, mas para fornecedores
+                  }}
+                >
+                  <Building2 className="h-4 w-4 mr-2 text-amber-500" />
+                  <span>Com Fornecedor</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => {
+                    // Criar uma conversa em grupo
+                    console.log("Iniciando nova conversa em grupo");
+                  }}
+                >
+                  <Users className="h-4 w-4 mr-2 text-primary" />
+                  <span>Conversa em Grupo</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       

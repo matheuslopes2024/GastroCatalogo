@@ -282,6 +282,9 @@ export default function ChatAdminPage() {
                 conversationType="all"
                 key="all-conversations"
                 emptyMessage="Não há conversas para exibir"
+                showEmojis={true}
+                showAttachmentPreview={true}
+                allowLargeAttachments={true}
               />
             )}
           </TabsContent>
