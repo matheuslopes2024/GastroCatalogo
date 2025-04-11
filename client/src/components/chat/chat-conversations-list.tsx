@@ -270,22 +270,42 @@ export default function ChatConversationsList() {
               <DropdownMenuGroup>
                 <DropdownMenuItem 
                   onClick={() => {
-                    // Aqui você chamaria uma função para criar uma nova conversa com um usuário
-                    // Por exemplo, abrir um modal de seleção de usuário
-                    console.log("Iniciando nova conversa com usuário");
-                    // Exemplo de como você pode implementar:
-                    const randomId = Math.floor(Math.random() * 1000) + 1;
-                    const newConversation = {
-                      id: randomId,
-                      participantIds: [user.id, 3], // Selecionar um usuário específico (ID 3 neste exemplo)
-                      subject: "Nova conversa com usuário",
-                      createdAt: new Date().toISOString(),
-                      lastActivityAt: new Date().toISOString()
-                    };
-                    // Adicionar a nova conversa ao estado global (você precisaria implementar esta função)
-                    // addConversation(newConversation);
-                    // Selecionar a nova conversa
-                    // setActiveConversation(newConversation.id);
+                    // Cria uma nova conversa com um usuário
+                    const targetUserId = 7; // ID padrão para um usuário comum
+                    const initialMessage = "Olá, estou iniciando uma nova conversa!";
+                    fetch('/api/chat/conversations', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        participantIds: [user.id, targetUserId],
+                        subject: "Nova conversa com usuário",
+                      }),
+                    })
+                    .then(response => response.json())
+                    .then(conversation => {
+                      // Enviar mensagem inicial
+                      return fetch('/api/chat/messages', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          message: initialMessage,
+                          senderId: user.id,
+                          receiverId: targetUserId,
+                          conversationId: conversation.id,
+                        }),
+                      }).then(() => conversation);
+                    })
+                    .then(conversation => {
+                      // Definir a conversa como ativa
+                      setActiveConversation(conversation);
+                    })
+                    .catch(error => {
+                      console.error("Erro ao criar conversa:", error);
+                    });
                   }}
                 >
                   <UserCircle className="h-4 w-4 mr-2 text-blue-500" />
@@ -293,9 +313,42 @@ export default function ChatConversationsList() {
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => {
-                    // Aqui você chamaria uma função para criar uma nova conversa com um fornecedor
-                    console.log("Iniciando nova conversa com fornecedor");
-                    // Exemplo similar ao anterior, mas para fornecedores
+                    // Cria uma nova conversa com um fornecedor
+                    const targetSupplierId = 3; // ID padrão para um fornecedor
+                    const initialMessage = "Olá, preciso de informações sobre seus produtos.";
+                    fetch('/api/chat/conversations', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        participantIds: [user.id, targetSupplierId],
+                        subject: "Nova conversa com Fornecedor",
+                      }),
+                    })
+                    .then(response => response.json())
+                    .then(conversation => {
+                      // Enviar mensagem inicial
+                      return fetch('/api/chat/messages', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          message: initialMessage,
+                          senderId: user.id,
+                          receiverId: targetSupplierId,
+                          conversationId: conversation.id,
+                        }),
+                      }).then(() => conversation);
+                    })
+                    .then(conversation => {
+                      // Definir a conversa como ativa
+                      setActiveConversation(conversation);
+                    })
+                    .catch(error => {
+                      console.error("Erro ao criar conversa:", error);
+                    });
                   }}
                 >
                   <Building2 className="h-4 w-4 mr-2 text-amber-500" />
@@ -304,8 +357,42 @@ export default function ChatConversationsList() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => {
-                    // Criar uma conversa em grupo
-                    console.log("Iniciando nova conversa em grupo");
+                    // Cria uma nova conversa em grupo (usuário + fornecedor + admin)
+                    const participants = [user.id, 3, 7, 1]; // Inclui o usuário atual, um fornecedor, um usuário comum e o admin
+                    const initialMessage = "Olá a todos! Estou criando esta conversa em grupo para discutirmos o próximo pedido.";
+                    fetch('/api/chat/conversations', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        participantIds: participants,
+                        subject: "Conversa em grupo",
+                      }),
+                    })
+                    .then(response => response.json())
+                    .then(conversation => {
+                      // Enviar mensagem inicial
+                      return fetch('/api/chat/messages', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          message: initialMessage,
+                          senderId: user.id,
+                          receiverId: null, // Em um grupo, não há um único receptor
+                          conversationId: conversation.id,
+                        }),
+                      }).then(() => conversation);
+                    })
+                    .then(conversation => {
+                      // Definir a conversa como ativa
+                      setActiveConversation(conversation);
+                    })
+                    .catch(error => {
+                      console.error("Erro ao criar conversa em grupo:", error);
+                    });
                   }}
                 >
                   <Users className="h-4 w-4 mr-2 text-primary" />
