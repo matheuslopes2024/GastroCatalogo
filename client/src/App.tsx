@@ -12,6 +12,7 @@ import { UserRole } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
 import { CartProvider } from "./hooks/use-cart";
 import { ChatProvider } from "./hooks/use-chat";
+import ChatWidget from "./components/chat/chat-widget";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -112,8 +113,12 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Router />
-        <Toaster />
+        <ChatProvider>
+          <Router />
+          <Toaster />
+          {/* Adicionando o componente de chat em todas as páginas */}
+          <ChatWidget />
+        </ChatProvider>
       </CartProvider>
     </AuthProvider>
   );
