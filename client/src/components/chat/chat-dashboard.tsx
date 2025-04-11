@@ -10,19 +10,25 @@ type ChatDashboardProps = {
   className?: string;
   sidebarClassName?: string;
   contentClassName?: string;
+  conversationType?: 'all' | 'user' | 'supplier';
+  emptyMessage?: string;
 };
 
 export default function ChatDashboard({
   className,
   sidebarClassName,
-  contentClassName
+  contentClassName,
+  conversationType = 'all',
+  emptyMessage = 'Escolha uma conversa da lista para começar a interagir.'
 }: ChatDashboardProps) {
   const { activeConversation, setConversationType } = useChat();
   const { user } = useAuth();
   
-  // Determinar se é página de admin para configurar o tipo de conversa apropriadamente
+  // Definir o tipo de conversa com base na prop recebida ou parâmetros da URL
   useEffect(() => {
-    if (user?.role === UserRole.ADMIN) {
+    if (conversationType) {
+      setConversationType(conversationType);
+    } else if (user?.role === UserRole.ADMIN) {
       // Verificar se estamos na página de chat-admin
       const pathname = window.location.pathname;
       if (pathname.includes("/admin/chat")) {
@@ -32,7 +38,7 @@ export default function ChatDashboard({
         setConversationType(type);
       }
     }
-  }, [user?.role, setConversationType]);
+  }, [user?.role, setConversationType, conversationType]);
   
   if (!user) return null;
   
@@ -53,7 +59,7 @@ export default function ChatDashboard({
           <div className="text-center p-8">
             <h3 className="text-lg font-medium mb-2">Selecione uma conversa</h3>
             <p className="text-muted-foreground text-sm">
-              Escolha uma conversa da lista para começar a interagir.
+              {emptyMessage}
             </p>
           </div>
         )}

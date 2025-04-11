@@ -279,6 +279,9 @@ export default function ChatAdminPage() {
               <ChatDashboard 
                 contentClassName="bg-white"
                 sidebarClassName="bg-white/50"
+                conversationType="all"
+                key="all-conversations"
+                emptyMessage="Não há conversas para exibir"
               />
             )}
           </TabsContent>
@@ -295,6 +298,9 @@ export default function ChatAdminPage() {
               <ChatDashboard 
                 contentClassName="bg-white"
                 sidebarClassName="bg-white/50"
+                conversationType="user"
+                key="user-conversations"
+                emptyMessage="Não há conversas com usuários para exibir"
               />
             )}
           </TabsContent>
@@ -311,6 +317,9 @@ export default function ChatAdminPage() {
               <ChatDashboard 
                 contentClassName="bg-white"
                 sidebarClassName="bg-white/50"
+                conversationType="supplier"
+                key="supplier-conversations"
+                emptyMessage="Não há conversas com fornecedores para exibir"
               />
             )}
           </TabsContent>
