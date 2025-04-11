@@ -1,6 +1,6 @@
+import React, { useEffect } from "react";
 import { useChat } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
 import ChatWidget from "./chat-widget";
 import ChatConversationsList from "./chat-conversations-list";
 import { cn } from "@/lib/utils";
@@ -137,17 +137,26 @@ export default function ChatDashboard({
                   </div>
                 </div>
                 <div className="flex-1 relative overflow-hidden flex flex-col">
-                  <div className="absolute inset-0 w-full h-full">
-                    <ChatWidget 
-                      hideToggle 
-                      fullHeight 
-                      isAdmin={true}
-                      className="static inset-auto shadow-none w-full h-full rounded-none max-h-full bg-transparent border-0"
-                      showAttachmentPreview={showAttachmentPreview}
-                      allowLargeAttachments={allowLargeAttachments}
-                      showEmojis={true}
-                      adminEnhanced={true}
-                    />
+                  {/* Usando diretamente os componentes do chat-message-components */}
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {React.createElement(
+                      require('./chat-message-components').MessageHistory, {
+                        isAdmin: true,
+                        showAttachmentPreview,
+                        adminEnhanced: true
+                      }
+                    )}
+                  </div>
+                  
+                  <div className="p-4 pt-2">
+                    {React.createElement(
+                      require('./chat-message-components').MessageInput, {
+                        isAdmin: true,
+                        showEmojis: true,
+                        allowLargeAttachments,
+                        adminEnhanced: true
+                      }
+                    )}
                   </div>
                 </div>
               </div>
