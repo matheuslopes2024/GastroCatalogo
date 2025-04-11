@@ -177,12 +177,19 @@ export function MessageHistory({
   }
   
   // Obtém as mensagens da conversa atual
-  const messages = useQuery<ExtendedChatMessage[]>({
+  const { data: messagesData, isLoading: messagesLoading } = useQuery<ExtendedChatMessage[]>({
     queryKey: ['/api/chat/messages', activeConversation.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/messages?conversationId=${activeConversation.id}`);
+      if (!res.ok) {
+        throw new Error('Falha ao carregar mensagens');
+      }
+      return res.json();
+    },
     enabled: !!activeConversation?.id
   });
   
-  if (messages.isLoading) {
+  if (messagesLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
@@ -190,7 +197,7 @@ export function MessageHistory({
     );
   }
   
-  if (!messages.data || messages.data.length === 0) {
+  if (!messagesData || messagesData.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center text-muted-foreground">
@@ -201,9 +208,10 @@ export function MessageHistory({
     );
   }
   
+  // A referência a messagesRef é usada para rolar para baixo automaticamente
   return (
-    <div className="space-y-1 p-2">
-      {messages.data.map((msg: ExtendedChatMessage) => (
+    <div className="space-y-1 p-2" ref={messagesRef}>
+      {messagesData && messagesData.map((msg: ExtendedChatMessage) => (
         <ChatMessageItem 
           key={msg.id} 
           message={msg} 
