@@ -372,9 +372,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [activeConversation, user?.id, sendMessageMutation, wsConnected, wsSendMessage]);
 
   const startNewConversation = useCallback(async (receiverId: number, initialMessage: string, attachment?: Attachment) => {
-    await startConversationMutation.mutateAsync({ receiverId, message: initialMessage, attachment });
+    // 1. Criar a conversa via API REST
+    const conversation = await startConversationMutation.mutateAsync({ 
+      receiverId, 
+      message: initialMessage, 
+      attachment 
+    });
+    
+    // 2. Notificar via WebSocket para atualização em tempo real
+    if (wsConnected && user) {
+      wsSendMessage({
+        type: "conversation_created",
+        conversationId: conversation.id,
+        participantIds: [user.id, receiverId]
+      });
+    }
+    
     setIsOpen(true);
-  }, [startConversationMutation]);
+    return conversation;
+  }, [startConversationMutation, wsConnected, wsSendMessage, user]);
 
   // Função específica para iniciar conversa com administrador
   const startConversationWithAdmin = useCallback(async (initialMessage: string, attachment?: Attachment) => {
@@ -382,24 +398,39 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Buscar usuário administrador (ID 1 é o admin padrão)
       const adminId = 1; // Assumimos que ID 1 é o admin padrão
 
-      await startConversationMutation.mutateAsync({ 
+      // 1. Criar conversa via API REST
+      const conversation = await startConversationMutation.mutateAsync({ 
         receiverId: adminId, 
         message: initialMessage,
         attachment 
       });
+      
+      // 2. Notificar via WebSocket para atualização em tempo real
+      if (wsConnected && user) {
+        wsSendMessage({
+          type: "conversation_created",
+          conversationId: conversation.id,
+          participantIds: [user.id, adminId],
+          priority: "high" // Priorizar conversa com admin
+        });
+      }
+      
       setIsOpen(true);
       toast({
         title: "Mensagem enviada com sucesso",
         description: "Um administrador irá atendê-lo em breve",
       });
+      
+      return conversation;
     } catch (error: any) {
       toast({
         title: "Erro ao contatar administrador",
         description: error.message || "Ocorreu um erro ao iniciar a conversa",
         variant: "destructive",
       });
+      throw error;
     }
-  }, [startConversationMutation, toast]);
+  }, [startConversationMutation, wsConnected, wsSendMessage, user, toast]);
 
   // Atalho para abrir chat diretamente com administrador
   const openChatWithAdmin = useCallback(() => {

@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { playNotificationSound } from "@/components/sounds/notification-sound";
 
 // Tipos para as mensagens do WebSocket
 export type WebSocketMessage = {
@@ -81,11 +82,25 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               description: message.message,
               variant: "destructive"
             });
-          } else if (message.type === "new_message_received" && message.message) {
-            // Notificar sobre nova mensagem se não for a atual
+          } else if (message.type === "new_message" && message.message) {
+            // Notificar sobre nova mensagem se não for a conversa ativa
+            if (!document.hasFocus() || message.conversationId !== message.activeConversationId) {
+              const sender = message.senderName || 'Alguém';
+              toast({
+                title: `Nova mensagem de ${sender}`,
+                description: `${message.message.substring(0, 50)}${message.message.length > 50 ? '...' : ''}`,
+              });
+              
+              // Reproduzir som de notificação
+              const audio = new Audio('/notification.mp3');
+              audio.volume = 0.5;
+              audio.play().catch(err => console.log('Erro ao reproduzir notificação: ', err));
+            }
+          } else if (message.type === "conversation_update") {
+            // Notificar sobre uma nova conversa iniciada
             toast({
-              title: "Nova mensagem",
-              description: `${message.message.message.substring(0, 50)}${message.message.message.length > 50 ? '...' : ''}`,
+              title: "Nova conversa",
+              description: "Uma nova conversa foi iniciada"
             });
           }
         } catch (error) {
