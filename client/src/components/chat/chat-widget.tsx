@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Paperclip, User, ChevronLeft } from "lucide-react";
+import { 
+  MessageCircle, X, Send, Paperclip, User, ChevronLeft,
+  Download, Image, Video, FileText, Smile
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
@@ -319,25 +322,25 @@ function ChatMessage({
             <div className="flex items-center justify-between">
               <div className="flex items-center truncate mr-2">
                 {message.attachmentType?.startsWith('image/') ? (
-                  <Image className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 ) : message.attachmentType?.startsWith('video/') ? (
-                  <Video className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 ) : message.attachmentType?.includes('pdf') ? (
-                  <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <Paperclip className="h-4 w-4 mr-2 flex-shrink-0" />
                 ) : (
                   <Paperclip className="h-4 w-4 mr-2 flex-shrink-0" />
                 )}
-                <span className="truncate">{message.attachmentName || "Arquivo anexado"}</span>
+                <span className="truncate">{"Arquivo anexado"}</span>
               </div>
               
               <a 
                 href={message.attachmentData} 
-                download={message.attachmentName || "download"} 
+                download="download" 
                 className="text-primary-foreground/80 hover:text-primary-foreground"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Download className="h-4 w-4" />
+                <Paperclip className="h-4 w-4" />
               </a>
             </div>
             
@@ -371,7 +374,7 @@ function ChatMessage({
                 
                 {message.attachmentType?.includes('pdf') && (
                   <div className="mt-2 p-2 bg-white/10 rounded border border-white/20 flex items-center justify-center">
-                    <FileText className="h-8 w-8 opacity-50" />
+                    <Paperclip className="h-8 w-8 opacity-50" />
                   </div>
                 )}
               </>
@@ -557,8 +560,27 @@ function ChatConversation({
               className="hidden" 
               ref={fileInputRef} 
               onChange={handleFileChange} 
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
             />
           </Button>
+          
+          {showEmojis && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="icon" 
+              className="flex-shrink-0"
+              onClick={() => {
+                // Lista de emojis comuns
+                const emojis = ["😊", "👍", "🙏", "❤️", "👏", "🔥", "✅", "🎉", "👌", "🤝"];
+                // Adicionar um emoji aleatório ao texto da mensagem
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                setMessageText(prev => prev + " " + randomEmoji);
+              }}
+            >
+              <Smile className="h-4 w-4" />
+            </Button>
+          )}
           
           <Textarea
             value={messageText}
