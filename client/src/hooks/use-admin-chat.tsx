@@ -194,7 +194,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     }
   }, [activeConversation, messages, markAsReadMutation, user?.id]);
 
-  // Enviar mensagem
+  // Enviar mensagem - implementação modificada para evitar requisições em cascata
   const sendMessage = useCallback(async (text: string, attachments: string[] = []) => {
     if (!activeConversation || !user) return;
     
@@ -208,8 +208,37 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       read: false,
     };
     
-    await sendMessageMutation.mutateAsync(newMessage);
-  }, [activeConversation, user, sendMessageMutation]);
+    try {
+      // Enviar mensagem diretamente sem usar mutação para evitar invalidações
+      const response = await apiRequest('POST', '/api/admin/chat/send-message', newMessage);
+      const sentMessage = await response.json();
+      
+      // Atualizar estado local de mensagens manualmente
+      const updatedMessages = [...messages, sentMessage];
+      queryClient.setQueryData(['/api/admin/chat/messages', activeConversation.id, messagesLimit], updatedMessages);
+      
+      // Atualizar lista de conversas manualmente
+      apiRequest('GET', '/api/admin/chat/conversations')
+        .then(response => response.json())
+        .then(conversations => {
+          console.log('Conversas atualizadas após enviar mensagem:', conversations.length);
+          setConversations(conversations);
+        })
+        .catch(error => {
+          console.error('Erro ao recarregar conversas após enviar mensagem:', error);
+        });
+        
+      return sentMessage;
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      toast({
+        title: 'Erro ao enviar mensagem',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  }, [activeConversation, user, messages, queryClient, messagesLimit, toast]);
 
   // Mutation para criar nova conversa
   const createConversationMutation = useMutation({
@@ -218,10 +247,19 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       return response.json();
     },
     onSuccess: (data: ChatConversation) => {
-      queryClient.invalidateQueries({
-        queryKey: ['/api/admin/chat/conversations']
-      });
-      setActiveConversation(data);
+      // Atualizar conversas manualmente sem invalidar queries
+      apiRequest('GET', '/api/admin/chat/conversations')
+        .then(response => response.json())
+        .then(conversations => {
+          console.log('Conversas atualizadas após criar conversa:', conversations.length);
+          setConversations(conversations);
+          setActiveConversation(data);
+        })
+        .catch(error => {
+          console.error('Erro ao recarregar conversas após criar conversa:', error);
+          // Ainda define a conversa ativa mesmo se falhar a atualização da lista
+          setActiveConversation(data);
+        });
     },
     onError: (error: Error) => {
       toast({
