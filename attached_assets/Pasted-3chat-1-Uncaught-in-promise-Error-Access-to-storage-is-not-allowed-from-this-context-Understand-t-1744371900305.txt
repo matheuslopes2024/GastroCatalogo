@@ -1,0 +1,141 @@
+3chat:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+client:536 WebSocket connection to 'wss://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/?token=KccLD2g9i6n_' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531Understand this error
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=KccLD2g9i6n_' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555Understand this error
+chunk-RPCDYKBN.js?v=44f00644:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chat-widget.tsx:1059 ChatWidget renderizado com conversa ativa: nenhuma
+queryClient.ts:32 Enviando request para: /api/chat/conversations com método: GET e corpo do tipo: undefined
+use-websocket.tsx:52 WebSocket conectado!
+use-websocket.tsx:75 Mensagem WebSocket recebida: {type: 'auth_success', userId: 1, userRole: 'admin', timestamp: '2025-04-11T11:45:13.850Z'}
+use-websocket.tsx:75 Mensagem WebSocket recebida: {type: 'conversations_update', conversations: Array(8), timestamp: '2025-04-11T11:45:13.871Z'}
+
+                
+          
+          
+          
+         Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.Understand this warning
+3js.stripe.com/v3/m-o…__[version]=basil:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+3m.stripe.network/inn…__[version]=basil:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+chat-conversations-list.tsx:108 Selecionando conversa: 5
+chat-conversations-list.tsx:495 Selecionando conversa: 5
+chat-dashboard.tsx:63 ChatDashboard: Conversa ativa definida: 5
+chat-widget.tsx:1059 ChatWidget renderizado com conversa ativa: 5
+chat-widget.tsx:1092 Uncaught ReferenceError: require is not defined
+    at ChatWidget (chat-widget.tsx:1092:30)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=44f00644:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=44f00644:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=44f00644:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=44f00644:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=44f00644:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=44f00644:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=44f00644:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=44f00644:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=44f00644:19137:13)
+ChatWidget @ chat-widget.tsx:1092
+renderWithHooks @ chunk-RPCDYKBN.js?v=44f00644:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=44f00644:14582
+beginWork @ chunk-RPCDYKBN.js?v=44f00644:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=44f00644:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=44f00644:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=44f00644:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=44f00644:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=44f00644:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=44f00644:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=44f00644:19116
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=44f00644:18678
+workLoop @ chunk-RPCDYKBN.js?v=44f00644:197
+flushWork @ chunk-RPCDYKBN.js?v=44f00644:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=44f00644:384Understand this error
+chat-widget.tsx:1092 Uncaught ReferenceError: require is not defined
+    at ChatWidget (chat-widget.tsx:1092:30)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=44f00644:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=44f00644:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=44f00644:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=44f00644:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=44f00644:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=44f00644:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=44f00644:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=44f00644:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=44f00644:19137:13)
+ChatWidget @ chat-widget.tsx:1092
+renderWithHooks @ chunk-RPCDYKBN.js?v=44f00644:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=44f00644:14582
+beginWork @ chunk-RPCDYKBN.js?v=44f00644:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=44f00644:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=44f00644:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=44f00644:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=44f00644:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=44f00644:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=44f00644:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=44f00644:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=44f00644:18736
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=44f00644:18684
+workLoop @ chunk-RPCDYKBN.js?v=44f00644:197
+flushWork @ chunk-RPCDYKBN.js?v=44f00644:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=44f00644:384Understand this error
+chunk-RPCDYKBN.js?v=44f00644:14032 The above error occurred in the <ChatWidget> component:
+
+    at ChatWidget (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/chat/chat-widget.tsx:1739:3)
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=44f00644:2805:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=44f00644:14032
+update.callback @ chunk-RPCDYKBN.js?v=44f00644:14052
+callCallback @ chunk-RPCDYKBN.js?v=44f00644:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=44f00644:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=44f00644:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=44f00644:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=44f00644:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=44f00644:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=44f00644:19353
+commitRoot @ chunk-RPCDYKBN.js?v=44f00644:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=44f00644:18760
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=44f00644:18718
+workLoop @ chunk-RPCDYKBN.js?v=44f00644:197
+flushWork @ chunk-RPCDYKBN.js?v=44f00644:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=44f00644:384Understand this error
+chunk-RPCDYKBN.js?v=44f00644:19413 Uncaught ReferenceError: require is not defined
+    at ChatWidget (chat-widget.tsx:1092:30)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=44f00644:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=44f00644:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=44f00644:15924:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=44f00644:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=44f00644:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=44f00644:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=44f00644:19116:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=44f00644:18736:28)
+    at performConcurrentWorkOnRoot (chunk-RPCDYKBN.js?v=44f00644:18684:30)
+ChatWidget @ chat-widget.tsx:1092
+renderWithHooks @ chunk-RPCDYKBN.js?v=44f00644:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=44f00644:14582
+beginWork @ chunk-RPCDYKBN.js?v=44f00644:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=44f00644:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=44f00644:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=44f00644:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=44f00644:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=44f00644:18736
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=44f00644:18684
+workLoop @ chunk-RPCDYKBN.js?v=44f00644:197
+flushWork @ chunk-RPCDYKBN.js?v=44f00644:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=44f00644:384Understand this error
+use-websocket.tsx:110 WebSocket desconectado: CloseEvent {isTrusted: true, wasClean: true, code: 1005, reason: '', type: 'close', …}
+use-websocket.tsx:117 Tentando reconectar WebSocket...
+use-websocket.tsx:52 WebSocket conectado!
+use-websocket.tsx:75 Mensagem WebSocket recebida: {type: 'auth_success', userId: 1, userRole: 'admin', timestamp: '2025-04-11T11:45:27.572Z'}
+use-websocket.tsx:75 Mensagem WebSocket recebida: {type: 'conversations_update', conversations: Array(8), timestamp: '2025-04-11T11:45:27.591Z'}

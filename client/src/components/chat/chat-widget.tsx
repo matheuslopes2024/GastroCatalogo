@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { MessageHistory as MessageHistoryComponent, MessageInput as MessageInputComponent } from "./chat-message-components";
 
 function ChatHeader() {
   const { closeChat, activeConversation, setActiveConversation, unreadCount } = useChat();
@@ -794,7 +795,7 @@ function ChatMessageItem({
 }
 
 // Componente para o histórico de mensagens
-function MessageHistory({ 
+function MessageHistoryLegacy({ 
   isAdmin = false, 
   showAttachmentPreview = true,
   adminEnhanced = false
@@ -847,7 +848,7 @@ function MessageHistory({
 }
 
 // Componente MessageInput para entrada de mensagens
-function MessageInput({ 
+function MessageInputLegacy({ 
   isAdmin = false, 
   showEmojis = false,
   allowLargeAttachments = false,
@@ -1089,26 +1090,22 @@ export default function ChatWidget({
                   <div className="flex-1 overflow-y-auto py-1">
                     <div className={adminEnhanced ? "px-2" : ""}>
                       {/* Importar os novos componentes do arquivo chat-message-components.tsx */}
-                      {React.createElement(
-                        require('./chat-message-components').MessageHistory, {
-                          isAdmin,
-                          showAttachmentPreview,
-                          adminEnhanced
-                        }
-                      )}
+                      <MessageHistoryComponent
+                        isAdmin={isAdmin}
+                        showAttachmentPreview={showAttachmentPreview}
+                        adminEnhanced={adminEnhanced}
+                      />
                     </div>
                   </div>
                   
                   {/* Componente de entrada de mensagem */}
                   <div className={cn("pt-1", adminEnhanced && "px-4 pb-3")}>
-                    {React.createElement(
-                      require('./chat-message-components').MessageInput, {
-                        isAdmin,
-                        showEmojis,
-                        allowLargeAttachments,
-                        adminEnhanced
-                      }
-                    )}
+                    <MessageInputComponent
+                      isAdmin={isAdmin}
+                      showEmojis={showEmojis}
+                      allowLargeAttachments={allowLargeAttachments}
+                      adminEnhanced={adminEnhanced}
+                    />
                   </div>
                 </div>
               ) : (
