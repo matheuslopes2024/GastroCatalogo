@@ -54,8 +54,8 @@ const ConversationItem = ({
   userId
 }: {
   conversation: ChatConversation;
-  activeId: number | null;
-  onSelect: (id: number) => void;
+  activeId: number | null | undefined;
+  onSelect: (conversation: ChatConversation) => void;
   userId: number;
 }) => {
   // Obter informações do outro participante (em um ambiente real, estes dados viriam da API)
@@ -83,7 +83,7 @@ const ConversationItem = ({
   // Função de manipulação de clique
   const handleClick = () => {
     console.log("Selecionando conversa:", conversation.id);
-    onSelect(conversation.id);
+    onSelect(conversation);
   };
   
   return (
@@ -121,7 +121,7 @@ const ConversationItem = ({
             "font-medium text-sm truncate", 
             activeId === conversation.id && "text-primary font-semibold"
           )}>
-            {otherParticipant?.name || conversation.subject || `Conversa #${conversation.id}`}
+            {conversation.subject || `Conversa #${conversation.id}`}
             <span className="inline-flex ml-1.5 items-center text-xs font-normal">
               {isSupplier ? (
                 <Badge variant="outline" className="bg-amber-50 h-5 px-1 border-amber-200">
@@ -161,7 +161,7 @@ const ConversationItem = ({
           <div className="flex items-center ml-1">
             {hasUnreadMessages ? (
               <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-primary">
-                {otherParticipant.unreadCount}
+                1
               </Badge>
             ) : conversation.lastMessageId && (
               <Badge variant="outline" className="h-5 px-1 text-xs bg-muted/30">
