@@ -463,7 +463,10 @@ function ChatConversation({
     
     try {
       setIsSending(true);
-      await sendMessage(messageText, attachment || undefined);
+      await sendMessage({
+        message: messageText,
+        attachment: attachment || undefined
+      });
       setMessageText("");
       setAttachment(null);
       if (fileInputRef.current) {
@@ -868,11 +871,10 @@ function MessageInput({
     try {
       setIsSending(true);
       await sendMessage({
-        content: message,
+        message: message,
         conversationId: activeConversation.id,
-        senderId: user.id,
         receiverId: activeConversation.participantIds.find(id => id !== user.id) || 0,
-        attachments
+        attachment: attachments.length > 0 ? attachments[0] : undefined
       });
       
       setMessage("");

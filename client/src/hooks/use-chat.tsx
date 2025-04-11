@@ -18,6 +18,7 @@ import { useWebSocket, WebSocketMessage } from "@/hooks/use-websocket";
 export interface ChatMessage {
   id: number;
   message: string;
+  content: string; // Para compatibilidade com ExtendedChatMessage
   createdAt: Date;
   senderId: number;
   receiverId: number;
@@ -27,6 +28,8 @@ export interface ChatMessage {
   attachmentType: string | null;
   attachmentData: string | null;
   attachmentSize: number | null;
+  senderName?: string; // Para compatibilidade com chat-message-components
+  attachments?: any[]; // Para compatibilidade com chat-message-components
 }
 
 export interface ChatConversation {
@@ -68,7 +71,7 @@ type ChatContextType = {
   messages: ChatMessage[];
   isLoadingConversations: boolean;
   isLoadingMessages: boolean;
-  sendMessage: (message: string, attachment?: Attachment) => Promise<void>;
+  sendMessage: (params: { message: string; conversationId?: number; receiverId?: number; attachment?: Attachment; }) => Promise<void>;
   markMessagesAsRead: (messageIds: number[]) => Promise<void>;
   startNewConversation: (receiverId: number, initialMessage: string, attachment?: Attachment) => Promise<void>;
   startConversationWithAdmin: (initialMessage: string, attachment?: Attachment) => Promise<void>;
@@ -340,25 +343,37 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [wsLastMessage, activeConversation, user, queryClient, markAsReadMutation]);
 
   // Métodos de interface pública
-  const sendMessage = useCallback(async (message: string, attachment?: Attachment) => {
-    if (!activeConversation) {
+  const sendMessage = useCallback(async (params: { 
+    message: string; 
+    conversationId?: number; 
+    receiverId?: number; 
+    attachment?: Attachment 
+  }) => {
+    // Garantir que temos uma conversa ativa, ou usando a fornecida nos parâmetros
+    const convId = params.conversationId || activeConversation?.id;
+    if (!convId) {
       throw new Error("Nenhuma conversa ativa");
     }
     
-    if (!message.trim() && !attachment) {
+    if (!params.message?.trim() && !params.attachment) {
       throw new Error("Mensagem vazia");
     }
     
-    const otherParticipant = activeConversation._participants?.find(p => p.id !== user?.id);
-    if (!otherParticipant) {
-      throw new Error("Destinatário não encontrado");
+    // Determinar o receiverId (destinatário)
+    let receiverId = params.receiverId;
+    if (!receiverId && activeConversation) {
+      const otherParticipant = activeConversation._participants?.find(p => p.id !== user?.id);
+      if (!otherParticipant) {
+        throw new Error("Destinatário não encontrado");
+      }
+      receiverId = otherParticipant.id;
     }
     
     const messageData = { 
-      message, 
-      conversationId: activeConversation.id,
-      receiverId: otherParticipant.id,
-      attachment
+      message: params.message, 
+      conversationId: convId,
+      receiverId: receiverId,
+      attachment: params.attachment
     };
     
     // 1. Enviar via API REST
@@ -547,7 +562,7 @@ export function useChat() {
       messages: [],
       isLoadingConversations: false,
       isLoadingMessages: false,
-      sendMessage: async () => {},
+      sendMessage: async (params: any) => {},
       markMessagesAsRead: async () => {},
       startNewConversation: async () => {},
       startConversationWithAdmin: async () => {},
