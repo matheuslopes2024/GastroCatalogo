@@ -1,6 +1,7 @@
 import { useChat } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Search, 
   UserCircle, 
@@ -12,7 +13,9 @@ import {
   Filter,
   Users,
   Paperclip,
-  PencilLine
+  PencilLine,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { UserRole } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -182,38 +185,64 @@ export default function ChatConversationsList() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<ConversationType>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const { toast } = useToast();
   
   if (!user) return null;
   
   // Filtrar conversas por tipo e termo de busca
-  const filteredConversations = conversations.filter(conversation => {
-    // Verificar por tipo (simplificado - idealmente você usaria dados reais)
-    const isSupplierConversation = conversation.subject?.includes("Fornecedor") || false;
-    
-    if (filter === "supplier" && !isSupplierConversation) return false;
-    if (filter === "user" && isSupplierConversation) return false;
-    
-    // Verificar por termo de busca
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const subjectMatch = conversation.subject?.toLowerCase().includes(term) || false;
+  const filteredConversations = useMemo(() => {
+    return conversations.filter(conversation => {
+      // Verificar por tipo (usando _participants quando disponível ou fallback para subject)
+      let isSupplierConversation = false;
       
-      // Em uma implementação real, também buscaria por nome do usuário
-      return subjectMatch;
-    }
-    
-    return true;
-  });
+      if (conversation._participants?.some(p => p.role === "supplier")) {
+        isSupplierConversation = true;
+      } else if (conversation.subject?.includes("Fornecedor")) {
+        isSupplierConversation = true;
+      }
+      
+      if (filter === "supplier" && !isSupplierConversation) return false;
+      if (filter === "user" && isSupplierConversation) return false;
+      
+      // Verificar por termo de busca
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const subjectMatch = conversation.subject?.toLowerCase().includes(term) || false;
+        
+        // Busca pelo nome de participantes também
+        const participantMatch = conversation._participants?.some(p => 
+          p.username?.toLowerCase().includes(term) || 
+          p.name?.toLowerCase().includes(term) || 
+          p.email?.toLowerCase().includes(term)
+        ) || false;
+        
+        return subjectMatch || participantMatch;
+      }
+      
+      return true;
+    });
+  }, [conversations, filter, searchTerm]);
   
-  const userConversations = conversations.filter(conversation => {
-    // Simplificação - idealmente você usaria dados reais
-    return !conversation.subject?.includes("Fornecedor");
-  });
+  const userConversations = useMemo(() => {
+    return conversations.filter(conversation => {
+      // Verificar por usuários usando _participants ou fallback para subject
+      if (conversation._participants?.every(p => p.role !== "supplier")) {
+        return true;
+      }
+      return !conversation.subject?.includes("Fornecedor");
+    });
+  }, [conversations]);
   
-  const supplierConversations = conversations.filter(conversation => {
-    // Simplificação - idealmente você usaria dados reais
-    return conversation.subject?.includes("Fornecedor");
-  });
+  const supplierConversations = useMemo(() => {
+    return conversations.filter(conversation => {
+      // Verificar por fornecedores usando _participants ou fallback para subject
+      if (conversation._participants?.some(p => p.role === "supplier")) {
+        return true;
+      }
+      return conversation.subject?.includes("Fornecedor");
+    });
+  }, [conversations]);
   
   return (
     <div className="h-full flex flex-col border-r">
