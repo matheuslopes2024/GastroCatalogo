@@ -117,13 +117,9 @@ function Router() {
 }
 
 function App() {
-  // Hook personalizado para detectar se estamos em uma página de admin
-  const useIsAdminPage = () => {
-    const [location] = useLocation();
-    return location.startsWith('/admin');
-  };
-  
-  const IsAdminPage = useIsAdminPage();
+  // Hook para detectar se estamos em uma página de admin
+  const [location] = useLocation();
+  const isAdminPage = location.startsWith('/admin');
 
   return (
     <AuthProvider>
@@ -133,7 +129,7 @@ function App() {
             <Router />
             <Toaster />
             {/* Adicionando o componente de chat apenas em páginas que não são de admin */}
-            {!IsAdminPage && <ChatWidget />}
+            {!isAdminPage && <ChatWidget />}
           </ChatProvider>
         </WebSocketProvider>
       </CartProvider>
