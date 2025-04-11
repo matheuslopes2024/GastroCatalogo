@@ -13,8 +13,11 @@ export type WebSocketMessage = {
 interface WebSocketContextType {
   connected: boolean;
   sendMessage: (message: WebSocketMessage) => void;
+  sendWebSocketMessage: (message: WebSocketMessage) => void;
   lastMessage: WebSocketMessage | null;
   connectionError: string | null;
+  addMessageHandler: (handlerId: string, handler: (message: WebSocketMessage) => void) => void;
+  removeMessageHandler: (handlerId: string) => void;
 }
 
 // Criar o contexto do WebSocket
@@ -29,6 +32,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const messageHandlers = useRef<Record<string, (message: WebSocketMessage) => void>>({});
   
   // Função para conectar ao WebSocket
   const connectWebSocket = () => {
@@ -74,6 +78,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           const message = JSON.parse(event.data);
           console.log("Mensagem WebSocket recebida:", message);
           setLastMessage(message);
+          
+          // Executar handlers específicos para esta mensagem
+          Object.values(messageHandlers.current).forEach(handler => {
+            try {
+              handler(message);
+            } catch (handlerError) {
+              console.error("Erro em handler de mensagem:", handlerError);
+            }
+          });
           
           // Tratar mensagens especiais
           if (message.type === "error") {
@@ -143,6 +156,21 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
   };
   
+  // Alias para sendMessage para compatibilidade com a interface
+  const sendWebSocketMessage = sendMessage;
+  
+  // Adicionar um manipulador de mensagens
+  const addMessageHandler = (handlerId: string, handler: (message: WebSocketMessage) => void) => {
+    messageHandlers.current[handlerId] = handler;
+  };
+  
+  // Remover um manipulador de mensagens
+  const removeMessageHandler = (handlerId: string) => {
+    if (messageHandlers.current[handlerId]) {
+      delete messageHandlers.current[handlerId];
+    }
+  };
+  
   // Conectar/desconectar quando o usuário mudar
   useEffect(() => {
     if (user) {
@@ -178,7 +206,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, [connected]);
   
   return (
-    <WebSocketContext.Provider value={{ connected, sendMessage, lastMessage, connectionError }}>
+    <WebSocketContext.Provider value={{ 
+      connected, 
+      sendMessage, 
+      sendWebSocketMessage,
+      lastMessage, 
+      connectionError,
+      addMessageHandler,
+      removeMessageHandler
+    }}>
       {children}
     </WebSocketContext.Provider>
   );

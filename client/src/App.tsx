@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
@@ -117,6 +117,14 @@ function Router() {
 }
 
 function App() {
+  // Hook personalizado para detectar se estamos em uma página de admin
+  const useIsAdminPage = () => {
+    const [location] = useLocation();
+    return location.startsWith('/admin');
+  };
+  
+  const IsAdminPage = useIsAdminPage();
+
   return (
     <AuthProvider>
       <CartProvider>
@@ -124,8 +132,8 @@ function App() {
           <ChatProvider>
             <Router />
             <Toaster />
-            {/* Adicionando o componente de chat em todas as páginas */}
-            <ChatWidget />
+            {/* Adicionando o componente de chat apenas em páginas que não são de admin */}
+            {!IsAdminPage && <ChatWidget />}
           </ChatProvider>
         </WebSocketProvider>
       </CartProvider>
