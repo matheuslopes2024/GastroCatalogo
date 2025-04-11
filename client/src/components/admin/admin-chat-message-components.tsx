@@ -230,14 +230,14 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
               : "bg-muted",
           hasAttachments && "space-y-2"
         )}>
-          {message.text && (
-            <p className="whitespace-pre-wrap">{message.text}</p>
+          {(message.text || message.message) && (
+            <p className="whitespace-pre-wrap">{message.message || message.text}</p>
           )}
           
           {hasAttachments && (
             <div className={cn(
               "flex flex-wrap gap-2",
-              !message.text && "mt-0"
+              !(message.text || message.message) && "mt-0"
             )}>
               {(message.attachments || []).map((attachment, index) => {
                 // Detectar se é uma imagem

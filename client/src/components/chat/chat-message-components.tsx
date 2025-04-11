@@ -93,7 +93,7 @@ export function ChatMessageItem({
           </div>
         )}
         
-        <div className="break-words whitespace-pre-wrap">{message.content}</div>
+        <div className="break-words whitespace-pre-wrap">{message.message || message.content}</div>
         
         {message.attachments && message.attachments.length > 0 && (
           <div className="flex flex-col gap-2">
