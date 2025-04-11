@@ -176,6 +176,9 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
   const isOwnMessage = message.senderId === user?.id;
   const hasAttachments = message.attachments && message.attachments.length > 0;
   
+  // Detectar se é uma mensagem vazia
+  const hasContent = Boolean(message.text || message.message || message.content);
+  
   // Rolagem suave quando a mensagem é adicionada
   useEffect(() => {
     if (messageRef.current) {
@@ -230,14 +233,14 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
               : "bg-muted",
           hasAttachments && "space-y-2"
         )}>
-          {(message.text || message.message) && (
-            <p className="whitespace-pre-wrap">{message.message || message.text}</p>
+          {(message.text || message.message || message.content) && (
+            <p className="whitespace-pre-wrap">{message.message || message.text || message.content}</p>
           )}
           
           {hasAttachments && (
             <div className={cn(
               "flex flex-wrap gap-2",
-              !(message.text || message.message) && "mt-0"
+              !hasContent && "mt-0"
             )}>
               {(message.attachments || []).map((attachment, index) => {
                 // Detectar se é uma imagem

@@ -1885,6 +1885,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Definir o remetente como o administrador
       validatedData.senderId = req.user.id;
       
+      // Garantir que a mensagem tenha conteúdo
+      if (!validatedData.message && !validatedData.attachments) {
+        return res.status(400).json({ message: "Mensagem ou anexo é obrigatório" });
+      }
+      
       // Salvar a mensagem no banco de dados
       const message = await storage.createChatMessage(validatedData);
       
@@ -1900,6 +1905,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Erro ao enviar mensagem como admin:", error);
       res.status(500).json({ message: "Erro ao enviar mensagem" });
+    }
+  });
+  
+  // Marcar mensagens como lidas (para administradores)
+  app.post("/api/admin/chat/mark-read", checkAdmin, async (req, res) => {
+    try {
+      const { messageIds } = req.body;
+      
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ message: "IDs de mensagens são obrigatórios" });
+      }
+      
+      // Marcar mensagens como lidas
+      await storage.markMessagesAsRead(messageIds);
+      
+      // Atualizar contadores de não lidas nas conversas
+      // Esta operação é implícita através da API markMessagesAsRead
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Erro ao marcar mensagens como lidas:", error);
+      res.status(500).json({ message: "Erro ao marcar mensagens como lidas" });
     }
   });
   
