@@ -167,7 +167,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const closeChat = useCallback(() => setIsOpen(false), []);
   const toggleChat = useCallback(() => setIsOpen(prev => !prev), []);
 
-  // Enviar mensagem
+  // Enviar mensagem ao servidor
   const sendMessageMutation = useMutation({
     mutationFn: async ({ 
       message, 

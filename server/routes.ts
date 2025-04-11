@@ -1335,8 +1335,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('Erro ao buscar conversas:', error);
           }
         } 
-        // Envio de nova mensagem
+        // Envio de nova mensagem via WebSocket
         else if (data.type === 'new_message' && userId) {
+          console.log('Recebida nova mensagem via WebSocket:', data);
           const { receiverId, message: messageText, conversationId } = data;
           
           // Validar que temos informações necessárias
