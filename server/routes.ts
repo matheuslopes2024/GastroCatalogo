@@ -1535,5 +1535,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }, 30000);
   });
   
+  // ======== ROTAS DO ADMINISTRADOR DE CHAT ========
+  
+  // Middleware para verificar se o usuário é administrador
+  const checkAdmin = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Não autorizado" });
+    }
+    
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    
+    next();
+  };
+  
+  // Obter todas as conversas (para administradores)
+  app.get("/api/admin/chat/conversations", checkAdmin, async (req, res) => {
+    try {
+      const conversations = await storage.getAllChatConversations();
+      res.json(conversations);
+    } catch (error) {
+      console.error("Erro ao buscar conversas para admin:", error);
+      res.status(500).json({ message: "Erro ao buscar conversas" });
+    }
+  });
+  
+  // Obter mensagens de uma conversa específica (para administradores)
+  app.get("/api/admin/chat/messages", checkAdmin, async (req, res) => {
+    try {
+      const { conversationId, limit, offset } = req.query;
+      
+      if (!conversationId) {
+        return res.status(400).json({ message: "ID da conversa é obrigatório" });
+      }
+      
+      const options: any = {
+        conversationId: parseInt(conversationId as string),
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0
+      };
+      
+      const messages = await storage.getChatMessages(options);
+      res.json(messages);
+    } catch (error) {
+      console.error("Erro ao buscar mensagens para admin:", error);
+      res.status(500).json({ message: "Erro ao buscar mensagens" });
+    }
+  });
+  
+  // Enviar mensagem como administrador
+  app.post("/api/admin/chat/messages", checkAdmin, async (req, res) => {
+    try {
+      const validatedData = insertChatMessageSchema.parse(req.body);
+      
+      // Definir o remetente como o administrador
+      validatedData.senderId = req.user.id;
+      
+      // Salvar a mensagem no banco de dados
+      const message = await storage.createChatMessage(validatedData);
+      
+      // Atualizar a última mensagem na conversa
+      if (validatedData.conversationId) {
+        await storage.updateChatConversationLastMessage(validatedData.conversationId, message);
+      }
+      
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Erro ao enviar mensagem como admin:", error);
+      res.status(500).json({ message: "Erro ao enviar mensagem" });
+    }
+  });
+  
   return httpServer;
 }
