@@ -1266,6 +1266,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
   };
   
+  // Verifica se uma conversa envolve um administrador
+  async function isAdminConversation(conversationId: number): Promise<boolean> {
+    try {
+      const conversation = await storage.getChatConversation(conversationId);
+      if (!conversation) return false;
+      
+      // Verificar se algum participante é administrador
+      const participantIds = conversation.participantIds || [];
+      
+      for (const participantId of participantIds) {
+        const participant = await storage.getUser(participantId);
+        if (participant && participant.role === UserRole.ADMIN) {
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Erro ao verificar se a conversa envolve um administrador:", error);
+      return false;
+    }
+  }
+
   // Verificar quais administradores estão online
   const getOnlineAdmins = () => {
     const onlineAdmins = [];
@@ -1337,11 +1360,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } 
         // Envio de nova mensagem via WebSocket
         else if (data.type === 'new_message' && userId) {
-          console.log('Recebida nova mensagem via WebSocket:', data);
-          const { receiverId, message: messageText, conversationId } = data;
+          console.log('Recebida nova mensagem via WebSocket:', {
+            userId,
+            data: {
+              ...data,
+              message: data.message ? `${data.message.substring(0, 30)}...` : "vazia"
+            }
+          });
+          const { receiverId, message: messageText, conversationId, attachment } = data;
           
           // Validar que temos informações necessárias
           if (!receiverId || !messageText) {
+            console.error("Dados da mensagem incompletos:", { receiverId, messageText });
             ws.send(JSON.stringify({ 
               type: 'error', 
               message: 'Destinatário e mensagem são obrigatórios',
@@ -1365,6 +1395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 actualConversationId = existingConversation.id;
               } else {
                 // Criar nova conversa
+                console.log("Criando nova conversa entre usuários:", userId, "e", receiverId);
                 const newConversation = await storage.createChatConversation({
                   participantIds: [Number(userId), Number(receiverId)],
                   subject: `Conversa entre ${userId} e ${receiverId}`,
@@ -1372,8 +1403,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 
                 actualConversationId = newConversation.id;
+                console.log("Conversa criada com ID:", actualConversationId);
               }
             }
+            
+            console.log("Salvando mensagem no banco de dados:", {
+              senderId: Number(userId),
+              receiverId: Number(receiverId),
+              conversationId: actualConversationId,
+              message: messageText.substring(0, 30) + '...',
+              hasAttachment: !!attachment
+            });
             
             // Salvar a mensagem no banco de dados
             const newMessage = await storage.createChatMessage({
@@ -1382,8 +1422,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               conversationId: actualConversationId,
               message: messageText,
               text: messageText, // Campo text obrigatório pelo schema
-              isRead: false
+              isRead: false,
+              attachmentUrl: attachment?.data || null,
+              attachmentType: attachment?.type || null,
+              attachmentData: attachment?.data || null,
+              attachmentSize: attachment?.size || null
             });
+            
+            console.log("Mensagem criada com sucesso, ID:", newMessage.id);
             
             // Atualizar a última atividade da conversa
             await storage.updateChatConversation(actualConversationId, {
@@ -1391,7 +1437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               lastActivityAt: new Date()
             });
             
-            // Enviar notificação para o remetente
+            // Enviar confirmação para o remetente
             ws.send(JSON.stringify({
               type: 'message_sent',
               message: newMessage,
@@ -1402,12 +1448,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Enviar a mensagem para o destinatário se estiver online
             const recipientClient = clients.get(Number(receiverId));
             if (recipientClient && recipientClient.ws.readyState === WebSocket.OPEN) {
+              console.log("Notificando destinatário sobre nova mensagem:", receiverId);
               recipientClient.ws.send(JSON.stringify({
                 type: 'new_message_received',
                 message: newMessage,
                 conversationId: actualConversationId,
+                senderId: Number(userId),
                 timestamp: new Date().toISOString()
               }));
+            } else {
+              console.log("Destinatário não está online:", receiverId);
+            }
+            
+            // Notificar todos os administradores, se o destinatário for um admin
+            // ou se for uma mensagem destinada a/de um administrador
+            const isAdminMessage = await isAdminConversation(actualConversationId);
+            if (isAdminMessage) {
+              console.log("Notificando administradores sobre nova mensagem");
+              // Notificar todos os admins conectados
+              for (const [adminId, adminClient] of adminClients) {
+                if (adminClient.ws.readyState === WebSocket.OPEN && adminId !== Number(userId)) {
+                  adminClient.ws.send(JSON.stringify({
+                    type: 'new_message_received',
+                    message: newMessage,
+                    conversationId: actualConversationId,
+                    senderId: Number(userId),
+                    timestamp: new Date().toISOString()
+                  }));
+                }
+              }
             }
             
             // Atualizar conversas para ambas as partes
