@@ -22,6 +22,7 @@ import { MessageHistory as MessageHistoryComponent, MessageInput as MessageInput
 
 function ChatHeader() {
   const { closeChat, activeConversation, setActiveConversation, unreadCount } = useChat();
+  const { adminStatus } = useAdminStatus();
   
   return (
     <div className="bg-primary p-3 text-white flex items-center justify-between rounded-t-lg">
@@ -46,6 +47,16 @@ function ChatHeader() {
             </Badge>
           )}
         </h3>
+        
+        {/* Indicador de status do administrador */}
+        <div className="flex items-center ml-2 bg-white/10 text-xs rounded-full px-2 py-0.5">
+          <span 
+            className={`h-2 w-2 rounded-full mr-1 ${adminStatus.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
+          ></span>
+          <span>
+            {adminStatus.isOnline ? 'Admin online' : 'Admin offline'}
+          </span>
+        </div>
       </div>
       
       <Button 
@@ -430,6 +441,7 @@ function ChatConversation({
     sendMessage 
   } = useChat();
   const { user } = useAuth();
+  const { adminStatus } = useAdminStatus();
   const [messageText, setMessageText] = useState("");
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -502,12 +514,36 @@ function ChatConversation({
             {otherParticipant?.name?.[0] || "U"}
           </AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex-1">
           <h3 className="font-medium">{otherParticipant?.name || "Usuário"}</h3>
           <p className="text-xs text-gray-500">
             {otherParticipant?.role === "SUPPLIER" ? "Fornecedor" : "Usuário"}
           </p>
         </div>
+        
+        {/* Indicador de status do administrador na conversa */}
+        {activeConversation && (
+          <div className="flex flex-col items-end">
+            {adminStatus.isOnline ? (
+              <div className="flex items-center text-xs text-green-600">
+                <span className="h-2 w-2 bg-green-500 rounded-full mr-1"></span>
+                <span>Admin online</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-xs text-gray-400">
+                <span className="h-2 w-2 bg-gray-300 rounded-full mr-1"></span>
+                <span>Admin offline</span>
+              </div>
+            )}
+            
+            {adminStatus.acceptedByAdmin && adminStatus.conversationAccepted === activeConversation.id && (
+              <div className="text-xs text-primary mt-1 flex items-center">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                <span>Conversa atendida</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       <ScrollArea className="flex-1 p-3">
