@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
+import { WebSocketServer, WebSocket } from 'ws';
 import { 
   insertCategorySchema, 
   insertProductSchema, 
@@ -1227,5 +1228,312 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   const httpServer = createServer(app);
+  
+  // Configuração do WebSocket Server para chat em tempo real
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Mapa para rastrear conexões de usuários
+  const clients = new Map();
+  
+  wss.on('connection', (ws) => {
+    console.log('Nova conexão WebSocket estabelecida');
+    
+    // Armazenar informações da conexão
+    let userId = null;
+    let userRole = null;
+    
+    ws.on('message', async (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Mensagem recebida via WebSocket:', data);
+        
+        // Autenticação da conexão
+        if (data.type === 'auth') {
+          userId = data.userId;
+          userRole = data.userRole;
+          
+          // Armazenar cliente no mapa com userId como chave
+          clients.set(userId, { ws, userId, userRole });
+          
+          console.log(`Usuário ${userId} (${userRole}) autenticado via WebSocket`);
+          
+          // Enviar confirmação para o cliente
+          ws.send(JSON.stringify({ 
+            type: 'auth_success', 
+            userId, 
+            userRole,
+            timestamp: new Date().toISOString()
+          }));
+          
+          // Buscar conversas existentes para o usuário
+          try {
+            const conversations = await storage.getChatConversations(userId);
+            ws.send(JSON.stringify({ 
+              type: 'conversations_update', 
+              conversations,
+              timestamp: new Date().toISOString()
+            }));
+          } catch (error) {
+            console.error('Erro ao buscar conversas:', error);
+          }
+        } 
+        // Envio de nova mensagem
+        else if (data.type === 'new_message' && userId) {
+          const { receiverId, message: messageText, conversationId } = data;
+          
+          // Validar que temos informações necessárias
+          if (!receiverId || !messageText) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Destinatário e mensagem são obrigatórios',
+              timestamp: new Date().toISOString()
+            }));
+            return;
+          }
+          
+          try {
+            // Verificar se já existe uma conversa ou criar uma nova
+            let actualConversationId = conversationId;
+            
+            if (!actualConversationId) {
+              // Verificar se já existe uma conversa entre esses usuários
+              const conversations = await storage.getChatConversations(userId);
+              const existingConversation = conversations.find(conv => 
+                conv.participantIds.includes(Number(receiverId))
+              );
+              
+              if (existingConversation) {
+                actualConversationId = existingConversation.id;
+              } else {
+                // Criar nova conversa
+                const newConversation = await storage.createChatConversation({
+                  participantIds: [Number(userId), Number(receiverId)],
+                  subject: `Conversa entre ${userId} e ${receiverId}`,
+                  isActive: true
+                });
+                
+                actualConversationId = newConversation.id;
+              }
+            }
+            
+            // Salvar a mensagem no banco de dados
+            const newMessage = await storage.createChatMessage({
+              senderId: Number(userId),
+              receiverId: Number(receiverId),
+              conversationId: actualConversationId,
+              message: messageText,
+              isRead: false
+            });
+            
+            // Atualizar a última atividade da conversa
+            await storage.updateChatConversation(actualConversationId, {
+              lastMessageId: newMessage.id,
+              lastActivityAt: new Date()
+            });
+            
+            // Enviar notificação para o remetente
+            ws.send(JSON.stringify({
+              type: 'message_sent',
+              message: newMessage,
+              conversationId: actualConversationId,
+              timestamp: new Date().toISOString()
+            }));
+            
+            // Enviar a mensagem para o destinatário se estiver online
+            const recipientClient = clients.get(Number(receiverId));
+            if (recipientClient && recipientClient.ws.readyState === WebSocket.OPEN) {
+              recipientClient.ws.send(JSON.stringify({
+                type: 'new_message_received',
+                message: newMessage,
+                conversationId: actualConversationId,
+                timestamp: new Date().toISOString()
+              }));
+            }
+            
+            // Atualizar conversas para ambas as partes
+            const updatedConversations = await storage.getChatConversations(userId);
+            ws.send(JSON.stringify({ 
+              type: 'conversations_update', 
+              conversations: updatedConversations,
+              timestamp: new Date().toISOString()
+            }));
+            
+            if (recipientClient && recipientClient.ws.readyState === WebSocket.OPEN) {
+              const recipientConversations = await storage.getChatConversations(Number(receiverId));
+              recipientClient.ws.send(JSON.stringify({ 
+                type: 'conversations_update', 
+                conversations: recipientConversations,
+                timestamp: new Date().toISOString()
+              }));
+            }
+          } catch (error) {
+            console.error('Erro ao processar mensagem:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Erro ao enviar mensagem',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        // Marcar mensagens como lidas
+        else if (data.type === 'mark_as_read' && userId) {
+          const { messageIds } = data;
+          
+          if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'IDs de mensagens inválidos',
+              timestamp: new Date().toISOString()
+            }));
+            return;
+          }
+          
+          try {
+            await storage.markMessagesAsRead(messageIds);
+            
+            ws.send(JSON.stringify({
+              type: 'messages_marked_read',
+              messageIds,
+              timestamp: new Date().toISOString()
+            }));
+            
+            // Notificar o remetente original que suas mensagens foram lidas
+            // Primeiro, buscar as mensagens para saber quem é o remetente
+            const messages = await Promise.all(
+              messageIds.map(id => storage.getChatMessage(id))
+            );
+            
+            // Agrupar por remetente para enviar uma única notificação por remetente
+            const senderMap = new Map();
+            messages.forEach(msg => {
+              if (!msg) return;
+              
+              if (!senderMap.has(msg.senderId)) {
+                senderMap.set(msg.senderId, []);
+              }
+              
+              senderMap.get(msg.senderId).push(msg.id);
+            });
+            
+            // Enviar notificações para cada remetente
+            for (const [senderId, ids] of senderMap.entries()) {
+              const senderClient = clients.get(Number(senderId));
+              if (senderClient && senderClient.ws.readyState === WebSocket.OPEN) {
+                senderClient.ws.send(JSON.stringify({
+                  type: 'messages_read_by_recipient',
+                  messageIds: ids,
+                  readBy: userId,
+                  timestamp: new Date().toISOString()
+                }));
+              }
+            }
+          } catch (error) {
+            console.error('Erro ao marcar mensagens como lidas:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Erro ao marcar mensagens como lidas',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        // Solicitar histórico de conversa
+        else if (data.type === 'get_conversation_history' && userId) {
+          const { conversationId, limit, offset } = data;
+          
+          if (!conversationId) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'ID da conversa é obrigatório',
+              timestamp: new Date().toISOString()
+            }));
+            return;
+          }
+          
+          try {
+            const messages = await storage.getChatMessages({
+              conversationId: Number(conversationId),
+              limit: limit || 50,
+              offset: offset || 0
+            });
+            
+            ws.send(JSON.stringify({
+              type: 'conversation_history',
+              conversationId,
+              messages,
+              timestamp: new Date().toISOString()
+            }));
+          } catch (error) {
+            console.error('Erro ao buscar histórico de conversa:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Erro ao buscar histórico de conversa',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        // Verificar digitação
+        else if (data.type === 'typing' && userId) {
+          const { conversationId, receiverId, isTyping } = data;
+          
+          if (!conversationId || !receiverId) {
+            return; // Silenciosamente ignoramos eventos de digitação inválidos
+          }
+          
+          const recipientClient = clients.get(Number(receiverId));
+          if (recipientClient && recipientClient.ws.readyState === WebSocket.OPEN) {
+            recipientClient.ws.send(JSON.stringify({
+              type: 'user_typing',
+              conversationId,
+              userId,
+              isTyping,
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        // Ping/Pong para manter a conexão ativa
+        else if (data.type === 'ping') {
+          ws.send(JSON.stringify({ 
+            type: 'pong',
+            timestamp: new Date().toISOString()
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao processar mensagem WebSocket:', error);
+      }
+    });
+    
+    // Lidar com fechamento da conexão
+    ws.on('close', () => {
+      console.log(`Conexão WebSocket fechada ${userId ? `para usuário ${userId}` : ''}`);
+      
+      if (userId) {
+        clients.delete(Number(userId));
+        
+        // Notificar outros usuários que este usuário está offline
+        clients.forEach((client) => {
+          if (client.ws.readyState === WebSocket.OPEN) {
+            client.ws.send(JSON.stringify({
+              type: 'user_offline',
+              userId,
+              timestamp: new Date().toISOString()
+            }));
+          }
+        });
+      }
+    });
+    
+    // Enviar heartbeat para manter a conexão ativa
+    const interval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ 
+          type: 'heartbeat',
+          timestamp: new Date().toISOString()
+        }));
+      } else {
+        clearInterval(interval);
+      }
+    }, 30000);
+  });
+  
   return httpServer;
 }
