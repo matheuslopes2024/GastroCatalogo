@@ -1,14 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/hooks/use-chat";
 import { UserRole } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
-import { Package, DollarSign, TrendingUp, Users, Plus, BarChart } from "lucide-react";
+import { 
+  Package, 
+  DollarSign, 
+  TrendingUp, 
+  Users, 
+  Plus, 
+  BarChart, 
+  MessageCircle, 
+  Bell, 
+  Paperclip, 
+  Send, 
+  Building2,
+  Settings
+} from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -21,6 +35,9 @@ import {
 
 // Dashboard sidebar with links to other supplier pages
 function SupplierSidebar() {
+  // Usar o hook para obter o contador de mensagens não lidas
+  const { unreadCount } = useChat();
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
@@ -37,6 +54,15 @@ function SupplierSidebar() {
           <DollarSign className="mr-2 h-5 w-5" />
           Vendas e Comissões
         </Link>
+        <Link href="/fornecedor/chat" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium relative">
+          <MessageCircle className="mr-2 h-5 w-5" />
+          Suporte/Chat
+          {unreadCount > 0 && (
+            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </Link>
       </nav>
     </div>
   );
@@ -44,6 +70,12 @@ function SupplierSidebar() {
 
 export default function SupplierDashboard() {
   const { user } = useAuth();
+  const { 
+    openChat, 
+    openChatWithAdmin,
+    unreadCount,
+    startConversationWithAdmin
+  } = useChat();
   
   // Fetch supplier products
   const { data: products, isLoading: isLoadingProducts } = useQuery({
@@ -168,6 +200,80 @@ export default function SupplierDashboard() {
                 </Card>
               </div>
               
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-3 bg-primary/10 rounded-full mb-4">
+                        <Package className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Adicionar Produto</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Cadastre novos produtos no marketplace
+                      </p>
+                      <Link href="/fornecedor/produtos/novo">
+                        <Button variant="outline" className="w-full">
+                          Cadastrar
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-3 bg-blue-100 rounded-full mb-4">
+                        <TrendingUp className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Relatório de Vendas</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Visualize relatórios detalhados das suas vendas
+                      </p>
+                      <Link href="/fornecedor/vendas">
+                        <Button variant="outline" className="w-full">
+                          Ver Relatórios
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-3 bg-purple-100 rounded-full mb-4">
+                        <MessageCircle className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Suporte Administrativo</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Tire dúvidas sobre comissões e funcionamento
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => {
+                          if (user) {
+                            const initialMessage = `Fornecedor ${user.username} - Solicitação de Suporte`;
+                            startConversationWithAdmin(initialMessage).then(() => {
+                              openChat();
+                            });
+                          }
+                        }}
+                      >
+                        <span className="mr-2">Conversar</span>
+                        {unreadCount > 0 && (
+                          <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
               {/* Sales Chart */}
               <Card>
                 <CardHeader>
@@ -265,6 +371,101 @@ export default function SupplierDashboard() {
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+              
+              {/* Chat com Administração */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MessageCircle className="h-5 w-5 mr-2 text-primary" />
+                    Suporte Administrativo
+                  </CardTitle>
+                  <CardDescription>
+                    Converse com nossa equipe administrativa diretamente pelo seu dashboard
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 h-[500px]">
+                  <div className="flex h-full border-t">
+                    {/* Lista de mensagens */}
+                    <div className="flex-1 flex flex-col">
+                      <div className="border-b p-3 flex items-center sticky top-0 bg-white z-10">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 font-bold text-sm mr-3">
+                            <Building2 className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm">Administração Gastro</h4>
+                            <p className="text-xs text-green-600">Online</p>
+                          </div>
+                        </div>
+                        <div className="ml-auto flex space-x-2">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+                        <div className="space-y-4">
+                          <div className="flex items-end flex-row-reverse">
+                            <div className="bg-primary text-white rounded-lg rounded-br-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Olá, preciso de informações sobre as comissões da plataforma para produtos de cozinha industrial.</p>
+                              <span className="text-xs text-primary-foreground/70 mt-1 block">13:45</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Olá! Claro, posso ajudar com informações sobre as comissões. Para produtos de cozinha industrial, nossa taxa é de 2,5% sobre o valor da venda.</p>
+                              <span className="text-xs text-gray-500 mt-1 block">13:47</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Essa taxa é válida para todos os equipamentos nessa categoria. Existe algum produto específico sobre o qual você gostaria de mais informações?</p>
+                              <span className="text-xs text-gray-500 mt-1 block">13:48</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end flex-row-reverse">
+                            <div className="bg-primary text-white rounded-lg rounded-br-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Gostaria de saber se há alguma diferença na comissão para fornos combinados de grande porte.</p>
+                              <span className="text-xs text-primary-foreground/70 mt-1 block">13:50</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Para fornos combinados de grande porte (acima de 20 GNs), a comissão é de 2%, um pouco menor que a taxa padrão, devido ao valor mais elevado desses equipamentos.</p>
+                              <span className="text-xs text-gray-500 mt-1 block">13:52</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t p-3 bg-white">
+                        <div className="flex items-center">
+                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full">
+                            <span className="sr-only">Anexar arquivo</span>
+                            <Paperclip className="h-4 w-4 text-gray-500" />
+                          </Button>
+                          <div className="flex-1 mx-3">
+                            <input
+                              type="text"
+                              placeholder="Digite sua mensagem..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                            />
+                          </div>
+                          <Button size="sm" className="h-9 w-9 p-0 rounded-full">
+                            <span className="sr-only">Enviar</span>
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
