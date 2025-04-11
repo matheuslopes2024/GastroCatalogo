@@ -1,0 +1,157 @@
+3/admin:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+client:536 WebSocket connection to 'wss://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/?token=5F3z1k7uYUbF' failed: 
+setupWebSocket @ client:536Understand this error
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=5F3z1k7uYUbF' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+20react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=kY__KVaWTOOKqemLJ-yFS:348:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:337:18
+    at div
+    at div
+    at header
+    at LayoutHeader (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:26:32)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=kY__KVaWTOOKqemLJ-yFS:348:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ chunk-RPCDYKBN.js?v=f9bbb7cb:521Understand this error
+20react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=kY__KVaWTOOKqemLJ-yFS:348:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+queryClient.ts:32 Enviando request para: /api/chat/conversations com método: GET e corpo do tipo: undefined
+2use-websocket.tsx:43 Conexão WebSocket já existe, não reconectando
+20react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=kY__KVaWTOOKqemLJ-yFS:348:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+use-websocket.tsx:43 Conexão WebSocket já existe, não reconectando
+use-websocket.tsx:62 WebSocket conectado!
+use-websocket.tsx:85 Mensagem WebSocket recebida: Object
+use-websocket.tsx:93 Erro em handler de mensagem: TypeError: Cannot read properties of undefined (reading 'type')
+    at handleMessage (use-admin-chat.tsx:221:16)
+    at use-websocket.tsx:91:15
+    at Array.forEach (<anonymous>)
+    at ws.current.onmessage (use-websocket.tsx:89:50)
+(anonymous) @ use-websocket.tsx:93Understand this error
+use-websocket.tsx:85 Mensagem WebSocket recebida: Object
+use-websocket.tsx:93 Erro em handler de mensagem: TypeError: Cannot read properties of undefined (reading 'type')
+    at handleMessage (use-admin-chat.tsx:221:16)
+    at use-websocket.tsx:91:15
+    at Array.forEach (<anonymous>)
+    at ws.current.onmessage (use-websocket.tsx:89:50)
+(anonymous) @ use-websocket.tsx:93Understand this error
+3js.stripe.com/v3/m-o…__[version]=basil:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+3m.stripe.network/inn…__[version]=basil:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+20react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=kY__KVaWTOOKqemLJ-yFS:348:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+21react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:26:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=kY__KVaWTOOKqemLJ-yFS:348:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+use-websocket.tsx:85 Mensagem WebSocket recebida: Object
+use-websocket.tsx:93 Erro em handler de mensagem: TypeError: Cannot read properties of undefined (reading 'type')
+    at handleMessage (use-admin-chat.tsx:221:16)
+    at use-websocket.tsx:91:15
+    at Array.forEach (<anonymous>)
+    at ws.current.onmessage (use-websocket.tsx:89:50)
+(anonymous) @ use-websocket.tsx:93Understand this error
+use-websocket.tsx:85 Mensagem WebSocket recebida: Object
+use-websocket.tsx:93 Erro em handler de mensagem: TypeError: Cannot read properties of undefined (reading 'type')
+    at handleMessage (use-admin-chat.tsx:221:16)
+    at use-websocket.tsx:91:15
+    at Array.forEach (<anonymous>)
+    at ws.current.onmessage (use-websocket.tsx:89:50)
+(anonymous) @ use-websocket.tsx:93Understand this error
+use-websocket.tsx:85 Mensagem WebSocket recebida: Object
+use-websocket.tsx:93 Erro em handler de mensagem: TypeError: Cannot read properties of undefined (reading 'type')
+    at handleMessage (use-admin-chat.tsx:221:16)
+    at use-websocket.tsx:91:15
+    at Array.forEach (<anonymous>)
+    at ws.current.onmessage (use-websocket.tsx:89:50)
+(anonymous) @ use-websocket.tsx:93
+ws.current.onmessage @ use-websocket.tsx:89Understand this error
+use-websocket.tsx:85 Mensagem WebSocket recebida: Object
+use-websocket.tsx:93 Erro em handler de mensagem: TypeError: Cannot read properties of undefined (reading 'type')
+    at handleMessage (use-admin-chat.tsx:221:16)
+    at use-websocket.tsx:91:15
+    at Array.forEach (<anonymous>)
+    at ws.current.onmessage (use-websocket.tsx:89:50)
+(anonymous) @ use-websocket.tsx:93
+ws.current.onmessage @ use-websocket.tsx:89Understand this error
+
+                
+          
+          
+          
+         Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.Understand this warning
