@@ -45,6 +45,13 @@ export default function ChatDashboard({
       }
     }
   }, [user?.role, setConversationType, conversationType]);
+
+  // Log para debug quando a conversa ativa muda
+  useEffect(() => {
+    if (activeConversation) {
+      console.log("ChatDashboard: Conversa ativa definida:", activeConversation.id);
+    }
+  }, [activeConversation]);
   
   if (!user) return null;
   

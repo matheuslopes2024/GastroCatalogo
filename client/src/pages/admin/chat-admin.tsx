@@ -35,7 +35,14 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function ChatAdminPage() {
   const { user } = useAuth();
-  const { conversations, setConversationType, refreshConversations, isLoadingConversations } = useChat();
+  const { 
+    conversations, 
+    activeConversation,
+    setActiveConversation,
+    setConversationType, 
+    refreshConversations, 
+    isLoadingConversations 
+  } = useChat();
   const [chatType, setChatType] = useState<"all" | "user" | "supplier">("all");
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
   const [isLoading, setIsLoading] = useState(false);
@@ -280,8 +287,8 @@ export default function ChatAdminPage() {
                 contentClassName="bg-white"
                 sidebarClassName="bg-white/50"
                 conversationType="all"
-                key="all-conversations"
-                emptyMessage="Não há conversas para exibir"
+                key={`all-conversations-${activeConversation?.id || 'none'}`}
+                emptyMessage="Não há conversas para exibir. Selecione um cliente ou fornecedor na lista à esquerda."
                 showEmojis={true}
                 showAttachmentPreview={true}
                 allowLargeAttachments={true}
@@ -302,8 +309,8 @@ export default function ChatAdminPage() {
                 contentClassName="bg-white"
                 sidebarClassName="bg-white/50"
                 conversationType="user"
-                key="user-conversations"
-                emptyMessage="Não há conversas com usuários para exibir"
+                key={`user-conversations-${activeConversation?.id || 'none'}`}
+                emptyMessage="Não há conversas com usuários para exibir. Selecione um cliente na lista à esquerda."
                 showEmojis={true}
                 showAttachmentPreview={true}
                 allowLargeAttachments={true}
@@ -324,8 +331,8 @@ export default function ChatAdminPage() {
                 contentClassName="bg-white"
                 sidebarClassName="bg-white/50"
                 conversationType="supplier"
-                key="supplier-conversations"
-                emptyMessage="Não há conversas com fornecedores para exibir"
+                key={`supplier-conversations-${activeConversation?.id || 'none'}`}
+                emptyMessage="Não há conversas com fornecedores para exibir. Selecione um fornecedor na lista à esquerda."
                 showEmojis={true}
                 showAttachmentPreview={true}
                 allowLargeAttachments={true}
