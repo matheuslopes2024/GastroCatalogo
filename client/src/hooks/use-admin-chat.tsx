@@ -63,11 +63,24 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       if (!user || user.role !== UserRole.ADMIN) return [];
       
-      const response = await apiRequest('GET', '/api/admin/chat/conversations');
-      const data = await response.json();
-      return data as ChatConversation[];
+      try {
+        const response = await apiRequest('GET', '/api/admin/chat/conversations');
+        const data = await response.json();
+        return data as ChatConversation[];
+      } catch (error) {
+        console.error('Erro ao buscar conversas:', error);
+        
+        // Se falhar, tenta usar o websocket como fallback
+        sendWebSocketMessage({
+          type: 'admin_request_conversations'
+        });
+        
+        return [];
+      }
     },
     enabled: !!user && user.role === UserRole.ADMIN,
+    staleTime: 10000, // 10 segundos para reduzir a frequência de requisições
+    refetchInterval: 30000, // 30 segundos para refresh periódico
   });
 
   // Filtrar conversas
