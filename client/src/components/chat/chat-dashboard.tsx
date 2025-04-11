@@ -55,6 +55,13 @@ export default function ChatDashboard({
   
   if (!user) return null;
   
+  // Debug-only: Mostra informações da conversa ativa
+  const debugInfo = activeConversation ? {
+    id: activeConversation.id,
+    participantIds: activeConversation.participantIds,
+    subject: activeConversation.subject
+  } : null;
+
   return (
     <div className={cn("grid grid-cols-1 md:grid-cols-3 h-full overflow-hidden", className)}>
       <div className={cn("md:col-span-1 border-r h-full", sidebarClassName)}>
@@ -63,15 +70,23 @@ export default function ChatDashboard({
       
       <div className={cn("md:col-span-2 h-full flex items-center justify-center", contentClassName)}>
         {activeConversation ? (
-          <ChatWidget 
-            hideToggle 
-            fullHeight 
-            isAdmin={user?.role === UserRole.ADMIN}
-            className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
-            showAttachmentPreview={showAttachmentPreview}
-            allowLargeAttachments={allowLargeAttachments}
-            showEmojis={showEmojis}
-          />
+          <>
+            {/* Debug only - remover depois */}
+            {process.env.NODE_ENV === "development" && (
+              <div className="absolute top-1 right-1 z-50 bg-black/70 text-white text-xs p-1 rounded">
+                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+              </div>
+            )}
+            <ChatWidget 
+              hideToggle 
+              fullHeight 
+              isAdmin={user?.role === UserRole.ADMIN}
+              className="static inset-auto shadow-none w-full h-full rounded-none max-h-full"
+              showAttachmentPreview={showAttachmentPreview}
+              allowLargeAttachments={allowLargeAttachments}
+              showEmojis={showEmojis}
+            />
+          </>
         ) : (
           <div className="text-center p-8">
             <h3 className="text-lg font-medium mb-2">Selecione uma conversa</h3>

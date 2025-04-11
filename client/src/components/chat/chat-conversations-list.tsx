@@ -463,7 +463,10 @@ export default function ChatConversationsList() {
                     key={conversation.id}
                     conversation={conversation}
                     activeId={activeConversationId}
-                    onSelect={setActiveConversation as any}
+                    onSelect={(conv) => {
+                      console.log("Selecionando conversa:", conv.id);
+                      setActiveConversation(conv as any);
+                    }}
                     userId={user.id}
                   />
                 ))}
@@ -488,7 +491,10 @@ export default function ChatConversationsList() {
                     key={conversation.id}
                     conversation={conversation}
                     activeId={activeConversationId}
-                    onSelect={setActiveConversation}
+                    onSelect={(conv) => {
+                      console.log("Selecionando conversa:", conv.id);
+                      setActiveConversation(conv as any);
+                    }}
                     userId={user.id}
                   />
                 ))}
@@ -513,7 +519,10 @@ export default function ChatConversationsList() {
                     key={conversation.id}
                     conversation={conversation}
                     activeId={activeConversationId}
-                    onSelect={setActiveConversation as any}
+                    onSelect={(conv) => {
+                      console.log("Selecionando conversa fornecedor:", conv.id);
+                      setActiveConversation(conv as any);
+                    }}
                     userId={user.id}
                   />
                 ))}
