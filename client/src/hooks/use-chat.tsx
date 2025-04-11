@@ -184,6 +184,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       const payload: any = {
         message,
+        text: message, // Campo text obrigatório pelo schema
         senderId: user.id,
       };
       
@@ -375,6 +376,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     
     const messageData = { 
       message: params.message, 
+      text: params.message, // Campo text obrigatório pelo schema
       conversationId: convId,
       receiverId: receiverId,
       attachment: params.attachment

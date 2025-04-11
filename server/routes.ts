@@ -1380,6 +1380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               receiverId: Number(receiverId),
               conversationId: actualConversationId,
               message: messageText,
+              text: messageText, // Campo text obrigatório pelo schema
               isRead: false
             });
             
