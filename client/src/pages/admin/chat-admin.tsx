@@ -175,15 +175,30 @@ export default function ChatAdminPage() {
             <TabsList>
               <TabsTrigger value="all" className="data-[state=active]:bg-primary/10">
                 Todas
-                <Badge variant="secondary" className="ml-2">42</Badge>
+                <Badge variant="secondary" className="ml-2">
+                  {isLoading ? "..." : "42"}
+                  {chatType !== "all" && (
+                    <span className="ml-1 text-xs text-red-500 font-bold">•</span>
+                  )}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="user" className="data-[state=active]:bg-primary/10">
                 Usuários
-                <Badge variant="secondary" className="ml-2">28</Badge>
+                <Badge variant="secondary" className="ml-2">
+                  {isLoading ? "..." : "28"}
+                  {chatType !== "user" && (
+                    <span className="ml-1 text-xs text-red-500 font-bold">•</span>
+                  )}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="supplier" className="data-[state=active]:bg-primary/10">
                 Fornecedores
-                <Badge variant="secondary" className="ml-2">14</Badge>
+                <Badge variant="secondary" className="ml-2">
+                  {isLoading ? "..." : "14"}
+                  {chatType !== "supplier" && (
+                    <span className="ml-1 text-xs text-red-500 font-bold">•</span>
+                  )}
+                </Badge>
               </TabsTrigger>
             </TabsList>
             

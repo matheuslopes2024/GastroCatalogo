@@ -111,7 +111,54 @@ function ConversationItem({ conversation, onSelect }: {
 }
 
 function ConversationsList() {
-  const { conversations, setActiveConversation, isLoadingConversations } = useChat();
+  const { 
+    conversations, 
+    setActiveConversation, 
+    isLoadingConversations,
+    startConversationWithAdmin
+  } = useChat();
+  const [contactingAdmin, setContactingAdmin] = useState(false);
+  const [initialMessage, setInitialMessage] = useState("");
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Manipular o upload de arquivos
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Verificar tamanho (1GB max)
+    if (file.size > 1024 * 1024 * 1024) {
+      alert("Arquivo muito grande. O tamanho máximo é 1GB.");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (!event.target?.result) return;
+      
+      setAttachment({
+        data: event.target.result as string,
+        type: file.type,
+        name: file.name,
+        size: file.size
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleStartConversation = async () => {
+    if (!initialMessage.trim() && !attachment) return;
+    
+    try {
+      await startConversationWithAdmin(initialMessage, attachment || undefined);
+      setContactingAdmin(false);
+      setInitialMessage("");
+      setAttachment(null);
+    } catch (error) {
+      console.error("Erro ao iniciar conversa:", error);
+    }
+  };
   
   if (isLoadingConversations) {
     return (
@@ -122,27 +169,113 @@ function ConversationsList() {
     );
   }
   
+  // Formulário para contatar o administrador
+  if (contactingAdmin) {
+    return (
+      <div className="flex flex-col h-full p-4">
+        <div className="mb-3">
+          <h3 className="text-lg font-medium mb-2">Fale com um administrador</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Envie uma mensagem e em breve um administrador irá atendê-lo.
+          </p>
+          
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Digite sua mensagem..."
+              value={initialMessage}
+              onChange={(e) => setInitialMessage(e.target.value)}
+              className="min-h-[120px]"
+            />
+            
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+              />
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1"
+              >
+                <Paperclip className="h-4 w-4" />
+                Anexar
+              </Button>
+              
+              {attachment && (
+                <div className="text-xs text-gray-500 truncate flex-1">
+                  {attachment.name} ({Math.round(attachment.size / 1024)} KB)
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setContactingAdmin(false);
+                  setInitialMessage("");
+                  setAttachment(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              
+              <Button onClick={handleStartConversation}>
+                Enviar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (conversations.length === 0) {
     return (
       <div className="p-6 text-center">
         <MessageCircle className="h-10 w-10 mx-auto text-gray-400 mb-2" />
         <h3 className="font-medium text-lg mb-1">Nenhuma conversa</h3>
-        <p className="text-sm text-gray-500">
-          Suas conversas aparecerão aqui. Inicie uma conversa clicando no botão de chat.
+        <p className="text-sm text-gray-500 mb-4">
+          Você ainda não iniciou nenhuma conversa.
         </p>
+        
+        <Button 
+          onClick={() => setContactingAdmin(true)}
+          className="w-full"
+        >
+          Falar com Administrador
+        </Button>
       </div>
     );
   }
   
   return (
-    <div className="divide-y divide-gray-100">
-      {conversations.map(conversation => (
-        <ConversationItem
-          key={conversation.id}
-          conversation={conversation}
-          onSelect={() => setActiveConversation(conversation)}
-        />
-      ))}
+    <div className="flex flex-col h-full">
+      <div className="p-3 border-b">
+        <Button 
+          onClick={() => setContactingAdmin(true)}
+          className="w-full"
+          variant="outline"
+        >
+          Nova Conversa com Administrador
+        </Button>
+      </div>
+      
+      <div className="divide-y divide-gray-100 flex-1 overflow-auto">
+        {conversations.map(conversation => (
+          <ConversationItem
+            key={conversation.id}
+            conversation={conversation}
+            onSelect={() => setActiveConversation(conversation)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -196,7 +329,6 @@ function ChatMessage({ message, isMine }: { message: ChatMessage; isMine: boolea
       
       {isMine && (
         <Avatar className="h-8 w-8 ml-2">
-          <AvatarImage src={user?.profileImage || ''} alt={user?.name || 'Usuário'} />
           <AvatarFallback className="bg-primary/10 text-primary">
             {user?.name?.[0] || 'U'}
           </AvatarFallback>
@@ -387,21 +519,60 @@ function ChatConversation() {
 }
 
 function ChatToggleButton() {
-  const { openChat, unreadCount } = useChat();
+  const { openChat, openChatWithAdmin, unreadCount } = useChat();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   return (
-    <Button
-      onClick={openChat}
-      size="icon"
-      className="h-12 w-12 rounded-full shadow-lg fixed bottom-6 right-6 z-50"
-    >
-      <MessageCircle className="h-6 w-6" />
-      {unreadCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[18px] h-[18px] text-xs flex items-center justify-center">
-          {unreadCount}
-        </span>
-      )}
-    </Button>
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      {/* Menu de opções */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="bg-white rounded-lg shadow-lg overflow-hidden mb-2"
+          >
+            <Button
+              variant="ghost"
+              className="w-full justify-start px-4 py-2 hover:bg-gray-100"
+              onClick={() => {
+                openChatWithAdmin();
+                setIsMenuOpen(false);
+              }}
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Falar com Administrador
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start px-4 py-2 hover:bg-gray-100"
+              onClick={() => {
+                openChat();
+                setIsMenuOpen(false);
+              }}
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Ver todas as conversas
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Botão principal do chat */}
+      <Button
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        size="icon"
+        className="h-12 w-12 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+      >
+        <MessageCircle className="h-6 w-6" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[18px] h-[18px] text-xs flex items-center justify-center">
+            {unreadCount}
+          </span>
+        )}
+      </Button>
+    </div>
   );
 }
 

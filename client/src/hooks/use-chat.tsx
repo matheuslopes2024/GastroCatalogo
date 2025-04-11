@@ -60,6 +60,7 @@ type ChatContextType = {
   closeChat: () => void;
   toggleChat: () => void;
   activeConversation: ChatConversation | null;
+  activeConversationId?: number; // Para compatibilidade com componentes existentes
   setActiveConversation: (conversation: ChatConversation | null) => void;
   conversations: ChatConversation[];
   messages: ChatMessage[];
@@ -67,12 +68,14 @@ type ChatContextType = {
   isLoadingMessages: boolean;
   sendMessage: (message: string, attachment?: Attachment) => Promise<void>;
   markMessagesAsRead: (messageIds: number[]) => Promise<void>;
-  startNewConversation: (receiverId: number, initialMessage: string) => Promise<void>;
+  startNewConversation: (receiverId: number, initialMessage: string, attachment?: Attachment) => Promise<void>;
+  startConversationWithAdmin: (initialMessage: string, attachment?: Attachment) => Promise<void>;
   refreshConversations: () => void;
   refreshMessages: () => void;
   unreadCount: number;
   conversationType: "all" | "user" | "supplier";
   setConversationType: (type: "all" | "user" | "supplier") => void;
+  openChatWithAdmin: () => void; // Novo método para abrir chat com admin diretamente
 };
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -297,14 +300,56 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
   }, [activeConversation, user?.id, sendMessageMutation]);
 
-  const startNewConversation = useCallback(async (receiverId: number, initialMessage: string) => {
-    await startConversationMutation.mutateAsync({ receiverId, message: initialMessage });
+  const startNewConversation = useCallback(async (receiverId: number, initialMessage: string, attachment?: Attachment) => {
+    await startConversationMutation.mutateAsync({ receiverId, message: initialMessage, attachment });
     setIsOpen(true);
   }, [startConversationMutation]);
+
+  // Função específica para iniciar conversa com administrador
+  const startConversationWithAdmin = useCallback(async (initialMessage: string, attachment?: Attachment) => {
+    try {
+      // Buscar usuário administrador (ID 1 é o admin padrão)
+      const adminId = 1; // Assumimos que ID 1 é o admin padrão
+
+      await startConversationMutation.mutateAsync({ 
+        receiverId: adminId, 
+        message: initialMessage,
+        attachment 
+      });
+      setIsOpen(true);
+      toast({
+        title: "Mensagem enviada com sucesso",
+        description: "Um administrador irá atendê-lo em breve",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao contatar administrador",
+        description: error.message || "Ocorreu um erro ao iniciar a conversa",
+        variant: "destructive",
+      });
+    }
+  }, [startConversationMutation, toast]);
+
+  // Atalho para abrir chat diretamente com administrador
+  const openChatWithAdmin = useCallback(() => {
+    setIsOpen(true);
+    // Verificamos se já existe uma conversa com o admin
+    const adminConversation = conversations.find(conv => {
+      return conv._participants?.some(p => p.role === UserRole.ADMIN);
+    });
+    
+    if (adminConversation) {
+      setActiveConversation(adminConversation);
+    }
+    // Se não existir, o usuário verá a lista de conversas e poderá iniciar uma nova
+  }, [conversations, setIsOpen]);
 
   const markMessagesAsRead = useCallback(async (messageIds: number[]) => {
     await markAsReadMutation.mutateAsync(messageIds);
   }, [markAsReadMutation]);
+
+  // Para compatibilidade com componentes existentes
+  const activeConversationId = activeConversation?.id;
 
   return (
     <ChatContext.Provider
@@ -314,6 +359,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         closeChat,
         toggleChat,
         activeConversation,
+        activeConversationId,
         setActiveConversation,
         conversations: filteredConversations,
         messages,
@@ -322,6 +368,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         sendMessage,
         markMessagesAsRead,
         startNewConversation,
+        startConversationWithAdmin,
+        openChatWithAdmin,
         refreshConversations,
         refreshMessages,
         unreadCount,
@@ -345,6 +393,7 @@ export function useChat() {
       closeChat: () => {},
       toggleChat: () => {},
       activeConversation: null,
+      activeConversationId: undefined,
       setActiveConversation: () => {},
       conversations: [],
       messages: [],
@@ -353,6 +402,8 @@ export function useChat() {
       sendMessage: async () => {},
       markMessagesAsRead: async () => {},
       startNewConversation: async () => {},
+      startConversationWithAdmin: async () => {},
+      openChatWithAdmin: () => {},
       refreshConversations: () => {},
       refreshMessages: () => {},
       unreadCount: 0,

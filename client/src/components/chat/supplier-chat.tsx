@@ -13,43 +13,30 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function SupplierChat() {
   const { user } = useAuth();
-  const { createConversation, isOpen, openChat, unreadCount, toggleChat, activeConversationId } = useChat();
-  const [adminUsers, setAdminUsers] = useState<{ id: number; username: string }[]>([]);
+  const { 
+    isOpen, 
+    openChat, 
+    unreadCount, 
+    toggleChat, 
+    activeConversationId,
+    startConversationWithAdmin,
+    openChatWithAdmin
+  } = useChat();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  // Buscar todos os usuários administradores para contato
-  useEffect(() => {
-    const fetchAdminUsers = async () => {
-      if (!user) return;
-      
-      try {
-        const response = await apiRequest("GET", "/api/users?role=admin");
-        const data = await response.json();
-        setAdminUsers(data);
-      } catch (error) {
-        console.error("Erro ao buscar administradores:", error);
-      }
-    };
-    
-    fetchAdminUsers();
-  }, [user]);
-  
   // Iniciar conversa com administrador
   const startChatWithAdmin = async () => {
-    if (!user || adminUsers.length === 0) return;
+    if (!user) return;
     
     setIsLoading(true);
     
     try {
-      // Pegar o primeiro administrador disponível
-      const admin = adminUsers[0];
+      // Se for fornecedor, incluir informação na mensagem inicial
+      const initialMessage = `Fornecedor ${user.username} - Solicitação de Suporte`;
       
-      // Criar uma nova conversa ou usar uma existente
-      await createConversation(
-        admin.id, 
-        `Fornecedor ${user.username} - Suporte`
-      );
+      // Usar a nova função para iniciar conversa diretamente com administrador
+      await startConversationWithAdmin(initialMessage);
       
       // Abrir o chat
       openChat();
