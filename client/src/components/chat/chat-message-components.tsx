@@ -116,16 +116,23 @@ export function ChatMessageItem({
                     <div className="flex-1 truncate">
                       {attachment.name}
                     </div>
-                    <a
-                      href={attachment.data}
-                      download={attachment.name}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = attachment.data;
+                        link.download = attachment.name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
                       className={cn(
                         "p-1 rounded-full",
                         isOwnMessage ? "hover:bg-primary-foreground/20" : "hover:bg-muted"
                       )}
                     >
                       <Download className="h-4 w-4" />
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

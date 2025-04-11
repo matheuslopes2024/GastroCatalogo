@@ -350,17 +350,12 @@ function ChatMessage({
               <>
                 {message.attachmentType?.startsWith('image/') && (
                   <div className="mt-2">
-                    <a 
-                      href={message.attachmentData} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      <img 
+                    <img 
                         src={message.attachmentData} 
                         alt="Anexo" 
-                        className="max-h-60 rounded object-contain w-full"
+                        className="max-h-60 rounded object-contain w-full cursor-pointer"
+                        onClick={() => window.open(message.attachmentData, '_blank')}
                       />
-                    </a>
                   </div>
                 )}
                 
