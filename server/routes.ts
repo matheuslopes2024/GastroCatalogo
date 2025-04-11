@@ -1235,6 +1235,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mapa para rastrear conexões de usuários
   const clients = new Map();
   
+  // Mapa para rastrear status online dos usuários
+  const onlineStatus = new Map();
+  
+  // Função auxiliar para notificar outros clientes sobre status online
+  const broadcastUserStatus = (userId, isOnline) => {
+    // Obter todas as conversas do usuário
+    storage.getChatConversations(userId)
+      .then(conversations => {
+        // Para cada conversa, notificar os outros participantes
+        conversations.forEach(conv => {
+          conv.participantIds.forEach(participantId => {
+            if (participantId !== userId) {
+              const client = clients.get(participantId);
+              if (client && client.ws.readyState === WebSocket.OPEN) {
+                client.ws.send(JSON.stringify({
+                  type: 'user_status_change',
+                  userId: userId,
+                  isOnline: isOnline,
+                  conversationId: conv.id,
+                  timestamp: new Date().toISOString()
+                }));
+              }
+            }
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Erro ao obter conversas para transmitir status:', error);
+      });
+  };
+  
+  // Verificar quais administradores estão online
+  const getOnlineAdmins = () => {
+    const onlineAdmins = [];
+    clients.forEach((client, userId) => {
+      if (client.userRole === UserRole.ADMIN && client.ws.readyState === WebSocket.OPEN) {
+        onlineAdmins.push(userId);
+      }
+    });
+    return onlineAdmins;
+  };
+  
   wss.on('connection', (ws) => {
     console.log('Nova conexão WebSocket estabelecida');
     
@@ -1255,7 +1297,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Armazenar cliente no mapa com userId como chave
           clients.set(userId, { ws, userId, userRole });
           
+          // Marcar usuário como online
+          onlineStatus.set(userId, true);
+          
           console.log(`Usuário ${userId} (${userRole}) autenticado via WebSocket`);
+          
+          // Notificar outros usuários sobre o status online
+          broadcastUserStatus(userId, true);
           
           // Enviar confirmação para o cliente
           ws.send(JSON.stringify({ 
@@ -1264,6 +1312,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userRole,
             timestamp: new Date().toISOString()
           }));
+          
+          // Se for um usuário regular, enviar status dos administradores online
+          if (userRole !== UserRole.ADMIN) {
+            const onlineAdmins = getOnlineAdmins();
+            ws.send(JSON.stringify({
+              type: 'admin_status',
+              onlineAdmins,
+              timestamp: new Date().toISOString()
+            }));
+          }
           
           // Buscar conversas existentes para o usuário
           try {
@@ -1490,6 +1548,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
           }
         }
+        // Admin registra recebimento de chat
+        else if (data.type === 'admin_chat_register' && userId && userRole === UserRole.ADMIN) {
+          console.log(`Administrador ${userId} registrado para receber chats`);
+          
+          // Não precisamos fazer nada especial aqui, apenas registrar que o admin está online
+          // e disponível para receber mensagens
+        }
+        
+        // Admin solicita todas as conversas
+        else if (data.type === 'admin_request_conversations' && userId && userRole === UserRole.ADMIN) {
+          try {
+            const allConversations = await storage.getAllChatConversations();
+            ws.send(JSON.stringify({
+              type: 'admin_conversations_list',
+              conversations: allConversations,
+              timestamp: new Date().toISOString()
+            }));
+          } catch (error) {
+            console.error('Erro ao buscar todas as conversas para admin:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Erro ao buscar conversas',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        
+        // Administrador aceita uma conversa
+        else if (data.type === 'admin_accept_conversation' && userId && userRole === UserRole.ADMIN) {
+          const { conversationId } = data;
+          
+          if (!conversationId) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'ID da conversa é obrigatório',
+              timestamp: new Date().toISOString()
+            }));
+            return;
+          }
+          
+          try {
+            // Buscar a conversa
+            const conversation = await storage.getChatConversation(conversationId);
+            
+            if (!conversation) {
+              ws.send(JSON.stringify({ 
+                type: 'error', 
+                message: 'Conversa não encontrada',
+                timestamp: new Date().toISOString()
+              }));
+              return;
+            }
+            
+            // Marcar a conversa como aceita pelo administrador
+            await storage.updateChatConversation(conversationId, {
+              isActive: true,
+              lastActivityAt: new Date()
+            });
+            
+            // Enviar mensagem de sistema para a conversa
+            const systemMessage = await storage.createChatMessage({
+              senderId: Number(userId),
+              receiverId: conversation.participantIds[0],
+              conversationId: conversationId,
+              message: "Administrador aceitou a conversa e agora está online para ajudar você.",
+              text: "Administrador aceitou a conversa e agora está online para ajudar você.",
+              isRead: false,
+              isSystemMessage: true
+            });
+            
+            // Atualizar a conversa com a última mensagem
+            await storage.updateChatConversationLastMessage(conversationId, systemMessage);
+            
+            // Enviar confirmação para o administrador
+            ws.send(JSON.stringify({
+              type: 'admin_conversation_accepted',
+              conversationId,
+              timestamp: new Date().toISOString()
+            }));
+            
+            // Notificar o participante que o administrador aceitou a conversa
+            conversation.participantIds.forEach(participantId => {
+              if (participantId !== Number(userId)) {
+                const participantClient = clients.get(participantId);
+                if (participantClient && participantClient.ws.readyState === WebSocket.OPEN) {
+                  participantClient.ws.send(JSON.stringify({
+                    type: 'conversation_accepted_by_admin',
+                    conversationId,
+                    adminId: userId,
+                    message: systemMessage,
+                    timestamp: new Date().toISOString()
+                  }));
+                  
+                  // Atualizar a lista de conversas para o participante
+                  storage.getChatConversations(participantId)
+                    .then(participantConversations => {
+                      participantClient.ws.send(JSON.stringify({
+                        type: 'conversations_update',
+                        conversations: participantConversations,
+                        timestamp: new Date().toISOString()
+                      }));
+                    });
+                }
+              }
+            });
+            
+            // Atualizar a lista de conversas para todos os administradores
+            clients.forEach((client, clientUserId) => {
+              if (client.userRole === UserRole.ADMIN && client.ws.readyState === WebSocket.OPEN) {
+                storage.getAllChatConversations()
+                  .then(adminConversations => {
+                    client.ws.send(JSON.stringify({
+                      type: 'admin_conversations_list',
+                      conversations: adminConversations,
+                      timestamp: new Date().toISOString()
+                    }));
+                  });
+              }
+            });
+          } catch (error) {
+            console.error('Erro ao aceitar conversa:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Erro ao aceitar conversa',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        
         // Ping/Pong para manter a conexão ativa
         else if (data.type === 'ping') {
           ws.send(JSON.stringify({ 
@@ -1507,18 +1694,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Conexão WebSocket fechada ${userId ? `para usuário ${userId}` : ''}`);
       
       if (userId) {
+        // Remover cliente do mapa de conexões
         clients.delete(Number(userId));
         
+        // Marcar usuário como offline
+        onlineStatus.set(userId, false);
+        
         // Notificar outros usuários que este usuário está offline
-        clients.forEach((client) => {
-          if (client.ws.readyState === WebSocket.OPEN) {
-            client.ws.send(JSON.stringify({
-              type: 'user_offline',
-              userId,
-              timestamp: new Date().toISOString()
-            }));
-          }
-        });
+        broadcastUserStatus(userId, false);
+        
+        // Se era um administrador, enviar notificação de administrador offline
+        // para todos os usuários ativos
+        if (userRole === UserRole.ADMIN) {
+          clients.forEach((client) => {
+            if (client.userRole !== UserRole.ADMIN && client.ws.readyState === WebSocket.OPEN) {
+              client.ws.send(JSON.stringify({
+                type: 'admin_status',
+                onlineAdmins: getOnlineAdmins(),
+                timestamp: new Date().toISOString()
+              }));
+            }
+          });
+        }
       }
     });
     
