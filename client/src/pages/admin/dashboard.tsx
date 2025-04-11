@@ -7,7 +7,7 @@ import { User, UserRole, Sale, Product } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
-import { BarChart, Users, DollarSign, Settings, Package, Grid, Tags, Percent } from "lucide-react";
+import { BarChart, Users, DollarSign, Settings, Package, Grid, Tags, Percent, MessageCircle, Bell } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -50,6 +50,13 @@ function AdminSidebar() {
           <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
             <Tags className="mr-2 h-5 w-5" />
             Categorias
+          </a>
+        </Link>
+        <Link href="/admin/chat">
+          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+            <MessageCircle className="mr-2 h-5 w-5" />
+            Chat Ao Vivo
+            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">3</span>
           </a>
         </Link>
       </nav>
@@ -413,7 +420,218 @@ export default function AdminDashboard() {
                     </div>
                   </CardContent>
                 </Card>
+                
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-3 bg-blue-400 rounded-full mb-4">
+                        <MessageCircle className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Chat Ao Vivo</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Atenda usuários e fornecedores em tempo real.
+                      </p>
+                      <Link href="/admin/chat">
+                        <Button variant="outline" className="w-full">
+                          <span className="mr-2">Acessar</span>
+                          <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">3</span>
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+              
+              {/* Live Chat Box Inline */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MessageCircle className="h-5 w-5 mr-2 text-primary" />
+                    Chat Ao Vivo
+                  </CardTitle>
+                  <CardDescription>
+                    Atenda usuários e fornecedores diretamente do dashboard
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 h-[500px]">
+                  <div className="flex h-full border-t">
+                    <div className="w-1/3 border-r p-0">
+                      <div className="flex items-center p-4 border-b bg-gray-50 sticky top-0">
+                        <h3 className="font-medium text-sm">Conversas</h3>
+                        <div className="ml-auto flex space-x-1">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                            <span className="sr-only">Filtrar</span>
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex border-b">
+                        <button className="flex-1 font-medium text-xs p-2 text-center relative bg-primary text-white">
+                          Clientes
+                          <span className="absolute top-1 right-1 bg-red-500 text-white text-xs px-1 rounded-full">2</span>
+                        </button>
+                        <button className="flex-1 font-medium text-xs p-2 text-center relative">
+                          Fornecedores
+                          <span className="absolute top-1 right-1 bg-red-500 text-white text-xs px-1 rounded-full">1</span>
+                        </button>
+                      </div>
+                      
+                      <div className="overflow-y-auto h-[calc(500px-86px)]">
+                        <div className="border-b p-3 hover:bg-gray-50 cursor-pointer">
+                          <div className="flex items-start">
+                            <div className="relative mr-3">
+                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 font-bold text-sm">
+                                MC
+                              </div>
+                              <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-sm">Marcos Costa</h4>
+                                <span className="text-xs text-gray-500">12:05</span>
+                              </div>
+                              <p className="text-xs text-gray-600 truncate">Olá, gostaria de informações sobre o prazo de entrega do forno combinado.</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border-b p-3 hover:bg-gray-50 cursor-pointer bg-blue-50">
+                          <div className="flex items-start">
+                            <div className="relative mr-3">
+                              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold text-sm">
+                                AS
+                              </div>
+                              <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-sm">Amanda Silva</h4>
+                                <span className="text-xs text-gray-500">11:42</span>
+                              </div>
+                              <p className="text-xs text-gray-600 truncate">Preciso de ajuda para comparar as opções de máquinas de gelo.</p>
+                              <span className="inline-block bg-primary text-white text-xs rounded-full px-2 py-0.5 mt-1">2 novas</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border-b p-3 hover:bg-gray-50 cursor-pointer">
+                          <div className="flex items-start">
+                            <div className="relative mr-3">
+                              <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-500 font-bold text-sm">
+                                RL
+                              </div>
+                              <span className="absolute bottom-0 right-0 h-3 w-3 bg-gray-300 rounded-full border-2 border-white"></span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-sm">Restaurante Laguna</h4>
+                                <span className="text-xs text-gray-500">Ontem</span>
+                              </div>
+                              <p className="text-xs text-gray-600 truncate">Obrigado pelo atendimento rápido!</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col">
+                      <div className="border-b p-3 flex items-center sticky top-0 bg-white z-10">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold text-sm mr-3">
+                            AS
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm">Amanda Silva</h4>
+                            <p className="text-xs text-green-600">Online</p>
+                          </div>
+                        </div>
+                        <div className="ml-auto flex space-x-2">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                            <Users className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                            <Bell className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+                        <div className="space-y-4">
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Olá, estou precisando de ajuda para escolher a melhor máquina de gelo para meu restaurante.</p>
+                              <span className="text-xs text-gray-500 mt-1 block">11:30</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end flex-row-reverse">
+                            <div className="bg-primary text-white rounded-lg rounded-br-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Olá Amanda! Claro, posso ajudá-la. Qual o tamanho do seu restaurante e quantos clientes atende por dia?</p>
+                              <span className="text-xs text-primary-foreground/70 mt-1 block">11:32</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Temos um restaurante médio, com capacidade para 80 pessoas. Atendemos cerca de 150 clientes por dia.</p>
+                              <span className="text-xs text-gray-500 mt-1 block">11:35</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Vi que vocês têm algumas opções de máquinas de gelo na plataforma, mas não sei qual seria ideal para nossas necessidades.</p>
+                              <span className="text-xs text-gray-500 mt-1 block">11:36</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end flex-row-reverse">
+                            <div className="bg-primary text-white rounded-lg rounded-br-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">Para um restaurante com esse fluxo, recomendo uma máquina com produção de pelo menos 80kg de gelo por dia. Temos ótimas opções dos fornecedores TecnoGelo e FrostMax.</p>
+                              <span className="text-xs text-primary-foreground/70 mt-1 block">11:40</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">A TecnoGelo tem um modelo específico que você recomenda? Vi que eles têm vários tipos de gelo também.</p>
+                              <span className="text-xs text-gray-500 mt-1 block">11:42</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-end">
+                            <div className="bg-white rounded-lg rounded-bl-none shadow-sm p-3 max-w-[80%]">
+                              <p className="text-sm">E qual a diferença de consumo de energia entre as duas marcas?</p>
+                              <span className="text-xs text-gray-500 mt-1 block">11:42</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t p-3 bg-white">
+                        <div className="flex items-center">
+                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full">
+                            <span className="sr-only">Anexar arquivo</span>
+                            <i className="fas fa-paperclip text-gray-500"></i>
+                          </Button>
+                          <div className="flex-1 mx-3">
+                            <input
+                              type="text"
+                              placeholder="Digite sua mensagem..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                            />
+                          </div>
+                          <Button size="sm" className="h-9 w-9 p-0 rounded-full">
+                            <span className="sr-only">Enviar</span>
+                            <i className="fas fa-paper-plane"></i>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
