@@ -1140,10 +1140,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getChatConversations(userId: number): Promise<ChatConversation[]> {
+    // Buscamos as conversas que contêm o ID do usuário no array participantIds usando o operador JSONB de contenção
     return db
       .select()
       .from(chatConversations)
-      .where(sql`${userId} = ANY(${chatConversations.participantIds})`)
+      .where(sql`${chatConversations.participantIds}::jsonb @> jsonb_build_array(${userId})`)
       .orderBy(desc(chatConversations.lastActivityAt));
   }
   
