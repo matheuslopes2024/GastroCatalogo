@@ -214,42 +214,60 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
 
   // Lidar com eventos de WebSocket
   useEffect(() => {
+    // Handler seguro para mensagens
     const handleMessage = (event: any) => {
-      const data = event.data;
-      
-      // Atualizar usuários online
-      if (data.type === 'user_status' && data.online !== undefined) {
-        setUsersOnline(prev => {
-          const newSet = new Set(prev);
-          if (data.online) {
-            newSet.add(data.userId);
-          } else {
-            newSet.delete(data.userId);
-          }
-          return newSet;
-        });
-      }
-      
-      // Receber nova mensagem de chat (do cliente ou fornecedor)
-      if (data.type === 'chat_message') {
-        queryClient.invalidateQueries({
-          queryKey: ['/api/admin/chat/conversations']
-        });
+      try {
+        if (!event || typeof event !== 'object') return;
         
-        if (activeConversation && data.message.conversationId === activeConversation.id) {
-          queryClient.invalidateQueries({
-            queryKey: ['/api/admin/chat/messages', activeConversation.id]
-          });
-          
-          // Marcar mensagem como lida se a conversa estiver aberta
-          markAsReadMutation.mutate([data.message.id]);
-        } else {
-          // Mostrar notificação
-          toast({
-            title: 'Nova mensagem',
-            description: `De: ${data.senderName || 'Usuário'} - ${data.message.text.substring(0, 50)}${data.message.text.length > 50 ? '...' : ''}`,
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+        
+        // Atualizar usuários online
+        if (data.type === 'user_status' && data.online !== undefined) {
+          setUsersOnline(prev => {
+            const newSet = new Set(prev);
+            if (data.online) {
+              newSet.add(data.userId);
+            } else {
+              newSet.delete(data.userId);
+            }
+            return newSet;
           });
         }
+        
+        // Receber nova mensagem de chat (do cliente ou fornecedor)
+        if (data.type === 'chat_message' && data.message) {
+          queryClient.invalidateQueries({
+            queryKey: ['/api/admin/chat/conversations']
+          });
+          
+          if (activeConversation && data.message.conversationId === activeConversation.id) {
+            queryClient.invalidateQueries({
+              queryKey: ['/api/admin/chat/messages', activeConversation.id]
+            });
+            
+            // Marcar mensagem como lida se a conversa estiver aberta
+            if (data.message.id) {
+              markAsReadMutation.mutate([data.message.id]);
+            }
+          } else {
+            // Mostrar notificação
+            toast({
+              title: 'Nova mensagem',
+              description: `De: ${data.senderName || 'Usuário'} - ${data.message.text?.substring(0, 50) || 'Nova mensagem'}${data.message.text?.length > 50 ? '...' : ''}`,
+            });
+          }
+        }
+        
+        // Atualização de conversas
+        if (data.type === 'conversations_update' && Array.isArray(data.conversations)) {
+          queryClient.setQueryData(
+            ['/api/admin/chat/conversations'],
+            data.conversations
+          );
+        }
+      } catch (error) {
+        console.error('Erro ao processar mensagem WebSocket:', error);
       }
     };
     
@@ -260,6 +278,11 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       sendWebSocketMessage({
         type: 'admin_chat_register',
         userId: user.id
+      });
+      
+      // Solicitar atualização de conversas
+      sendWebSocketMessage({
+        type: 'admin_request_conversations'
       });
     }
     

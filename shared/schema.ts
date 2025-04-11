@@ -5,6 +5,7 @@ import { z } from "zod";
 // User Types
 export const UserRole = {
   USER: "user",
+  CLIENT: "user", // Alias para USER (compatibilidade)
   SUPPLIER: "supplier",
   ADMIN: "admin",
 } as const;
@@ -174,7 +175,13 @@ export const faqItems = pgTable("faq_items", {
 export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
   participantIds: jsonb("participant_ids").$type<number[]>().notNull(), // Array com IDs dos usuários na conversa
+  participantId: integer("participant_id"), // ID do participante principal (para uso no admin)
+  participantName: text("participant_name"), // Nome do participante principal
+  participantRole: text("participant_role").$type<UserRoleType>(), // Papel do participante principal
   lastMessageId: integer("last_message_id"), // Referência à última mensagem
+  lastMessageText: text("last_message_text"), // Texto da última mensagem
+  lastMessageDate: timestamp("last_message_date"), // Data da última mensagem
+  unreadCount: integer("unread_count").notNull().default(0), // Contador de mensagens não lidas
   lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(),
   subject: text("subject"),
   isActive: boolean("is_active").notNull().default(true),
@@ -188,11 +195,14 @@ export const chatMessages = pgTable("chat_messages", {
   receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   conversationId: integer("conversation_id").references(() => chatConversations.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
+  text: text("text").notNull(), // Texto da mensagem
   isRead: boolean("is_read").notNull().default(false),
+  read: boolean("read").notNull().default(false), // Alias para isRead (compatibilidade)
   attachmentUrl: text("attachment_url"),
   attachmentType: text("attachment_type"),
   attachmentData: text("attachment_data"), // Base64 do arquivo (para arquivos menores)
   attachmentSize: integer("attachment_size"), // Tamanho em bytes
+  attachments: jsonb("attachments").$type<string[]>(), // Lista de anexos
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
