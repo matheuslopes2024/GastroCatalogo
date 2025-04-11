@@ -38,6 +38,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const connectWebSocket = () => {
     if (!user) return;
     
+    // Evitar múltiplas tentativas de conexão
+    if (ws.current && (ws.current.readyState === WebSocket.CONNECTING || ws.current.readyState === WebSocket.OPEN)) {
+      console.log("Conexão WebSocket já existe, não reconectando");
+      return;
+    }
+    
     try {
       // Construir a URL do WebSocket
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -123,8 +129,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         console.log("WebSocket desconectado:", event);
         setConnected(false);
         
-        // Tentar reconectar após um atraso
-        if (!reconnectTimeout.current && user) {
+        // Tentar reconectar após um atraso apenas se não estiver em uma rota de admin
+        if (!reconnectTimeout.current && user && !window.location.pathname.startsWith('/admin')) {
+          console.log("Agendando reconexão...");
           reconnectTimeout.current = setTimeout(() => {
             reconnectTimeout.current = null;
             console.log("Tentando reconectar WebSocket...");

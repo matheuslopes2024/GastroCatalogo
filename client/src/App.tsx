@@ -14,6 +14,8 @@ import { CartProvider } from "./hooks/use-cart";
 import { ChatProvider } from "./hooks/use-chat";
 import { WebSocketProvider } from "./hooks/use-websocket";
 import ChatWidget from "./components/chat/chat-widget";
+import { AdminChatProvider } from "./hooks/use-admin-chat";
+import { AdminLayout } from "@/components/admin/admin-layout";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -42,77 +44,98 @@ import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import HelpPage from "@/pages/help";
 
-function Router() {
+// Layout principal para as páginas de cliente
+function MainRoutes() {
   return (
-    <Switch>
-      {/* Public Routes */}
-      <Route path="/" component={HomePage} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/busca" component={SearchResults} />
-      <Route path="/produto/:slug" component={ProductDetails} />
-      <Route path="/checkout" component={Checkout} />
-      <Route path="/carrinho" component={CartPage} />
-      <Route path="/categorias" component={CategoriesPage} />
-      <Route path="/perfil" component={ProfilePage} />
-      
-      {/* New Public Routes */}
-      <Route path="/como-funciona" component={HowItWorksPage} />
-      <Route path="/fornecedores" component={SuppliersListPage} />
-      <Route path="/blog" component={BlogPage} />
-      <Route path="/blog/:slug" component={BlogPostPage} />
-      <Route path="/contato" component={ContactPage} />
-      <Route path="/faq" component={FAQPage} />
-      <Route path="/termos" component={TermsPage} />
-      <Route path="/privacidade" component={PrivacyPage} />
-      <Route path="/ajuda" component={HelpPage} />
-      
-      {/* Admin Routes */}
-      <ProtectedRoute 
-        path="/admin" 
-        component={AdminDashboard} 
-        allowedRoles={[UserRole.ADMIN]} 
-      />
-      <ProtectedRoute 
-        path="/admin/fornecedores" 
-        component={AdminSuppliers} 
-        allowedRoles={[UserRole.ADMIN]}
-      />
-      <ProtectedRoute 
-        path="/admin/comissoes" 
-        component={AdminCommissions} 
-        allowedRoles={[UserRole.ADMIN]}
-      />
-      <ProtectedRoute 
-        path="/admin/chat" 
-        component={ChatAdminPage} 
-        allowedRoles={[UserRole.ADMIN]}
-      />
-      <ProtectedRoute 
-        path="/admin/categorias" 
-        component={AdminCategories} 
-        allowedRoles={[UserRole.ADMIN]}
-      />
-      
-      {/* Supplier Routes */}
-      <ProtectedRoute 
-        path="/fornecedor" 
-        component={SupplierDashboard} 
-        allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
-      />
-      <ProtectedRoute 
-        path="/fornecedor/produtos" 
-        component={SupplierProductManagement} 
-        allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
-      />
-      <ProtectedRoute 
-        path="/fornecedor/vendas" 
-        component={SupplierSales} 
-        allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
-      />
-      
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Switch>
+        {/* Public Routes */}
+        <Route path="/" component={HomePage} />
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/busca" component={SearchResults} />
+        <Route path="/produto/:slug" component={ProductDetails} />
+        <Route path="/checkout" component={Checkout} />
+        <Route path="/carrinho" component={CartPage} />
+        <Route path="/categorias" component={CategoriesPage} />
+        <Route path="/perfil" component={ProfilePage} />
+        
+        {/* New Public Routes */}
+        <Route path="/como-funciona" component={HowItWorksPage} />
+        <Route path="/fornecedores" component={SuppliersListPage} />
+        <Route path="/blog" component={BlogPage} />
+        <Route path="/blog/:slug" component={BlogPostPage} />
+        <Route path="/contato" component={ContactPage} />
+        <Route path="/faq" component={FAQPage} />
+        <Route path="/termos" component={TermsPage} />
+        <Route path="/privacidade" component={PrivacyPage} />
+        <Route path="/ajuda" component={HelpPage} />
+        
+        {/* Supplier Routes */}
+        <ProtectedRoute 
+          path="/fornecedor" 
+          component={SupplierDashboard} 
+          allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+        />
+        <ProtectedRoute 
+          path="/fornecedor/produtos" 
+          component={SupplierProductManagement} 
+          allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+        />
+        <ProtectedRoute 
+          path="/fornecedor/vendas" 
+          component={SupplierSales} 
+          allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+        />
+        
+        {/* Fallback to 404 */}
+        <Route component={NotFound} />
+      </Switch>
+      <ChatWidget />
+    </>
+  );
+}
+
+// Rotas de administração com layout de Admin
+function AdminRoutes() {
+  return (
+    <AdminChatProvider>
+      <AdminLayout>
+        <Switch>
+          <ProtectedRoute 
+            path="/admin" 
+            component={AdminDashboard} 
+            allowedRoles={[UserRole.ADMIN]} 
+          />
+          <ProtectedRoute 
+            path="/admin/fornecedores" 
+            component={AdminSuppliers} 
+            allowedRoles={[UserRole.ADMIN]}
+          />
+          <ProtectedRoute 
+            path="/admin/comissoes" 
+            component={AdminCommissions} 
+            allowedRoles={[UserRole.ADMIN]}
+          />
+          <ProtectedRoute 
+            path="/admin/chat" 
+            component={ChatAdminPage} 
+            allowedRoles={[UserRole.ADMIN]}
+          />
+          <ProtectedRoute 
+            path="/admin/categorias" 
+            component={AdminCategories} 
+            allowedRoles={[UserRole.ADMIN]}
+          />
+          {/* Fallback para rota de admin não encontrada */}
+          <Route path="/admin/*">
+            <div className="p-8 text-center">
+              <h2 className="text-2xl font-bold mb-4">Página de Administração não encontrada</h2>
+              <p>A página de administração que você está procurando não existe.</p>
+            </div>
+          </Route>
+        </Switch>
+      </AdminLayout>
+    </AdminChatProvider>
   );
 }
 
@@ -126,10 +149,8 @@ function App() {
       <CartProvider>
         <WebSocketProvider>
           <ChatProvider>
-            <Router />
             <Toaster />
-            {/* Adicionando o componente de chat apenas em páginas que não são de admin */}
-            {!isAdminPage && <ChatWidget />}
+            {isAdminPage ? <AdminRoutes /> : <MainRoutes />}
           </ChatProvider>
         </WebSocketProvider>
       </CartProvider>
