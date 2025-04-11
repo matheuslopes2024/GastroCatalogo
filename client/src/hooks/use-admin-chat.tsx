@@ -54,19 +54,21 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Obter conversas
-  const { 
-    data: conversations = [], 
-    isLoading: isLoadingConversations 
-  } = useQuery({
-    queryKey: ['/api/admin/chat/conversations'],
-    queryFn: async () => {
-      if (!user || user.role !== UserRole.ADMIN) return [];
-      
+  // Estado local para conversas para evitar o loop infinito de requests
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  
+  // Carregar conversas uma vez e via WebSocket
+  useEffect(() => {
+    if (!user || user.role !== UserRole.ADMIN) return;
+    
+    const fetchConversations = async () => {
+      setIsLoadingConversations(true);
       try {
         const response = await apiRequest('GET', '/api/admin/chat/conversations');
         const data = await response.json();
-        return data as ChatConversation[];
+        console.log('Conversas carregadas via API:', data.length);
+        setConversations(data);
       } catch (error) {
         console.error('Erro ao buscar conversas:', error);
         
@@ -75,13 +77,22 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
           type: 'admin_request_conversations'
         });
         
-        return [];
+        // Não faz retry automático
+      } finally {
+        setIsLoadingConversations(false);
       }
-    },
-    enabled: !!user && user.role === UserRole.ADMIN,
-    staleTime: 10000, // 10 segundos para reduzir a frequência de requisições
-    refetchInterval: 30000, // 30 segundos para refresh periódico
-  });
+    };
+    
+    // Busca inicial
+    fetchConversations();
+    
+    // Configura um refresh periódico de 30 segundos
+    const interval = setInterval(() => {
+      fetchConversations();
+    }, 60000); // 1 minuto
+    
+    return () => clearInterval(interval);
+  }, [user, sendWebSocketMessage]);
 
   // Filtrar conversas
   const filteredConversations = filterConversations(conversations);
@@ -157,9 +168,16 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['/api/admin/chat/conversations']
-      });
+      // Atualizar conversas manualmente sem usar queryClient
+      apiRequest('GET', '/api/admin/chat/conversations')
+        .then(response => response.json())
+        .then(conversations => {
+          console.log('Conversas atualizadas após marcar mensagens como lidas:', conversations.length);
+          setConversations(conversations);
+        })
+        .catch(error => {
+          console.error('Erro ao recarregar conversas:', error);
+        });
     },
   });
 
@@ -251,14 +269,31 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         
         // Receber nova mensagem de chat (do cliente ou fornecedor)
         if (data.type === 'chat_message' && data.message) {
-          queryClient.invalidateQueries({
-            queryKey: ['/api/admin/chat/conversations']
-          });
+          // Atualizar conversas diretamente
+          apiRequest('GET', '/api/admin/chat/conversations')
+            .then(response => response.json())
+            .then(conversations => {
+              console.log('Conversas recarregadas após nova mensagem:', conversations.length);
+              setConversations(conversations);
+            })
+            .catch(error => {
+              console.error('Erro ao recarregar conversas:', error);
+            });
           
           if (activeConversation && data.message.conversationId === activeConversation.id) {
-            queryClient.invalidateQueries({
-              queryKey: ['/api/admin/chat/messages', activeConversation.id]
-            });
+            // Atualizar mensagens diretamente
+            apiRequest('GET', `/api/admin/chat/messages?conversationId=${activeConversation.id}&limit=${messagesLimit}`)
+              .then(response => response.json())
+              .then(messages => {
+                console.log('Mensagens atualizadas após nova mensagem:', messages.length);
+                queryClient.setQueryData(
+                  ['/api/admin/chat/messages', activeConversation.id, messagesLimit],
+                  messages
+                );
+              })
+              .catch(error => {
+                console.error('Erro ao recarregar mensagens:', error);
+              });
             
             // Marcar mensagem como lida se a conversa estiver aberta
             if (data.message.id) {
@@ -275,10 +310,8 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         
         // Atualização de conversas
         if (data.type === 'conversations_update' && Array.isArray(data.conversations)) {
-          queryClient.setQueryData(
-            ['/api/admin/chat/conversations'],
-            data.conversations
-          );
+          console.log('Conversas atualizadas via WebSocket:', data.conversations.length);
+          setConversations(data.conversations);
         }
       } catch (error) {
         console.error('Erro ao processar mensagem WebSocket:', error);
@@ -306,11 +339,12 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
   }, [addMessageHandler, removeMessageHandler, sendWebSocketMessage, user, queryClient, activeConversation, markAsReadMutation, toast]);
 
   // Auto-marcar mensagens como lidas quando a conversa estiver ativa
+  // Removido o useEffect disparado por mudanças em messages.length para evitar loop
   useEffect(() => {
     if (activeConversation && !isLoadingMessages && !isFetchingMessages) {
       markAllAsRead();
     }
-  }, [activeConversation, messages.length, isLoadingMessages, isFetchingMessages, markAllAsRead]);
+  }, [activeConversation, isLoadingMessages, isFetchingMessages, markAllAsRead]);
 
   // Determina se este é o chat de administração
   const isAdminChat = user?.role === UserRole.ADMIN;

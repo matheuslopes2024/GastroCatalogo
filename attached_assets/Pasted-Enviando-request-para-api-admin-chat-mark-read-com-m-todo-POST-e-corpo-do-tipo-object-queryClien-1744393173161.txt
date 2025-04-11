@@ -1,0 +1,48 @@
+Enviando request para: /api/admin/chat/mark-read com método: POST e corpo do tipo: object
+queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+queryClient.ts:35 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+apiRequest @ queryClient.ts:35
+queryFn @ use-admin-chat.tsx:67
+fetchFn @ @tanstack_react-query.js?v=f9bbb7cb:840
+run @ @tanstack_react-query.js?v=f9bbb7cb:494
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:1726
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:1725
+batch @ @tanstack_react-query.js?v=f9bbb7cb:583
+refetchQueries @ @tanstack_react-query.js?v=f9bbb7cb:1724
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:1716
+batch @ @tanstack_react-query.js?v=f9bbb7cb:583
+invalidateQueries @ @tanstack_react-query.js?v=f9bbb7cb:1705
+onSuccess @ use-admin-chat.tsx:160
+execute @ @tanstack_react-query.js?v=f9bbb7cb:1233Understand this error
+use-admin-chat.tsx:71 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at queryFn (use-admin-chat.tsx:67:32)
+    at Object.fetchFn [as fn] (@tanstack_react-query.js?v=f9bbb7cb:840:14)
+    at run (@tanstack_react-query.js?v=f9bbb7cb:494:49)
+    at Object.start (@tanstack_react-query.js?v=f9bbb7cb:536:9)
+    at _a4.fetch (@tanstack_react-query.js?v=f9bbb7cb:926:41)
+    at @tanstack_react-query.js?v=f9bbb7cb:1726:29
+    at Array.map (<anonymous>)
+    at @tanstack_react-query.js?v=f9bbb7cb:1725:101
+    at Object.batch (@tanstack_react-query.js?v=f9bbb7cb:583:18)
+queryFn @ use-admin-chat.tsx:71
+await in queryFn
+fetchFn @ @tanstack_react-query.js?v=f9bbb7cb:840
+run @ @tanstack_react-query.js?v=f9bbb7cb:494
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:1726
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:1725
+batch @ @tanstack_react-query.js?v=f9bbb7cb:583
+refetchQueries @ @tanstack_react-query.js?v=f9bbb7cb:1724
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:1716
+batch @ @tanstack_react-query.js?v=f9bbb7cb:583
+invalidateQueries @ @tanstack_react-query.js?v=f9bbb7cb:1705
+onSuccess @ use-admin-chat.tsx:160
+execute @ @tanstack_react-query.js?v=f9bbb7cb:1233Understand this error
+queryClient.ts:32 Enviando request para: /api/admin/chat/mark-read com método: POST e corpo do tipo: object
