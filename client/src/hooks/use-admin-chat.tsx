@@ -1,29 +1,78 @@
-import React, { createContext, useState, useContext, useCallback, ReactNode, useEffect } from 'react';
+/**
+ * @file use-admin-chat.tsx
+ * @description Hook profissional para gerenciar o chat do painel de administração com suporte
+ * a conversas de clientes e fornecedores, integração com WebSocket para atualização em tempo real
+ * e sistema de notificação de novas mensagens.
+ */
+
+import React, { createContext, useState, useContext, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useWebSocket } from '@/hooks/use-websocket';
 import { ChatConversation, ChatMessage, InsertChatMessage, UserRole } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-// Tipagem para o contexto
+/**
+ * Define o tipo de dados para o contexto do chat de administração
+ * Contém todos os estados e funções necessárias para gerenciar o chat
+ */
 type AdminChatContextType = {
+  // Estado da conversa ativamente selecionada
   activeConversation: ChatConversation | null;
+  
+  // Lista de mensagens da conversa ativa
   messages: ChatMessage[];
+  
+  // Lista de todas as conversas disponíveis
   conversations: ChatConversation[];
+  
+  // Contador de mensagens não lidas em todas as conversas
   unreadCount: number;
+  
+  // Conjunto de IDs de usuários atualmente online
   usersOnline: Set<number>;
+  
+  // Função para enviar uma nova mensagem
   sendMessage: (text: string, attachments?: string[]) => Promise<void>;
+  
+  // Função para carregar mais mensagens (paginação)
   loadMoreMessages: () => void;
+  
+  // Função para definir a conversa ativa
   setActiveConversation: (conversation: ChatConversation | null) => void;
+  
+  // Flag indicando se existem mais mensagens para carregar
   hasMore: boolean;
+  
+  // Estado de carregamento das mensagens
   isLoadingMessages: boolean;
+  
+  // Estado de carregamento das conversas
   isLoadingConversations: boolean;
+  
+  // Flag indicando se é a interface de chat de admin
   isAdminChat: boolean;
+  
+  // Função para marcar todas as mensagens como lidas
   markAllAsRead: () => Promise<void>;
+  
+  // Função para criar uma nova conversa
   createConversation: (userId: number) => Promise<ChatConversation>;
+  
+  // Modo de filtro atual (todos, clientes ou fornecedores)
   filterMode: 'all' | 'clients' | 'suppliers';
+  
+  // Função para alterar o modo de filtro
   setFilterMode: (mode: 'all' | 'clients' | 'suppliers') => void;
+  
+  // Formatador de data para mensagens
+  formatMessageDate: (date: Date) => string;
+  
+  // Estado de envio de mensagem
+  isSendingMessage: boolean;
 };
 
 const AdminChatContext = createContext<AdminChatContextType | undefined>(undefined);
@@ -194,9 +243,27 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     }
   }, [activeConversation, messages, markAsReadMutation, user?.id]);
 
-  // Enviar mensagem - implementação modificada para evitar requisições em cascata
+  /**
+   * Função para enviar mensagem - implementação completamente reescrita para:
+   * 1. Evitar requisições em cascata e loops infinitos
+   * 2. Implementar animação de envio com controle de estado
+   * 3. Usar WebSocket para notificações em tempo real
+   * 4. Atualizar cache localmente para melhor performance
+   * 5. Implementar melhor tratamento de erros
+   */
   const sendMessage = useCallback(async (text: string, attachments: string[] = []) => {
     if (!activeConversation || !user) return;
+    if (!text.trim() && (!attachments || attachments.length === 0)) {
+      toast({
+        title: 'Mensagem vazia',
+        description: 'Não é possível enviar uma mensagem vazia.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Ativar status de envio para animação
+    setIsSendingMessage(true);
     
     const newMessage: InsertChatMessage = {
       conversationId: activeConversation.id,
@@ -209,15 +276,41 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     };
     
     try {
-      // Enviar mensagem diretamente sem usar mutação para evitar invalidações
+      // Criar uma versão otimista da mensagem para atualização imediata
+      const optimisticMessage: ChatMessage = {
+        id: Date.now(), // ID temporário que será substituído
+        createdAt: new Date(),
+        ...newMessage,
+        isRead: false,
+        attachmentUrl: null,
+        attachmentType: null,
+        attachmentData: null,
+        attachmentSize: null,
+        isSending: true, // Propriedade adicional para mostrar status de envio
+      };
+      
+      // Atualizar UI imediatamente com mensagem otimista
+      const updatedMessages = [...messages, optimisticMessage];
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+        updatedMessages
+      );
+      
+      // Enviar mensagem para o servidor
       const response = await apiRequest('POST', '/api/admin/chat/send-message', newMessage);
       const sentMessage = await response.json();
       
-      // Atualizar estado local de mensagens manualmente
-      const updatedMessages = [...messages, sentMessage];
-      queryClient.setQueryData(['/api/admin/chat/messages', activeConversation.id, messagesLimit], updatedMessages);
+      // Remover mensagem otimista e adicionar a mensagem real
+      const finalMessages = messages
+        .filter(msg => msg.id !== optimisticMessage.id)
+        .concat(sentMessage);
+        
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+        finalMessages
+      );
       
-      // Atualizar lista de conversas manualmente
+      // Atualizar lista de conversas sem bloquear a UI
       apiRequest('GET', '/api/admin/chat/conversations')
         .then(response => response.json())
         .then(conversations => {
@@ -227,18 +320,37 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         .catch(error => {
           console.error('Erro ao recarregar conversas após enviar mensagem:', error);
         });
+      
+      // Notificar via WebSocket para entrega em tempo real
+      sendWebSocketMessage({
+        type: 'admin_chat_message',
+        message: sentMessage,
+        conversationId: sentMessage.conversationId,
+        recipientId: activeConversation.participantId ?? 0,
+        senderName: user.name || user.username
+      });
         
       return sentMessage;
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
+      
+      // Remover mensagem otimista em caso de erro
+      const cleanedMessages = messages.filter(msg => !('isSending' in msg));
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+        cleanedMessages
+      );
+      
       toast({
         title: 'Erro ao enviar mensagem',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive'
       });
       throw error;
+    } finally {
+      setIsSendingMessage(false);
     }
-  }, [activeConversation, user, messages, queryClient, messagesLimit, toast]);
+  }, [activeConversation, user, messages, queryClient, messagesLimit, toast, sendWebSocketMessage]);
 
   // Mutation para criar nova conversa
   const createConversationMutation = useMutation({
@@ -386,6 +498,14 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
 
   // Determina se este é o chat de administração
   const isAdminChat = user?.role === UserRole.ADMIN;
+  
+  // Estado para controlar a animação de envio de mensagem
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  
+  // Formatador de data para mensagens
+  const formatMessageDate = useCallback((date: Date) => {
+    return format(date, "dd 'de' MMMM', às' HH:mm", { locale: ptBR });
+  }, []);
 
   // Fornecer contexto
   return (
@@ -406,7 +526,9 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         markAllAsRead,
         createConversation,
         filterMode,
-        setFilterMode
+        setFilterMode,
+        formatMessageDate,
+        isSendingMessage
       }}
     >
       {children}

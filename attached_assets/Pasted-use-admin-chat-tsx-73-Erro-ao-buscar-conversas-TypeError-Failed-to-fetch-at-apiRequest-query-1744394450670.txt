@@ -1,0 +1,42 @@
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+2
+queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+use-chat.tsx:328 Processando mensagem WebSocket: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.715Z'}
+queryClient.ts:35 
+ GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+use-websocket.tsx:85 Mensagem WebSocket recebida: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.722Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.723Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.724Z'}
+queryClient.ts:35 
+ GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+queryClient.ts:35 
+ GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+2
+queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+use-chat.tsx:328 Processando mensagem WebSocket: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.724Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.730Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: 
+{type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-11T18:01:15.734Z'}
+queryClient.ts:35 
+ GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
