@@ -111,7 +111,13 @@ function ConversationItem({ conversation, onSelect }: {
   );
 }
 
-function ConversationsList() {
+function ConversationsList({
+  isAdmin = false,
+  allowLargeAttachments = true
+}: {
+  isAdmin?: boolean;
+  allowLargeAttachments?: boolean;
+}) {
   const { 
     conversations, 
     setActiveConversation, 
@@ -281,7 +287,15 @@ function ConversationsList() {
   );
 }
 
-function ChatMessage({ message, isMine }: { message: ChatMessage; isMine: boolean }) {
+function ChatMessage({ 
+  message, 
+  isMine,
+  showAttachmentPreview = true 
+}: { 
+  message: ChatMessage; 
+  isMine: boolean;
+  showAttachmentPreview?: boolean;
+}) {
   const { user } = useAuth();
   
   const formattedTime = formatDistanceToNow(new Date(message.createdAt), {
@@ -302,19 +316,65 @@ function ChatMessage({ message, isMine }: { message: ChatMessage; isMine: boolea
       <div className={`max-w-[70%] ${isMine ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800'} p-3 rounded-lg`}>
         {message.attachmentData && (
           <div className="mb-2 p-2 bg-white/10 rounded border border-white/20 text-sm">
-            <div className="flex items-center">
-              <Paperclip className="h-4 w-4 mr-2" />
-              <span className="truncate">Arquivo anexado</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center truncate mr-2">
+                {message.attachmentType?.startsWith('image/') ? (
+                  <Image className="h-4 w-4 mr-2 flex-shrink-0" />
+                ) : message.attachmentType?.startsWith('video/') ? (
+                  <Video className="h-4 w-4 mr-2 flex-shrink-0" />
+                ) : message.attachmentType?.includes('pdf') ? (
+                  <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                ) : (
+                  <Paperclip className="h-4 w-4 mr-2 flex-shrink-0" />
+                )}
+                <span className="truncate">{message.attachmentName || "Arquivo anexado"}</span>
+              </div>
+              
+              <a 
+                href={message.attachmentData} 
+                download={message.attachmentName || "download"} 
+                className="text-primary-foreground/80 hover:text-primary-foreground"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="h-4 w-4" />
+              </a>
             </div>
             
-            {message.attachmentType?.startsWith('image/') && (
-              <div className="mt-1">
-                <img 
-                  src={message.attachmentData} 
-                  alt="Anexo" 
-                  className="max-h-40 rounded object-cover"
-                />
-              </div>
+            {showAttachmentPreview && (
+              <>
+                {message.attachmentType?.startsWith('image/') && (
+                  <div className="mt-2">
+                    <a 
+                      href={message.attachmentData} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <img 
+                        src={message.attachmentData} 
+                        alt="Anexo" 
+                        className="max-h-60 rounded object-contain w-full"
+                      />
+                    </a>
+                  </div>
+                )}
+                
+                {message.attachmentType?.startsWith('video/') && (
+                  <div className="mt-2">
+                    <video 
+                      src={message.attachmentData} 
+                      controls 
+                      className="max-h-60 rounded w-full"
+                    />
+                  </div>
+                )}
+                
+                {message.attachmentType?.includes('pdf') && (
+                  <div className="mt-2 p-2 bg-white/10 rounded border border-white/20 flex items-center justify-center">
+                    <FileText className="h-8 w-8 opacity-50" />
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -339,7 +399,17 @@ function ChatMessage({ message, isMine }: { message: ChatMessage; isMine: boolea
   );
 }
 
-function ChatConversation() {
+function ChatConversation({ 
+  isAdmin = false,
+  showAttachmentPreview = true,
+  allowLargeAttachments = true,
+  showEmojis = false
+}: {
+  isAdmin?: boolean;
+  showAttachmentPreview?: boolean;
+  allowLargeAttachments?: boolean;
+  showEmojis?: boolean;
+}) {
   const { 
     activeConversation, 
     messages, 
@@ -445,7 +515,8 @@ function ChatConversation() {
               <ChatMessage 
                 key={message.id} 
                 message={message} 
-                isMine={message.senderId === user?.id} 
+                isMine={message.senderId === user?.id}
+                showAttachmentPreview={showAttachmentPreview}
               />
             ))}
             <div ref={messagesEndRef} />
@@ -581,12 +652,20 @@ type ChatWidgetProps = {
   hideToggle?: boolean;
   fullHeight?: boolean;
   className?: string;
+  isAdmin?: boolean;
+  showAttachmentPreview?: boolean;
+  allowLargeAttachments?: boolean;
+  showEmojis?: boolean;
 };
 
 export default function ChatWidget({ 
   hideToggle = false, 
   fullHeight = false,
-  className = ""
+  className = "",
+  isAdmin = false,
+  showAttachmentPreview = true,
+  allowLargeAttachments = true,
+  showEmojis = false
 }: ChatWidgetProps) {
   const { isOpen } = useChat();
   
@@ -608,9 +687,17 @@ export default function ChatWidget({
             
             <div className="flex-1 flex flex-col overflow-hidden">
               {!!useChat().activeConversation ? (
-                <ChatConversation />
+                <ChatConversation 
+                  isAdmin={isAdmin}
+                  showAttachmentPreview={showAttachmentPreview}
+                  allowLargeAttachments={allowLargeAttachments}
+                  showEmojis={showEmojis}
+                />
               ) : (
-                <ConversationsList />
+                <ConversationsList 
+                  isAdmin={isAdmin}
+                  allowLargeAttachments={allowLargeAttachments}
+                />
               )}
             </div>
           </motion.div>
