@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -163,7 +164,33 @@ export function MessageHistory({
     }, 100);
   }, [activeConversation]);
   
-  if (!activeConversation?.messages?.length) {
+  // Verifica se há mensagens na conversa atual
+  if (!activeConversation || !activeConversation.id) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <p>Nenhuma mensagem ainda.</p>
+          <p className="text-sm">Comece uma conversa!</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Obtém as mensagens da conversa atual
+  const messages = useQuery<ExtendedChatMessage[]>({
+    queryKey: ['/api/chat/messages', activeConversation.id],
+    enabled: !!activeConversation?.id
+  });
+  
+  if (messages.isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+  
+  if (!messages.data || messages.data.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center text-muted-foreground">
@@ -176,7 +203,7 @@ export function MessageHistory({
   
   return (
     <div className="space-y-1 p-2">
-      {activeConversation.messages.map((msg: any) => (
+      {messages.data.map((msg: ExtendedChatMessage) => (
         <ChatMessageItem 
           key={msg.id} 
           message={msg} 
@@ -223,24 +250,14 @@ export function MessageInput({
       // Obter o ID do destinatário (o outro participante da conversa)
       const receiverId = activeConversation.participantIds.find(id => id !== user.id) || 0;
       
-      // Enviar a mensagem usando a API
-      const response = await fetch('/api/chat/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: message,
-          conversationId: activeConversation.id,
-          senderId: user.id,
-          receiverId,
-          attachments
-        }),
+      // Usar o hook sendMessage do useChat para enviar a mensagem
+      // Este é o ponto chave da correção - usamos o hook em vez de fazer fetch diretamente
+      await sendMessage({
+        message: message,
+        conversationId: activeConversation.id,
+        receiverId,
+        attachment: attachments.length > 0 ? attachments[0] : undefined,
       });
-      
-      if (!response.ok) {
-        throw new Error('Falha ao enviar mensagem');
-      }
       
       // Limpar os campos após o envio bem-sucedido
       setMessage("");
