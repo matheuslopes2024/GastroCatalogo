@@ -272,11 +272,9 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <SheetContent side="left" className="p-0 w-72">
                 <div className="px-3 py-4 border-b">
                   <div className="flex items-center">
-                    <Link href="/admin">
-                      <a className="flex items-center gap-2 font-bold text-xl">
-                        <Layers className="h-6 w-6 text-primary" />
-                        <span>Gastro Admin</span>
-                      </a>
+                    <Link href="/admin" className="flex items-center gap-2 font-bold text-xl">
+                      <Layers className="h-6 w-6 text-primary" />
+                      <span>Gastro Admin</span>
                     </Link>
                   </div>
                 </div>
@@ -288,11 +286,9 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               </SheetContent>
             </Sheet>
             
-            <Link href="/admin">
-              <a className="flex items-center gap-2 font-bold text-xl">
+            <Link href="/admin" className="flex items-center gap-2 font-bold text-xl">
                 <Layers className="h-6 w-6 text-primary hidden md:block" />
                 <span>Gastro Admin</span>
-              </a>
             </Link>
             
             <Button 
@@ -330,10 +326,8 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>Notificações</span>
-                  <Link href="/admin/notificacoes">
-                    <a className="text-xs text-primary hover:underline">
-                      Ver todas
-                    </a>
+                  <Link href="/admin/notificacoes" className="text-xs text-primary hover:underline">
+                    Ver todas
                   </Link>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -374,10 +368,8 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>Mensagens</span>
-                  <Link href="/admin/chat">
-                    <a className="text-xs text-primary hover:underline">
+                  <Link href="/admin/chat" className="text-xs text-primary hover:underline">
                       Ver todas
-                    </a>
                   </Link>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -426,20 +418,14 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/admin/perfil">
-                    <a className="flex w-full">Perfil</a>
-                  </Link>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/perfil" className="flex w-full">Perfil</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/admin/configuracoes">
-                    <a className="flex w-full">Configurações</a>
-                  </Link>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/configuracoes" className="flex w-full">Configurações</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/admin/ajuda">
-                    <a className="flex w-full">Ajuda & Suporte</a>
-                  </Link>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/ajuda" className="flex w-full">Ajuda & Suporte</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleLogout}>
