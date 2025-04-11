@@ -1,5 +1,6 @@
 import { useChat } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 import ChatWidget from "./chat-widget";
 import ChatConversationsList from "./chat-conversations-list";
 import { cn } from "@/lib/utils";
@@ -15,8 +16,22 @@ export default function ChatDashboard({
   sidebarClassName,
   contentClassName
 }: ChatDashboardProps) {
-  const { activeConversationId } = useChat();
+  const { activeConversation, setConversationType } = useChat();
   const { user } = useAuth();
+  
+  // Determinar se é página de admin para configurar o tipo de conversa apropriadamente
+  useEffect(() => {
+    if (user?.role === UserRole.ADMIN) {
+      // Verificar se estamos na página de chat-admin
+      const pathname = window.location.pathname;
+      if (pathname.includes("/admin/chat")) {
+        // Obter o tipo de conversa da URL ou parâmetro, caso exista
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get("type") as "all" | "user" | "supplier" || "all";
+        setConversationType(type);
+      }
+    }
+  }, [user?.role, setConversationType]);
   
   if (!user) return null;
   
@@ -27,7 +42,7 @@ export default function ChatDashboard({
       </div>
       
       <div className={cn("md:col-span-2 h-full flex items-center justify-center", contentClassName)}>
-        {activeConversationId ? (
+        {activeConversation ? (
           <ChatWidget 
             hideToggle 
             fullHeight 

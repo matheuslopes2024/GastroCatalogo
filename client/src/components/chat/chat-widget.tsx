@@ -11,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 function ChatHeader() {
   const { closeChat, activeConversation, setActiveConversation, unreadCount } = useChat();
@@ -576,7 +577,17 @@ function ChatToggleButton() {
   );
 }
 
-export default function ChatWidget() {
+type ChatWidgetProps = {
+  hideToggle?: boolean;
+  fullHeight?: boolean;
+  className?: string;
+};
+
+export default function ChatWidget({ 
+  hideToggle = false, 
+  fullHeight = false,
+  className = ""
+}: ChatWidgetProps) {
   const { isOpen } = useChat();
   
   return (
@@ -587,7 +598,11 @@ export default function ChatWidget() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-20 right-6 w-80 sm:w-96 h-[500px] bg-white rounded-lg shadow-xl z-50 flex flex-col overflow-hidden border"
+            className={cn(
+              "fixed bottom-20 right-6 w-80 sm:w-96 h-[500px] bg-white rounded-lg shadow-xl z-50 flex flex-col overflow-hidden border",
+              fullHeight && "h-full",
+              className
+            )}
           >
             <ChatHeader />
             
@@ -602,7 +617,7 @@ export default function ChatWidget() {
         )}
       </AnimatePresence>
       
-      <ChatToggleButton />
+      {!hideToggle && <ChatToggleButton />}
     </>
   );
 }
