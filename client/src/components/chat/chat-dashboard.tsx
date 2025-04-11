@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import ChatWidget from "./chat-widget";
 import ChatConversationsList from "./chat-conversations-list";
 import { cn } from "@/lib/utils";
+import { UserRole } from "@shared/schema";
 
 type ChatDashboardProps = {
   className?: string;

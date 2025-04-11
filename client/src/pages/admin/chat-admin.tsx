@@ -217,7 +217,10 @@ export default function ChatAdminPage() {
                 </div>
               </div>
             ) : (
-              <ChatDashboard />
+              <ChatDashboard 
+                contentClassName="bg-white"
+                sidebarClassName="bg-white/50"
+              />
             )}
           </TabsContent>
           
@@ -230,7 +233,10 @@ export default function ChatAdminPage() {
                 </div>
               </div>
             ) : (
-              <ChatDashboard />
+              <ChatDashboard 
+                contentClassName="bg-white"
+                sidebarClassName="bg-white/50"
+              />
             )}
           </TabsContent>
           
@@ -243,7 +249,10 @@ export default function ChatAdminPage() {
                 </div>
               </div>
             ) : (
-              <ChatDashboard />
+              <ChatDashboard 
+                contentClassName="bg-white"
+                sidebarClassName="bg-white/50"
+              />
             )}
           </TabsContent>
         </Tabs>
