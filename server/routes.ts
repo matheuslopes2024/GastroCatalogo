@@ -1241,9 +1241,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mapa para rastrear status online dos usuários
   const onlineStatus = new Map();
   
-  // Mapa para evitar solicitações duplicadas em curto período
-  const recentConversationRequests = new Map();
-  
   // Função auxiliar para notificar outros clientes sobre status online
   const broadcastUserStatus = (userId, isOnline) => {
     // Obter todas as conversas do usuário
@@ -1652,10 +1649,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Admin solicita todas as conversas
         else if (data.type === 'admin_request_conversations' && userId && userRole === UserRole.ADMIN) {
           try {
-            // Buscar e enviar as conversas - simplificado para evitar loops
             const allConversations = await storage.getAllChatConversations();
             ws.send(JSON.stringify({
-              type: 'conversations_update', // Alterado para usar o mesmo tipo de outras atualizações
+              type: 'admin_conversations_list',
               conversations: allConversations,
               timestamp: new Date().toISOString()
             }));
