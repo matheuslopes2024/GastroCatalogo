@@ -844,7 +844,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       
       // Adicionar mensagem de erro ao chat para feedback visual imediato
       const errorSystemMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
+        id: `error-${Date.now()}`, // String temporária que será convertida para número pelo servidor
         conversationId: activeConversation.id,
         senderId: -1, // ID especial para sistema
         receiverId: user.id,

@@ -1,9 +1,40 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
 import AdminChatDashboard from '@/components/admin/admin-chat-dashboard';
 import { AdminChatProvider } from '@/hooks/use-admin-chat';
 
 export default function ChatAdminPage() {
+  // Aplicar correção WebSocket ao montar a página
+  useEffect(() => {
+    // Aplicar patch para interceptar a criação do WebSocket
+    if (typeof window !== 'undefined' && window.WebSocket) {
+      console.log('[WS:patch] Aplicando correção WebSocket...');
+      const originalWebSocket = window.WebSocket;
+      
+      window.WebSocket = function(url, protocols) {
+        // Corrigir URLs incorretas que usam /?token= em vez de /ws?token=
+        if (url && typeof url === 'string' && url.includes('/?token=')) {
+          console.warn('[WS:patch] Corrigindo URL WebSocket incorreta', url);
+          url = url.replace('/?token=', '/ws?token=');
+          console.info('[WS:patch] URL corrigida:', url);
+        }
+        
+        // Chamar o construtor original com a URL corrigida
+        return new originalWebSocket(url, protocols);
+      };
+      
+      // Manter as propriedades estáticas do WebSocket
+      window.WebSocket.CONNECTING = originalWebSocket.CONNECTING;
+      window.WebSocket.OPEN = originalWebSocket.OPEN;
+      window.WebSocket.CLOSING = originalWebSocket.CLOSING;
+      window.WebSocket.CLOSED = originalWebSocket.CLOSED;
+      
+      console.info('[WS:patch] Patch de WebSocket instalado para corrigir URL');
+    }
+
+    // Nenhuma limpeza necessária ao desmontar, pois o patch deve permanecer ativo
+  }, []);
+
   return (
     <AdminChatProvider>
       <AdminLayout 
