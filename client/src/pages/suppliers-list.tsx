@@ -157,14 +157,16 @@ const SupplierCard = ({ supplier }: { supplier: Supplier }) => {
             </div>
             
             <div className="flex items-center gap-2">
-              <Link href={`/fornecedor/${supplier.id}`} className="flex-1">
-                <Button variant="outline" className="w-full group">
+              <Link href={`/fornecedores/${supplier.id}`} className="flex-1">
+                <Button variant="outline" className="w-full group bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+                  <Building size={16} className="mr-2 text-blue-600" />
                   <span>Ver Detalhes</span>
                   <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link href={`/busca?fornecedor=${supplier.id}`} className="flex-1">
                 <Button className="w-full group">
+                  <Store size={16} className="mr-2" />
                   <span>Ver Produtos</span>
                   <ArrowUpRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </Button>

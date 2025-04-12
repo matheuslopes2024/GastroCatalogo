@@ -75,6 +75,13 @@ function MainRoutes() {
         {/* New Public Routes */}
         <Route path="/como-funciona" component={HowItWorksPage} />
         <Route path="/fornecedores" component={SuppliersListPage} />
+        <Route path="/fornecedores/:supplierId">
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>}>
+            {React.createElement(lazy(() => import("@/pages/supplier-detail")))}
+          </Suspense>
+        </Route>
         <Route path="/blog" component={BlogPage} />
         <Route path="/blog/:slug" component={BlogPostPage} />
         <Route path="/contato" component={ContactPage} />
