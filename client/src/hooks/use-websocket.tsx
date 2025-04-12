@@ -129,14 +129,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         console.log("WebSocket desconectado:", event);
         setConnected(false);
         
-        // Tentar reconectar após um atraso apenas se não estiver em uma rota de admin
-        if (!reconnectTimeout.current && user && !window.location.pathname.startsWith('/admin')) {
+        // Tentar reconectar após um atraso, incluindo para rotas admin 
+        // (precisamos de WebSocket para todas as partes do aplicativo)
+        if (!reconnectTimeout.current && user) {
           console.log("Agendando reconexão...");
           reconnectTimeout.current = setTimeout(() => {
             reconnectTimeout.current = null;
             console.log("Tentando reconectar WebSocket...");
             connectWebSocket();
-          }, 5000); // Reconectar após 5 segundos
+          }, 3000); // Reconectar após 3 segundos para maior rapidez
         }
       };
       

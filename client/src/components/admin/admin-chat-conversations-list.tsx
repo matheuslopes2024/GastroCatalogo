@@ -139,14 +139,18 @@ export function AdminChatConversationsList() {
   const { data: users } = useQuery({
     queryKey: ['/api/admin/users'],
     queryFn: async () => {
-      // Placeholder para dados - aqui você implementará a chamada real à API
-      return [
-        { id: 1, username: 'João Silva', role: UserRole.CLIENT, email: 'joao@example.com' },
-        { id: 2, username: 'Maria Oliveira', role: UserRole.CLIENT, email: 'maria@example.com' },
-        { id: 3, username: 'Fornecedor ABC', role: UserRole.SUPPLIER, email: 'abc@example.com' },
-      ];
+      try {
+        const response = await fetch('/api/admin/users');
+        if (!response.ok) {
+          throw new Error('Falha ao buscar usuários');
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('Erro ao buscar usuários:', error);
+        return [];
+      }
     },
-    enabled: false // Desativado por padrão, só carrega quando necessário
+    staleTime: 60000 // Dados válidos por 1 minuto
   });
   
   // Atualizar a lista filtrada quando as conversas mudarem ou o termo de pesquisa mudar

@@ -96,8 +96,14 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
    * de tempo para garantir que não há duplicação de eventos.
    */
   const setupWebSocketHandler = useCallback(() => {
-    // Evita registro duplicado de handlers
+    // Evita registro duplicado de handlers e verifica se é admin
     if (handlerRegisteredRef.current || !user || user.role !== UserRole.ADMIN) return;
+    
+    // Desregistrar qualquer handler antigo primeiro para evitar duplicação
+    if (wsHandlerIdRef.current) {
+      removeMessageHandler(wsHandlerIdRef.current);
+      handlerRegisteredRef.current = false;
+    }
     
     // Marcar como registrado
     handlerRegisteredRef.current = true;
@@ -116,16 +122,27 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         // Ignorar mensagens de heartbeat e pong para não sobrecarregar o log
         if (data.type === 'heartbeat' || data.type === 'pong') return;
         
+        // Verificação anti-loop: evita processar a mesma mensagem múltiplas vezes
+        const timestamp = Date.now();
+        const messageId = `${data.type}_${data.timestamp || timestamp}`;
+        const lastTime = lastEventTimestampRef.current[messageId] || 0;
+        
+        if (timestamp - lastTime < 500) { // Ignora mensagens duplicadas em menos de 500ms
+          return;
+        }
+        
+        // Registra o timestamp desta mensagem
+        lastEventTimestampRef.current[messageId] = timestamp;
+        
         // Verificação de tempo para evitar processamento duplicado
-        const now = Date.now();
         const eventKey = `${data.type}-${data.conversationId || 'global'}`;
         
         if (lastEventTimestampRef.current[eventKey] && 
-            now - lastEventTimestampRef.current[eventKey] < DEBOUNCE_INTERVAL) {
+            timestamp - lastEventTimestampRef.current[eventKey] < DEBOUNCE_INTERVAL) {
           return; // Ignora eventos muito próximos
         }
         
-        lastEventTimestampRef.current[eventKey] = now;
+        lastEventTimestampRef.current[eventKey] = timestamp;
         
         // Processar eventos específicos
         
