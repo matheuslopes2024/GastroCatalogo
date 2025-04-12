@@ -1649,12 +1649,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Admin solicita todas as conversas
         else if (data.type === 'admin_request_conversations' && userId && userRole === UserRole.ADMIN) {
           try {
+            // Adicionando log para depuração
+            console.log(`Admin ${userId} solicitou todas as conversas - início da busca`);
+            
+            // Buscar todas as conversas com informações expandidas 
+            // (participantes, mensagens recentes, contagem não lida)
             const allConversations = await storage.getAllChatConversations();
+            
+            // Log para verificar as conversas retornadas
+            console.log(`Encontradas ${allConversations.length} conversas para o admin`);
+            
+            // Para cada conversa, calcular informações adicionais
+            const enhancedConversations = await Promise.all(allConversations.map(async (conv) => {
+              try {
+                // Buscar informações do participante (não admin)
+                const participantIds = conv.participantIds.filter(id => id !== Number(userId));
+                const participantId = participantIds.length > 0 ? participantIds[0] : null;
+                
+                // Buscar última mensagem
+                const recentMessages = await storage.getChatMessages({
+                  conversationId: conv.id,
+                  limit: 1
+                });
+                
+                const lastMessage = recentMessages.length > 0 ? recentMessages[0] : null;
+                
+                // Contar mensagens não lidas manualmente
+                // Implementação rápida para contornar a falta do método na interface
+                const unreadCount = await (async () => {
+                  try {
+                    // Buscar mensagens da conversa
+                    const messages = await storage.getChatMessages({
+                      conversationId: conv.id,
+                      limit: 50 // Limitar para evitar sobrecarga
+                    });
+                    
+                    // Filtrar mensagens não lidas onde o admin é o destinatário
+                    return messages.filter(msg => 
+                      !msg.read && msg.receiverId === Number(userId)
+                    ).length;
+                  } catch (err) {
+                    console.error(`Erro ao calcular mensagens não lidas para conversa ${conv.id}:`, err);
+                    return 0;
+                  }
+                })();
+                
+                // Buscar informações do participante
+                let participantName = "Usuário";
+                let participantRole = UserRole.CLIENT;
+                
+                if (participantId) {
+                  const user = await storage.getUser(participantId);
+                  if (user) {
+                    participantName = user.name || user.username;
+                    participantRole = user.role;
+                  }
+                }
+                
+                // Retornar conversa com informações adicionais
+                return {
+                  ...conv,
+                  participantId,
+                  participantName,
+                  participantRole,
+                  unreadCount,
+                  lastMessageText: lastMessage?.text || "",
+                  lastMessageDate: lastMessage?.createdAt || null
+                };
+              } catch (error) {
+                console.error(`Erro ao processar conversa ${conv.id}:`, error);
+                return conv; // Retorna conversa original em caso de erro
+              }
+            }));
+            
+            // Enviar conversas para o cliente admin
             ws.send(JSON.stringify({
               type: 'admin_conversations_list',
-              conversations: allConversations,
+              conversations: enhancedConversations,
               timestamp: new Date().toISOString()
             }));
+            
+            console.log(`Admin ${userId} - lista de conversas enviada com sucesso`);
           } catch (error) {
             console.error('Erro ao buscar todas as conversas para admin:', error);
             ws.send(JSON.stringify({ 
