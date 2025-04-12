@@ -397,11 +397,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Determinar o receiverId (destinatário)
     let receiverId = params.receiverId;
     if (!receiverId && activeConversation) {
-      const otherParticipant = activeConversation._participants?.find(p => p.id !== user?.id);
-      if (!otherParticipant) {
-        throw new Error("Destinatário não encontrado");
+      // Verificamos se temos os participantes disponíveis
+      if (activeConversation._participants?.length) {
+        const otherParticipant = activeConversation._participants.find(p => p.id !== user?.id);
+        if (otherParticipant) {
+          receiverId = otherParticipant.id;
+        }
       }
-      receiverId = otherParticipant.id;
+      
+      // Se ainda não temos receiverId, verificamos o participantRole para identificar um admin
+      if (!receiverId && activeConversation.participantRole === UserRole.ADMIN) {
+        // Se estamos falando com um admin (caso de fornecedor->admin), usamos o ID 1 (admin padrão)
+        receiverId = 1; // ID do administrador padrão do sistema
+        console.log("Definindo destinatário como admin padrão (ID=1)");
+      } else if (!receiverId && activeConversation.participantId) {
+        // Se temos um participantId, usamos ele
+        receiverId = activeConversation.participantId;
+        console.log(`Usando participantId ${receiverId} como destinatário`);
+      } else if (!receiverId) {
+        // Último recurso: buscar nos IDs de participantes qualquer um que não seja o usuário atual
+        const participantIds = activeConversation.participantIds || [];
+        const otherId = participantIds.find(id => id !== user?.id);
+        if (otherId) {
+          receiverId = otherId;
+          console.log(`Usando participantIds ${receiverId} como destinatário`);
+        } else {
+          throw new Error("Destinatário não encontrado - verifique se há participantes na conversa");
+        }
+      }
     }
     
     const messageData = { 
