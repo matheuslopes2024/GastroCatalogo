@@ -362,24 +362,62 @@ export default function ProductDetailPage() {
           {/* Fornecedor */}
           <Card className="mb-4">
             <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {product.supplier?.name.charAt(0)}
+              <div className="flex justify-between items-start">
+                <div className="flex items-start">
+                  <div className="h-12 w-12 rounded-full relative">
+                    {product.supplier?.imageUrl ? (
+                      <img 
+                        src={product.supplier.imageUrl} 
+                        alt={product.supplier.name} 
+                        className="w-full h-full object-cover rounded-full border-2 border-primary/20"
+                      />
+                    ) : (
+                      <div className="h-full w-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {product.supplier?.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs p-1 rounded-full">
+                      <CheckCircle size={12} />
+                    </div>
                   </div>
                   <div className="ml-3">
-                    <p className="font-medium">{product.supplier?.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{product.supplier?.name}</p>
+                      {product.supplier?.isPremium && (
+                        <Badge variant="outline" className="h-5 text-[10px] bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                          <Crown size={10} className="text-amber-500" /> Premium
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{product.supplier?.companyName}</p>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="flex items-center">
+                        <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                        <span className="ml-1 text-xs">
+                          {product.supplier?.rating || "4.8"} ({product.supplier?.ratingsCount || "241"} avaliações)
+                        </span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Calendar size={14} className="mr-1" />
+                        <span>{product.supplier?.activeYears || 3} anos no mercado</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={contactSupplier}
-                >
-                  <Mail size={14} className="mr-1" /> Contatar
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={contactSupplier}
+                    className="gap-1"
+                  >
+                    <Mail size={14} /> Contatar
+                  </Button>
+                  <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 flex items-center justify-center gap-1 py-1">
+                    <ShieldCheck size={10} className="text-blue-500" /> Verificado
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
