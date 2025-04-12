@@ -28,36 +28,26 @@ function AdminSidebar() {
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel Administrativo</h2>
       <nav className="space-y-2">
-        <Link href="/admin">
-          <a className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
-            <BarChart className="mr-2 h-5 w-5" />
-            Dashboard
-          </a>
+        <Link href="/admin" className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
+          <BarChart className="mr-2 h-5 w-5" />
+          Dashboard
         </Link>
-        <Link href="/admin/fornecedores">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <Users className="mr-2 h-5 w-5" />
-            Fornecedores
-          </a>
+        <Link href="/admin/fornecedores" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <Users className="mr-2 h-5 w-5" />
+          Fornecedores
         </Link>
-        <Link href="/admin/comissoes">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <Percent className="mr-2 h-5 w-5" />
-            Comissões
-          </a>
+        <Link href="/admin/comissoes" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <Percent className="mr-2 h-5 w-5" />
+          Comissões
         </Link>
-        <Link href="/admin/categorias">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <Tags className="mr-2 h-5 w-5" />
-            Categorias
-          </a>
+        <Link href="/admin/categorias" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <Tags className="mr-2 h-5 w-5" />
+          Categorias
         </Link>
-        <Link href="/admin/chat">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <MessageCircle className="mr-2 h-5 w-5" />
-            Chat Ao Vivo
-            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">3</span>
-          </a>
+        <Link href="/admin/chat" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <MessageCircle className="mr-2 h-5 w-5" />
+          Chat Ao Vivo
+          <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">3</span>
         </Link>
       </nav>
     </div>
@@ -374,11 +364,11 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 text-sm mb-4">
                         Aprove novos fornecedores e gerencie os existentes.
                       </p>
-                      <Link href="/admin/fornecedores">
-                        <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/admin/fornecedores">
                           Acessar
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -393,11 +383,11 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 text-sm mb-4">
                         Configure as taxas de comissão para diferentes categorias.
                       </p>
-                      <Link href="/admin/comissoes">
-                        <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/admin/comissoes">
                           Acessar
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -412,11 +402,11 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 text-sm mb-4">
                         Adicione ou edite categorias de produtos.
                       </p>
-                      <Link href="/admin/categorias">
-                        <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/admin/categorias">
                           Acessar
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -431,12 +421,12 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 text-sm mb-4">
                         Atenda usuários e fornecedores em tempo real.
                       </p>
-                      <Link href="/admin/chat">
-                        <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/admin/chat">
                           <span className="mr-2">Acessar</span>
                           <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">3</span>
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
