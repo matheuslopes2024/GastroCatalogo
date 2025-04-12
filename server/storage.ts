@@ -1132,6 +1132,20 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(chatMessages.id, messageIds));
   }
   
+  // Implementação de exclusão de mensagens
+  async deleteChatMessage(id: number): Promise<void> {
+    await db
+      .delete(chatMessages)
+      .where(eq(chatMessages.id, id));
+  }
+  
+  // Implementação para excluir todas as mensagens de uma conversa específica
+  async deleteChatMessagesInConversation(conversationId: number): Promise<void> {
+    await db
+      .delete(chatMessages)
+      .where(eq(chatMessages.conversationId, conversationId));
+  }
+  
   // Chat Conversation methods
   async getChatConversation(id: number): Promise<ChatConversation | undefined> {
     const [conversation] = await db.select().from(chatConversations).where(eq(chatConversations.id, id));
@@ -1184,6 +1198,17 @@ export class DatabaseStorage implements IStorage {
         lastActivityAt: new Date()
       })
       .where(eq(chatConversations.id, conversationId));
+  }
+  
+  // Método para excluir uma conversa completa
+  async deleteChatConversation(id: number): Promise<void> {
+    // Primeiro excluímos todas as mensagens da conversa
+    await this.deleteChatMessagesInConversation(id);
+    
+    // Depois excluímos a conversa em si
+    await db
+      .delete(chatConversations)
+      .where(eq(chatConversations.id, id));
   }
   
   // Commission Settings methods

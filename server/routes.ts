@@ -2079,6 +2079,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Excluir conversa de chat (apenas administradores podem fazer isso)
+        else if (data.type === 'admin_delete_conversation' && userId && userRole === UserRole.ADMIN) {
+          const { conversationId } = data;
+          
+          if (!conversationId) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'ID da conversa é obrigatório',
+              timestamp: new Date().toISOString()
+            }));
+            return;
+          }
+          
+          try {
+            console.log(`Admin ${userId} solicitou exclusão da conversa ${conversationId}`);
+            
+            // Buscar a conversa para obter os participantes
+            const conversation = await storage.getChatConversation(Number(conversationId));
+            
+            if (!conversation) {
+              ws.send(JSON.stringify({ 
+                type: 'error', 
+                message: 'Conversa não encontrada',
+                timestamp: new Date().toISOString()
+              }));
+              return;
+            }
+            
+            // Excluir a conversa e todas as suas mensagens (o método já exclui as mensagens)
+            await storage.deleteChatConversation(Number(conversationId));
+            
+            // Enviar confirmação para o administrador
+            ws.send(JSON.stringify({
+              type: 'admin_conversation_deleted',
+              conversationId,
+              success: true,
+              timestamp: new Date().toISOString()
+            }));
+            
+            // Notificar o participante que a conversa foi excluída
+            conversation.participantIds.forEach(participantId => {
+              if (participantId !== Number(userId)) {
+                const participantClient = clients.get(participantId);
+                if (participantClient && participantClient.ws && participantClient.ws.readyState === WebSocket.OPEN) {
+                  participantClient.ws.send(JSON.stringify({
+                    type: 'conversation_deleted',
+                    conversationId,
+                    deletedBy: userId,
+                    timestamp: new Date().toISOString()
+                  }));
+                }
+              }
+            });
+            
+            // Atualizar as listas de conversas para todos os administradores
+            broadcastToAdmins(async (adminId, adminClient) => {
+              // Atualizar a lista de conversas para o administrador
+              const adminConversations = await storage.getAllChatConversations();
+              
+              if (adminClient.ws && adminClient.ws.readyState === WebSocket.OPEN) {
+                adminClient.ws.send(JSON.stringify({
+                  type: 'conversations_update',
+                  conversations: adminConversations,
+                  timestamp: new Date().toISOString()
+                }));
+              }
+            });
+          } catch (error) {
+            console.error('Erro ao excluir conversa:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Erro ao excluir conversa',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+        
         // Ping/Pong para manter a conexão ativa
         else if (data.type === 'ping') {
           ws.send(JSON.stringify({ 
