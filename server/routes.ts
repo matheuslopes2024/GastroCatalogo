@@ -1075,6 +1075,197 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoints para comissões específicas por produto
+  
+  // Obter todas as comissões por produto para o fornecedor
+  app.get("/api/supplier/products/commissions", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      // Buscar as configurações de comissão específicas por produto
+      const productCommissions = await storage.getProductCommissionSettings({
+        supplierId,
+        active: true
+      });
+      
+      // Se houver configurações, complementar com informações do produto
+      if (productCommissions.length > 0) {
+        const productIds = productCommissions.map(setting => setting.productId);
+        const products = await Promise.all(
+          productIds.map(id => storage.getProduct(id))
+        );
+        
+        // Criar um mapa de produtos para facilitar o acesso
+        const productMap = new Map();
+        products.forEach(product => {
+          if (product) {
+            productMap.set(product.id, product);
+          }
+        });
+        
+        // Enriquecer as configurações com dados do produto
+        const enrichedCommissions = productCommissions.map(setting => ({
+          ...setting,
+          product: productMap.get(setting.productId) || null
+        }));
+        
+        res.json(enrichedCommissions);
+      } else {
+        res.json([]);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar comissões por produto:", error);
+      res.status(500).json({ error: "Erro ao buscar comissões por produto" });
+    }
+  });
+  
+  // Obter uma comissão específica por ID
+  app.get("/api/supplier/products/commissions/:id", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const settingId = parseInt(req.params.id, 10);
+      
+      if (isNaN(settingId)) {
+        return res.status(400).json({ error: "ID inválido" });
+      }
+      
+      // Buscar a configuração
+      const setting = await storage.getProductCommissionSetting(settingId);
+      
+      if (!setting) {
+        return res.status(404).json({ error: "Configuração não encontrada" });
+      }
+      
+      // Verificar se a configuração pertence ao fornecedor (verificação de segurança)
+      const product = await storage.getProduct(setting.productId);
+      if (!product || product.supplierId !== supplierId) {
+        return res.status(403).json({ error: "Acesso negado a esta configuração" });
+      }
+      
+      // Complementar com informações do produto
+      const response = {
+        ...setting,
+        product
+      };
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Erro ao buscar comissão por produto:", error);
+      res.status(500).json({ error: "Erro ao buscar comissão por produto" });
+    }
+  });
+  
+  // Criar uma nova comissão por produto
+  app.post("/api/supplier/products/commissions", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const { productId, rate, active = true } = req.body;
+      
+      if (!productId || !rate) {
+        return res.status(400).json({ error: "Dados incompletos. Forneça productId e rate" });
+      }
+      
+      // Validar se o produtoId é um número
+      if (isNaN(parseInt(productId, 10))) {
+        return res.status(400).json({ error: "ID de produto inválido" });
+      }
+      
+      // Validar se a taxa está no formato correto
+      if (isNaN(parseFloat(rate))) {
+        return res.status(400).json({ error: "Taxa de comissão inválida" });
+      }
+      
+      // Verificar se o produto existe e pertence ao fornecedor
+      const product = await storage.getProduct(parseInt(productId, 10));
+      if (!product) {
+        return res.status(404).json({ error: "Produto não encontrado" });
+      }
+      
+      if (product.supplierId !== supplierId) {
+        return res.status(403).json({ error: "Este produto não pertence ao seu fornecedor" });
+      }
+      
+      // Verificar se já existe uma configuração para este produto
+      const existingConfig = await storage.getProductCommissionSettingByProductId(product.id);
+      if (existingConfig) {
+        // Atualizar a configuração existente
+        const updatedConfig = await storage.updateProductCommissionSetting(existingConfig.id, {
+          rate,
+          active: !!active
+        });
+        
+        return res.json({
+          ...updatedConfig,
+          product,
+          message: "Configuração de comissão atualizada com sucesso"
+        });
+      }
+      
+      // Criar uma nova configuração
+      const newConfig = await storage.createProductCommissionSetting({
+        productId: product.id,
+        supplierId,
+        rate,
+        active: !!active
+      });
+      
+      res.status(201).json({
+        ...newConfig,
+        product,
+        message: "Configuração de comissão criada com sucesso"
+      });
+    } catch (error) {
+      console.error("Erro ao criar comissão por produto:", error);
+      res.status(500).json({ error: "Erro ao criar comissão por produto" });
+    }
+  });
+  
+  // Atualizar uma comissão por produto
+  app.put("/api/supplier/products/commissions/:id", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const settingId = parseInt(req.params.id, 10);
+      const { rate, active } = req.body;
+      
+      if (isNaN(settingId)) {
+        return res.status(400).json({ error: "ID inválido" });
+      }
+      
+      if ((!rate && active === undefined) || (rate && isNaN(parseFloat(rate)))) {
+        return res.status(400).json({ error: "Dados inválidos para atualização" });
+      }
+      
+      // Buscar a configuração existente
+      const setting = await storage.getProductCommissionSetting(settingId);
+      
+      if (!setting) {
+        return res.status(404).json({ error: "Configuração não encontrada" });
+      }
+      
+      // Verificar se a configuração pertence ao fornecedor (verificação de segurança)
+      const product = await storage.getProduct(setting.productId);
+      if (!product || product.supplierId !== supplierId) {
+        return res.status(403).json({ error: "Acesso negado a esta configuração" });
+      }
+      
+      // Atualizar a configuração
+      const updateData: Partial<ProductCommissionSetting> = {};
+      if (rate !== undefined) updateData.rate = rate;
+      if (active !== undefined) updateData.active = !!active;
+      
+      const updatedSetting = await storage.updateProductCommissionSetting(settingId, updateData);
+      
+      res.json({
+        ...updatedSetting,
+        product,
+        message: "Configuração atualizada com sucesso"
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar comissão por produto:", error);
+      res.status(500).json({ error: "Erro ao atualizar comissão por produto" });
+    }
+  });
+  
   // Commission Settings API
   app.get("/api/commission-settings", checkRole([UserRole.ADMIN]), async (req, res) => {
     try {

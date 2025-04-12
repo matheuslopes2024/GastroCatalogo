@@ -2134,7 +2134,17 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Produto não encontrado");
     }
     
-    // Buscar as configurações de comissão aplicáveis
+    // Primeiro, verificar se existe uma configuração específica para este produto
+    const productSpecificCommission = await this.getProductCommissionSettingByProductId(productId);
+    if (productSpecificCommission && productSpecificCommission.active) {
+      return {
+        rate: productSpecificCommission.rate,
+        type: "specific",
+        settingId: productSpecificCommission.id
+      };
+    }
+    
+    // Se não houver configuração específica, buscar as configurações de comissão gerais aplicáveis
     const applicableSettings = await this.getSupplierApplicableCommissionSettings(product.supplierId);
     
     // Se não houver configurações, retornar uma taxa padrão
@@ -2313,6 +2323,92 @@ export class DatabaseStorage implements IStorage {
     }
     
     return query.execute();
+  }
+
+  // --- Métodos para comissões por produto (Product Commission Settings) ---
+  
+  /**
+   * Obtém uma configuração de comissão de produto pelo ID
+   * @param id ID da configuração de comissão
+   * @returns A configuração de comissão ou undefined se não existir
+   */
+  async getProductCommissionSetting(id: number): Promise<ProductCommissionSetting | undefined> {
+    return this.productCommissionSettings.get(id);
+  }
+  
+  /**
+   * Obtém uma configuração de comissão de produto pelo ID do produto
+   * @param productId ID do produto
+   * @returns A configuração de comissão ou undefined se não existir
+   */
+  async getProductCommissionSettingByProductId(productId: number): Promise<ProductCommissionSetting | undefined> {
+    return Array.from(this.productCommissionSettings.values()).find(
+      setting => setting.productId === productId
+    );
+  }
+  
+  /**
+   * Cria uma nova configuração de comissão para um produto específico
+   * @param insertSetting Dados para criar a configuração de comissão
+   * @returns A configuração de comissão criada
+   */
+  async createProductCommissionSetting(insertSetting: InsertProductCommissionSetting): Promise<ProductCommissionSetting> {
+    const id = this.currentProductCommissionSettingId++;
+    const setting: ProductCommissionSetting = { 
+      ...insertSetting, 
+      id, 
+      createdAt: new Date() 
+    };
+    
+    this.productCommissionSettings.set(id, setting);
+    return setting;
+  }
+  
+  /**
+   * Atualiza uma configuração de comissão de produto
+   * @param id ID da configuração de comissão
+   * @param settingData Dados para atualizar a configuração
+   * @returns A configuração de comissão atualizada ou undefined se não existir
+   */
+  async updateProductCommissionSetting(id: number, settingData: Partial<ProductCommissionSetting>): Promise<ProductCommissionSetting | undefined> {
+    const setting = await this.getProductCommissionSetting(id);
+    if (!setting) return undefined;
+    
+    const updatedSetting = { ...setting, ...settingData };
+    this.productCommissionSettings.set(id, updatedSetting);
+    return updatedSetting;
+  }
+  
+  /**
+   * Obtém as configurações de comissão de produtos com filtros opcionais
+   * @param options Opções de filtragem (supplierId, active)
+   * @returns Lista de configurações de comissão de produtos
+   */
+  async getProductCommissionSettings(options?: { 
+    supplierId?: number; 
+    active?: boolean 
+  }): Promise<ProductCommissionSetting[]> {
+    let settings = Array.from(this.productCommissionSettings.values());
+    
+    if (options) {
+      if (options.supplierId !== undefined) {
+        // Primeiro, encontrar todos os produtos deste fornecedor
+        const supplierProducts = Array.from(this.products.values())
+          .filter(product => product.supplierId === options.supplierId)
+          .map(product => product.id);
+        
+        // Depois, filtrar as configurações que correspondem a esses produtos
+        settings = settings.filter(setting => 
+          supplierProducts.includes(setting.productId)
+        );
+      }
+      
+      if (options.active !== undefined) {
+        settings = settings.filter(setting => setting.active === options.active);
+      }
+    }
+    
+    return settings;
   }
 
   // --- Métodos para grupos de produtos (Product Groups) ---
