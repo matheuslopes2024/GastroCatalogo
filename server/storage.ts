@@ -38,6 +38,10 @@ export interface IStorage {
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   getUsers(role?: string): Promise<User[]>;
   
+  // Supplier specific methods
+  getSupplierProductsCount(supplierId: number): Promise<number>;
+  getSupplierCategories(supplierId: number): Promise<Category[]>;
+  
   // Category methods
   getCategory(id: number): Promise<Category | undefined>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
