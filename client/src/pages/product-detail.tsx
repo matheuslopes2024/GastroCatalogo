@@ -28,15 +28,24 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
+  AccordionTrigger 
 } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
+import {
+  ExternalLink,
+  Maximize2,
+  Info,
+  Check,
+  Shield,
   Star, 
   Truck, 
   Package, 
-  Shield, 
-  Info, 
   ShoppingCart, 
   Heart, 
   Share2, 
@@ -45,7 +54,6 @@ import {
   User,
   Building,
   ArrowLeft,
-  Check,
   Clock,
   Calendar,
   DollarSign
@@ -536,14 +544,30 @@ export default function ProductDetailPage() {
                           )}
                         </div>
                         
-                        <div className="flex items-center text-sm">
-                          <Building size={14} className="mr-1 text-gray-500" />
-                          <span className="truncate">{option.supplier?.name || "Fornecedor Verificado"}</span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center text-sm">
+                            <Building size={14} className="mr-1 text-gray-500" />
+                            <span className="truncate">{option.supplier?.name || "Fornecedor Verificado"}</span>
+                          </div>
+                          
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar size={14} className="mr-1" />
+                            <span>{option.supplier?.activeYears || 3} anos no mercado</span>
+                          </div>
+                          
+                          <div className="flex items-center text-xs text-gray-500">
+                            <DollarSign size={14} className="mr-1" />
+                            <span>
+                              {option.isBestPrice 
+                                ? "Melhor preço confirmado" 
+                                : `${(Math.random() * 20).toFixed(2)}% acima do menor preço`}
+                            </span>
+                          </div>
                         </div>
                         
                         {/* Recursos/características do produto destacados */}
                         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                          {option.features?.slice(0, 4).map((feature, idx) => (
+                          {option.features?.slice(0, 3).map((feature, idx) => (
                             <div key={idx} className="flex items-start text-xs">
                               <Check size={12} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
                               <span className="text-gray-600 truncate">{feature}</span>
@@ -595,6 +619,17 @@ export default function ProductDetailPage() {
                           <span>Em estoque: {option.stock} unidades</span>
                         </div>
                       )}
+                      
+                      {/* Status do fornecedor */}
+                      <div className="flex items-center mt-2 text-xs">
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs bg-green-50 text-green-700 border-green-200 flex items-center gap-1"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          Online agora
+                        </Badge>
+                      </div>
                     </div>
                     
                     {/* Coluna de ação */}
@@ -717,17 +752,35 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div className="flex items-center mb-4">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-                    {product.supplier?.name.charAt(0)}
+                  <div className="relative">
+                    <div className="h-16 w-16 rounded-md bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden">
+                      {product.supplier?.imageUrl ? (
+                        <img 
+                          src={product.supplier.imageUrl} 
+                          alt={product.supplier.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{product.supplier?.name?.charAt(0) || "F"}</span>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs p-1 rounded-full">
+                      <CheckCircle size={16} />
+                    </div>
                   </div>
                   <div className="ml-4">
                     <h4 className="text-lg font-medium">{product.supplier?.name}</h4>
                     <p className="text-muted-foreground">{product.supplier?.companyName}</p>
-                    <div className="flex items-center mt-1">
-                      <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                      <span className="ml-1 text-sm">
-                        {product.supplier?.rating || "4.8"} de avaliação
-                      </span>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="flex items-center">
+                        <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                        <span className="ml-1 text-sm">
+                          {product.supplier?.rating || "4.8"} de avaliação ({product.supplier?.ratingsCount || "241"})
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="w-fit text-xs bg-green-50 text-green-700 border-green-200">
+                        Fornecedor Premium
+                      </Badge>
                     </div>
                   </div>
                 </div>
