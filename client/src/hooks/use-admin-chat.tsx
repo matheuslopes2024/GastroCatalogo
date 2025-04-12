@@ -1,14 +1,14 @@
 /**
  * @file use-admin-chat.tsx
  * @description Hook profissional para gerenciar o chat do painel de administração 
- * *** VERSÃO REFEITA PARA CORRIGIR PROBLEMAS DE LOOP INFINITO ***
+ * *** VERSÃO COMPLETA 2.0 - RECONSTRUÇÃO TOTAL SEM LOOPS ***
  * 
  * Implementa:
  * - Suporte a conversas para clientes e fornecedores
  * - Integração com WebSocket para comunicação em tempo real
  * - Sistema de notificação de novas mensagens
  * - UI otimista para melhor experiência do usuário
- * - Tratamento avançado de erros
+ * - Zero loops de requisição ou atualizações em cascata
  * - Formatação de mensagens em português
  */
 
@@ -22,81 +22,69 @@ import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-/**
- * Define o tipo de dados para o contexto do chat de administração
- * Contém todos os estados e funções necessárias para gerenciar o chat
- */
+// Chave de localStorage para rastrear inicialização
+const ADMIN_CHAT_INITIALIZED_KEY = 'adminChatInitialized';
+
+// Tipos para o contexto do chat administrativo
 type AdminChatContextType = {
-  // Estado da conversa ativamente selecionada
   activeConversation: ChatConversation | null;
-  
-  // Lista de mensagens da conversa ativa
   messages: ChatMessage[];
-  
-  // Lista de todas as conversas disponíveis
   conversations: ChatConversation[];
-  
-  // Contador de mensagens não lidas em todas as conversas
   unreadCount: number;
-  
-  // Conjunto de IDs de usuários atualmente online
   usersOnline: Set<number>;
-  
-  // Função para enviar uma nova mensagem
   sendMessage: (text: string, attachments?: string[]) => Promise<void>;
-  
-  // Função para carregar mais mensagens (paginação)
   loadMoreMessages: () => void;
-  
-  // Função para definir a conversa ativa
   setActiveConversation: (conversation: ChatConversation | null) => void;
-  
-  // Flag indicando se existem mais mensagens para carregar
   hasMore: boolean;
-  
-  // Estado de carregamento das mensagens
   isLoadingMessages: boolean;
-  
-  // Estado de carregamento das conversas
   isLoadingConversations: boolean;
-  
-  // Flag indicando se é a interface de chat de admin
   isAdminChat: boolean;
-  
-  // Função para marcar todas as mensagens como lidas
   markAllAsRead: () => Promise<void>;
-  
-  // Função para criar uma nova conversa
   createConversation: (userId: number) => Promise<ChatConversation>;
-  
-  // Modo de filtro atual (todos, clientes ou fornecedores)
   filterMode: 'all' | 'clients' | 'suppliers';
-  
-  // Função para alterar o modo de filtro
   setFilterMode: (mode: 'all' | 'clients' | 'suppliers') => void;
-  
-  // Formatador de data para mensagens
   formatMessageDate: (date: Date) => string;
-  
-  // Estado de envio de mensagem
   isSendingMessage: boolean;
 };
 
+// Criar contexto com undefined como valor inicial
 const AdminChatContext = createContext<AdminChatContextType | undefined>(undefined);
 
-// Provedor do contexto
+// Provider do contexto
 export function AdminChatProvider({ children }: { children: ReactNode }) {
+  // Hooks e estados
   const { user } = useAuth();
   const { sendWebSocketMessage, addMessageHandler, removeMessageHandler } = useWebSocket();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Gerenciamento de estado com useRef para evitar loops de renderização
+  const isInitializedRef = useRef<boolean>(false);
+  const isLoadingRef = useRef<boolean>(false);
+  const webSocketHandlerIdRef = useRef<string>('');
+  const conversationsRef = useRef<ChatConversation[]>([]);
+  const lastProcessedEventsRef = useRef<Record<string, number>>({});
+  
+  // Estados React que causam renderização
   const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
   const [messagesLimit, setMessagesLimit] = useState(30);
   const [usersOnline, setUsersOnline] = useState<Set<number>>(new Set());
   const [filterMode, setFilterMode] = useState<'all' | 'clients' | 'suppliers'>('all');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  
+  // Função para atualizar conversas de forma segura
+  const updateConversations = useCallback((newConversations: ChatConversation[]) => {
+    // Verifica se há alterações reais antes de atualizar o estado
+    if (JSON.stringify(conversationsRef.current) !== JSON.stringify(newConversations)) {
+      conversationsRef.current = newConversations;
+      setConversations(newConversations);
+    }
+  }, []);
 
-  // Filtragem de conversas baseada no modo selecionado
-  const filterConversations = (conversations: ChatConversation[]) => {
+  // Filtragem de conversas
+  const filterConversations = useCallback((conversations: ChatConversation[]) => {
     if (filterMode === 'all') return conversations;
     
     return conversations.filter(conv => {
@@ -108,369 +96,67 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       }
       return true;
     });
-  };
+  }, [filterMode]);
 
-  // Estado local para conversas para evitar o loop infinito de requests
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
-  
-  /**
-   * Carregador de conversas otimizado para:
-   * 1. Fazer apenas uma requisição inicial 
-   * 2. Evitar polling contínuo que causa loop de requisições
-   * 3. Reduzir a carga no servidor e melhorar performance
-   * 4. Deixar atualizações para o canal WebSocket
-   */
-  useEffect(() => {
-    if (!user || user.role !== UserRole.ADMIN) return;
+  // Fetcher de conversas otimizado que não causa loops
+  const fetchConversations = useCallback(async (force = false) => {
+    // Evita requisições simultâneas
+    if (isLoadingRef.current && !force) return;
     
-    // Flag para evitar requisições duplicadas
-    let isComponentMounted = true;
-    const loadingKey = 'conversationsLoading';
-    
-    const fetchConversations = async () => {
-      // Verificar se já existe um carregamento em andamento
-      if (sessionStorage.getItem(loadingKey) === 'true') {
-        return;
-      }
-      
-      sessionStorage.setItem(loadingKey, 'true');
-      setIsLoadingConversations(true);
-      
-      try {
-        const response = await apiRequest('GET', '/api/admin/chat/conversations');
-        const data = await response.json();
-        
-        // Verificar se o componente ainda está montado
-        if (isComponentMounted) {
-          console.log('Conversas carregadas via API:', data.length);
-          // Usar um setter funcional para garantir que estamos usando o estado mais recente
-          setConversations(currentConversations => {
-            // Comparar se algo realmente mudou para evitar re-renders desnecessários
-            if (JSON.stringify(currentConversations) === JSON.stringify(data)) {
-              console.log('Sem alterações nas conversas.');
-              return currentConversations;
-            }
-            return data;
-          });
-        }
-      } catch (error) {
-        console.error('Erro ao buscar conversas:', error);
-        
-        // Se falhar, tenta usar o websocket como fallback (apenas uma vez)
-        if (isComponentMounted) {
-          sendWebSocketMessage({
-            type: 'admin_request_conversations'
-          });
-        }
-      } finally {
-        if (isComponentMounted) {
-          setIsLoadingConversations(false);
-        }
-        sessionStorage.removeItem(loadingKey);
-      }
-    };
-    
-    // Busca inicial após um pequeno delay para garantir que tudo está iniciado
-    const initialTimer = setTimeout(() => {
-      fetchConversations();
-    }, 300);
-    
-    // Refresh muito menos frequente (a cada 5 minutos) já que WebSocket mantém atualizado
-    const interval = setInterval(fetchConversations, 300000); // 5 minutos
-    
-    return () => {
-      isComponentMounted = false;
-      clearTimeout(initialTimer);
-      clearInterval(interval);
-      sessionStorage.removeItem(loadingKey);
-    };
-  }, [user, sendWebSocketMessage]);
-
-  // Filtrar conversas
-  const filteredConversations = filterConversations(conversations);
-
-  // Contar mensagens não lidas
-  const unreadCount = conversations.reduce((total, conversation) => {
-    return total + (conversation.unreadCount || 0);
-  }, 0);
-
-  // Obter mensagens para a conversa ativa
-  const { 
-    data: messages = [],
-    isLoading: isLoadingMessages,
-    isFetching: isFetchingMessages,
-    refetch: refetchMessages,
-  } = useQuery({
-    queryKey: ['/api/admin/chat/messages', activeConversation?.id, messagesLimit],
-    queryFn: async () => {
-      if (!activeConversation) return [];
-      
-      const response = await apiRequest('GET', `/api/admin/chat/messages?conversationId=${activeConversation.id}&limit=${messagesLimit}`);
-      const data = await response.json();
-      return data as ChatMessage[];
-    },
-    enabled: !!activeConversation,
-  });
-
-  // Verificar se há mais mensagens para carregar
-  const hasMore = messages.length >= messagesLimit;
-
-  // Carregar mais mensagens
-  const loadMoreMessages = useCallback(() => {
-    setMessagesLimit(prev => prev + 30);
-  }, []);
-
-  // Mutação para enviar mensagem
-  const sendMessageMutation = useMutation({
-    mutationFn: async (newMessage: InsertChatMessage) => {
-      const response = await apiRequest('POST', '/api/admin/chat/messages', newMessage);
-      return response.json();
-    },
-    onSuccess: (data: ChatMessage) => {
-      queryClient.invalidateQueries({
-        queryKey: ['/api/admin/chat/messages', activeConversation?.id]
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['/api/admin/chat/conversations']
-      });
-      
-      // Notificar via WebSocket
-      sendWebSocketMessage({
-        type: 'admin_chat_message',
-        message: data,
-        conversationId: data.conversationId,
-        recipientId: activeConversation?.participantId ?? 0
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Erro ao enviar mensagem',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Mutação para marcar mensagens como lidas
-  const markAsReadMutation = useMutation({
-    mutationFn: async (messageIds: number[]) => {
-      if (!messageIds.length) return null;
-      
-      const response = await apiRequest('POST', '/api/admin/chat/mark-read', { messageIds });
-      return response.json();
-    },
-    onSuccess: () => {
-      // Atualizar conversas manualmente sem usar queryClient
-      apiRequest('GET', '/api/admin/chat/conversations')
-        .then(response => response.json())
-        .then(conversations => {
-          console.log('Conversas atualizadas após marcar mensagens como lidas:', conversations.length);
-          setConversations(conversations);
-        })
-        .catch(error => {
-          console.error('Erro ao recarregar conversas:', error);
-        });
-    },
-  });
-
-  // Marcar todas as mensagens como lidas na conversa ativa
-  const markAllAsRead = useCallback(async () => {
-    if (!activeConversation) return;
-    
-    const unreadMessages = messages
-      .filter(msg => !msg.read && msg.senderId !== user?.id)
-      .map(msg => msg.id);
-    
-    if (unreadMessages.length > 0) {
-      await markAsReadMutation.mutateAsync(unreadMessages);
-    }
-  }, [activeConversation, messages, markAsReadMutation, user?.id]);
-
-  /**
-   * Função para enviar mensagem - implementação completamente reescrita para:
-   * 1. Evitar requisições em cascata e loops infinitos
-   * 2. Implementar animação de envio com controle de estado
-   * 3. Usar WebSocket para notificações em tempo real
-   * 4. Atualizar cache localmente para melhor performance
-   * 5. Implementar melhor tratamento de erros
-   */
-  const sendMessage = useCallback(async (text: string, attachments: string[] = []) => {
-    if (!activeConversation || !user) return;
-    if (!text.trim() && (!attachments || attachments.length === 0)) {
-      toast({
-        title: 'Mensagem vazia',
-        description: 'Não é possível enviar uma mensagem vazia.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    // Ativar status de envio para animação
-    setIsSendingMessage(true);
-    
-    const newMessage: InsertChatMessage = {
-      conversationId: activeConversation.id,
-      senderId: user.id,
-      receiverId: activeConversation.participantId ?? 0,
-      text,
-      message: text, // Campo obrigatório que estava faltando
-      attachments,
-      read: false,
-    };
+    isLoadingRef.current = true;
+    setIsLoadingConversations(true);
     
     try {
-      // Criar uma versão otimista da mensagem para atualização imediata
-      const optimisticMessage: any = {
-        id: Date.now(), // ID temporário que será substituído
-        createdAt: new Date(),
-        ...newMessage,
-        isRead: false,
-        attachmentUrl: null,
-        attachmentType: null,
-        attachmentData: null,
-        attachmentSize: null,
-        isSending: true, // Propriedade adicional para mostrar status de envio
-      };
-      
-      // Atualizar UI imediatamente com mensagem otimista
-      const updatedMessages = [...messages, optimisticMessage];
-      queryClient.setQueryData(
-        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
-        updatedMessages
-      );
-      
-      // Enviar mensagem para o servidor
-      const response = await apiRequest('POST', '/api/admin/chat/send-message', newMessage);
-      const sentMessage = await response.json();
-      
-      // Remover mensagem otimista e adicionar a mensagem real
-      const finalMessages = messages
-        .filter(msg => msg.id !== optimisticMessage.id)
-        .concat(sentMessage);
-        
-      queryClient.setQueryData(
-        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
-        finalMessages
-      );
-      
-      // Atualizar lista de conversas sem bloquear a UI
-      apiRequest('GET', '/api/admin/chat/conversations')
-        .then(response => response.json())
-        .then(conversations => {
-          console.log('Conversas atualizadas após enviar mensagem:', conversations.length);
-          setConversations(conversations);
-        })
-        .catch(error => {
-          console.error('Erro ao recarregar conversas após enviar mensagem:', error);
-        });
-      
-      // Notificar via WebSocket para entrega em tempo real
-      sendWebSocketMessage({
-        type: 'admin_chat_message',
-        message: sentMessage,
-        conversationId: sentMessage.conversationId,
-        recipientId: activeConversation.participantId ?? 0,
-        senderName: user.name || user.username
-      });
-        
-      return sentMessage;
+      const response = await apiRequest('GET', '/api/admin/chat/conversations');
+      const data = await response.json();
+      console.log('Conversas carregadas via API:', data.length);
+      updateConversations(data);
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      console.error('Erro ao buscar conversas:', error);
       
-      // Remover mensagem otimista em caso de erro
-      const cleanedMessages = messages.filter(msg => !('isSending' in msg));
-      queryClient.setQueryData(
-        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
-        cleanedMessages
-      );
-      
-      toast({
-        title: 'Erro ao enviar mensagem',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive'
-      });
-      throw error;
+      // Fallback para WebSocket só se for uma falha inicial
+      if (force) {
+        sendWebSocketMessage({ type: 'admin_request_conversations' });
+      }
     } finally {
-      setIsSendingMessage(false);
+      isLoadingRef.current = false;
+      setIsLoadingConversations(false);
     }
-  }, [activeConversation, user, messages, queryClient, messagesLimit, toast, sendWebSocketMessage]);
+  }, [sendWebSocketMessage, updateConversations]);
 
-  // Mutation para criar nova conversa
-  const createConversationMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      const response = await apiRequest('POST', '/api/admin/chat/conversations', { participantId: userId });
-      return response.json();
-    },
-    onSuccess: (data: ChatConversation) => {
-      // Atualizar conversas manualmente sem invalidar queries
-      apiRequest('GET', '/api/admin/chat/conversations')
-        .then(response => response.json())
-        .then(conversations => {
-          console.log('Conversas atualizadas após criar conversa:', conversations.length);
-          setConversations(conversations);
-          setActiveConversation(data);
-        })
-        .catch(error => {
-          console.error('Erro ao recarregar conversas após criar conversa:', error);
-          // Ainda define a conversa ativa mesmo se falhar a atualização da lista
-          setActiveConversation(data);
-        });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Erro ao criar conversa',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Função para criar nova conversa
-  const createConversation = useCallback(async (userId: number) => {
-    // Verificar se já existe conversa com este usuário
-    const existingConversation = conversations.find(c => c.participantId === userId);
-    if (existingConversation) {
-      setActiveConversation(existingConversation);
-      return existingConversation;
-    }
+  // Inicializador seguro de WebSocket que só executa uma vez
+  const initializeWebSocketHandler = useCallback(() => {
+    if (!user || user.role !== UserRole.ADMIN || isInitializedRef.current) return;
     
-    return await createConversationMutation.mutateAsync(userId);
-  }, [conversations, createConversationMutation]);
-
-  /**
-   * Gerenciador de eventos de WebSocket totalmente reescrito para:
-   * 1. Eliminar callbacks desnecessários que causavam loops
-   * 2. Reduzir requisições HTTP redundantes
-   * 3. Gerenciar eventos apenas quando relevantes
-   * 4. Implementar um sistema de atualização inteligente
-   */
-  useEffect(() => {
-    // Referência para rastrear o último evento processado
-    const lastProcessedEvent = useRef<Record<string, number>>({});
+    // Marcar como inicializado
+    isInitializedRef.current = true;
     
-    // Handler seguro para mensagens com processamento otimizado
-    const handleMessage = (event: any) => {
+    // Criar um ID único para o handler
+    const handlerId = `adminChat-${Date.now()}`;
+    webSocketHandlerIdRef.current = handlerId;
+    
+    // Handler de eventos WebSocket
+    const handleWebSocketMessage = (event: any) => {
       try {
-        if (!event || typeof event !== 'object') return;
+        if (!event?.data || typeof event.data !== 'object') return;
         const data = event.data;
-        if (!data || typeof data !== 'object') return;
         
-        // Evitar loops de processamento do mesmo evento (debounce básico)
+        // Debounce básico para evitar reprocessamento
         const eventKey = `${data.type}-${data.conversationId || 'global'}`;
         const now = Date.now();
-        if (lastProcessedEvent.current[eventKey] && now - lastProcessedEvent.current[eventKey] < 1000) {
-          return; // Ignora eventos do mesmo tipo em menos de 1 segundo
+        if (lastProcessedEventsRef.current[eventKey] && 
+            now - lastProcessedEventsRef.current[eventKey] < 1000) {
+          return;
         }
-        lastProcessedEvent.current[eventKey] = now;
+        lastProcessedEventsRef.current[eventKey] = now;
         
-        // Console de debug apenas quando necessário
+        // Ignorar logs de heartbeat para não poluir o console
         if (data.type !== 'heartbeat' && data.type !== 'pong') {
-          console.log('Mensagem WebSocket recebida:', data);
+          console.log('AdminChat: Evento WebSocket recebido:', data.type);
         }
         
-        // Atualizar usuários online
-        if (data.type === 'user_status' && data.online !== undefined) {
+        // Atualizar status de usuários online
+        if (data.type === 'user_status' && typeof data.online === 'boolean') {
           setUsersOnline(prev => {
             const newSet = new Set(prev);
             if (data.online) {
@@ -482,93 +168,281 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
           });
         }
         
-        // Receber nova mensagem de chat (do cliente ou fornecedor)
+        // Atualizar lista de conversas recebida via WebSocket
+        if (data.type === 'conversations_update' && Array.isArray(data.conversations)) {
+          updateConversations(data.conversations);
+        }
+        
+        // Processar nova mensagem recebida
         if (data.type === 'chat_message' && data.message) {
-          // Atualizar conversas após um pequeno delay para evitar corrida
-          setTimeout(() => {
-            apiRequest('GET', '/api/admin/chat/conversations')
-              .then(response => response.json())
-              .then(conversations => {
-                console.log('Conversas recarregadas após nova mensagem:', conversations.length);
-                setConversations(conversations);
-              })
-              .catch(error => {
-                console.error('Erro ao recarregar conversas:', error);
-              });
-          }, 300);
+          // Atualizar lista de conversas após um pequeno delay
+          setTimeout(() => fetchConversations(), 300);
           
+          // Se a conversa estiver ativa, adicionar a mensagem ao cache
           if (activeConversation && data.message.conversationId === activeConversation.id) {
-            // Adicionar a mensagem ao final do cache atual para resposta imediata na UI
+            // Atualizar cache de mensagens sem fazer nova requisição
             queryClient.setQueryData(
-              ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+              ['/api/admin/chat/messages', activeConversation.id, messagesLimit],
               (old: ChatMessage[] = []) => [...old, data.message]
             );
             
-            // Marcar mensagem como lida se a conversa estiver aberta
+            // Marcar como lida automaticamente
             if (data.message.id && data.message.senderId !== user?.id) {
-              markAsReadMutation.mutate([data.message.id]);
+              apiRequest('POST', '/api/admin/chat/mark-read', { 
+                messageIds: [data.message.id] 
+              });
             }
-          } else if (data.message.senderId !== user?.id) {
-            // Mostrar notificação apenas para mensagens de outros usuários
+          } 
+          // Notificar se for mensagem de outro usuário e conversa não estiver ativa
+          else if (data.message.senderId !== user?.id) {
             toast({
               title: 'Nova mensagem',
-              description: `De: ${data.senderName || 'Usuário'} - ${data.message.text?.substring(0, 50) || 'Nova mensagem'}${data.message.text?.length > 50 ? '...' : ''}`,
+              description: `De: ${data.senderName || 'Usuário'} - ${
+                data.message.text?.substring(0, 50) || 'Nova mensagem'
+              }${data.message.text?.length > 50 ? '...' : ''}`,
             });
           }
         }
-        
-        // Atualização de conversas via WebSocket (mais eficiente)
-        if (data.type === 'conversations_update' && Array.isArray(data.conversations)) {
-          console.log('Conversas atualizadas via WebSocket:', data.conversations.length);
-          // Usar setConversations diretamente sem fazer novas requisições
-          setConversations(data.conversations);
-        }
       } catch (error) {
-        console.error('Erro ao processar mensagem WebSocket:', error);
+        console.error('Erro ao processar evento WebSocket:', error);
       }
     };
     
-    // Registrar o handler com nome único para evitar duplicação
-    const handlerId = 'adminChatHandler-' + Date.now();
-    addMessageHandler(handlerId, handleMessage);
+    // Registrar o handler
+    addMessageHandler(handlerId, handleWebSocketMessage);
     
-    // Registrar apenas uma vez, quando o componente montar
-    if (user && user.role === UserRole.ADMIN) {
-      // Usar setTimeout para garantir que a conexão WebSocket esteja pronta
-      setTimeout(() => {
-        sendWebSocketMessage({
-          type: 'admin_chat_register',
-          userId: user.id
-        });
-        
-        // Solicitar atualização de conversas apenas uma vez ao montar
-        sendWebSocketMessage({
-          type: 'admin_request_conversations'
-        });
-      }, 500);
-    }
+    // Registrar o admin para receber notificações
+    setTimeout(() => {
+      sendWebSocketMessage({
+        type: 'admin_chat_register',
+        userId: user.id
+      });
+      
+      // Solicitar a lista inicial de conversas
+      fetchConversations(true);
+    }, 500);
+    
+  }, [user, addMessageHandler, fetchConversations, sendWebSocketMessage, activeConversation, queryClient, messagesLimit, toast, updateConversations]);
+  
+  // Inicialização única ao montar o componente
+  useEffect(() => {
+    if (!user || user.role !== UserRole.ADMIN) return;
+    
+    // Limpar marcador inicial se existir
+    localStorage.removeItem(ADMIN_CHAT_INITIALIZED_KEY);
+    
+    // Inicializar o sistema
+    initializeWebSocketHandler();
     
     return () => {
-      // Limpar o handler ao desmontar para evitar vazamentos de memória
-      removeMessageHandler(handlerId);
+      // Remover handler ao desmontar
+      if (webSocketHandlerIdRef.current) {
+        removeMessageHandler(webSocketHandlerIdRef.current);
+      }
+      
+      // Reiniciar estado
+      isInitializedRef.current = false;
+      isLoadingRef.current = false;
     };
-  }, [user, addMessageHandler, removeMessageHandler, sendWebSocketMessage, queryClient, activeConversation, markAsReadMutation, toast, messagesLimit]);
+  }, [user, initializeWebSocketHandler, removeMessageHandler]);
+  
+  // Contar mensagens não lidas
+  const unreadCount = conversations.reduce((total, conversation) => {
+    return total + (conversation.unreadCount || 0);
+  }, 0);
 
-  // Auto-marcar mensagens como lidas quando a conversa estiver ativa
-  // Removido o useEffect disparado por mudanças em messages.length para evitar loop
-  useEffect(() => {
-    if (activeConversation && !isLoadingMessages && !isFetchingMessages) {
-      markAllAsRead();
+  // Queries e mutations
+  const { 
+    data: messages = [],
+    isLoading: isLoadingMessages,
+    isFetching: isFetchingMessages,
+  } = useQuery({
+    queryKey: ['/api/admin/chat/messages', activeConversation?.id, messagesLimit],
+    queryFn: async () => {
+      if (!activeConversation) return [];
+      
+      const response = await apiRequest('GET', 
+        `/api/admin/chat/messages?conversationId=${activeConversation.id}&limit=${messagesLimit}`
+      );
+      return response.json() as Promise<ChatMessage[]>;
+    },
+    enabled: !!activeConversation,
+    staleTime: 30000, // 30 segundos
+  });
+
+  // Verificar se há mais mensagens para carregar
+  const hasMore = messages.length >= messagesLimit;
+
+  // Carregar mais mensagens
+  const loadMoreMessages = useCallback(() => {
+    setMessagesLimit(prev => prev + 30);
+  }, []);
+
+  // Marcar mensagens como lidas
+  const markAsReadMutation = useMutation({
+    mutationFn: async (messageIds: number[]) => {
+      if (!messageIds.length) return null;
+      const response = await apiRequest('POST', '/api/admin/chat/mark-read', { messageIds });
+      return response.json();
+    },
+    onSuccess: () => {
+      fetchConversations();
+    },
+  });
+
+  // Marcar todas as mensagens como lidas
+  const markAllAsRead = useCallback(async () => {
+    if (!activeConversation || !messages.length) return;
+    
+    const unreadMessages = messages
+      .filter(msg => !msg.read && msg.senderId !== user?.id)
+      .map(msg => msg.id);
+    
+    if (unreadMessages.length > 0) {
+      await markAsReadMutation.mutateAsync(unreadMessages);
     }
-  }, [activeConversation, isLoadingMessages, isFetchingMessages, markAllAsRead]);
+  }, [activeConversation, messages, markAsReadMutation, user?.id]);
 
-  // Determina se este é o chat de administração
+  // Função otimizada para enviar mensagem com UI otimista
+  const sendMessage = useCallback(async (text: string, attachments: string[] = []) => {
+    if (!activeConversation || !user) return;
+    if (!text.trim() && (!attachments || attachments.length === 0)) {
+      toast({
+        title: 'Mensagem vazia',
+        description: 'Não é possível enviar uma mensagem vazia.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Ativar animação de envio
+    setIsSendingMessage(true);
+    
+    // Preparar nova mensagem
+    const newMessage: InsertChatMessage = {
+      conversationId: activeConversation.id,
+      senderId: user.id,
+      receiverId: activeConversation.participantId ?? 0,
+      text,
+      message: text,
+      attachments,
+      read: false,
+    };
+    
+    try {
+      // Criar mensagem otimista para UI imediata
+      const optimisticMessage: any = {
+        id: `temp-${Date.now()}`,
+        createdAt: new Date(),
+        ...newMessage,
+        isRead: false,
+        attachmentUrl: null,
+        attachmentType: null,
+        attachmentData: null,
+        attachmentSize: null,
+        isSending: true, // Para mostrar indicador de envio
+      };
+      
+      // Atualizar UI imediatamente
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+        (oldMessages: ChatMessage[] = []) => [...oldMessages, optimisticMessage]
+      );
+      
+      // Enviar para o servidor
+      const response = await apiRequest('POST', '/api/admin/chat/send-message', newMessage);
+      const sentMessage = await response.json();
+      
+      // Substituir mensagem temporária pela real
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+        (oldMessages: ChatMessage[] = []) => {
+          return oldMessages
+            .filter(msg => msg.id !== optimisticMessage.id)
+            .concat(sentMessage);
+        }
+      );
+      
+      // Atualizar lista de conversas
+      fetchConversations();
+      
+      // Notificar via WebSocket
+      sendWebSocketMessage({
+        type: 'admin_chat_message',
+        message: sentMessage,
+        conversationId: sentMessage.conversationId,
+        recipientId: activeConversation.participantId ?? 0,
+        senderName: user.name || user.username
+      });
+      
+      return sentMessage;
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      
+      // Remover mensagem otimista em caso de erro
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit], 
+        (oldMessages: ChatMessage[] = []) => oldMessages.filter(msg => msg.id !== `temp-${Date.now()}`)
+      );
+      
+      toast({
+        title: 'Erro ao enviar mensagem',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSendingMessage(false);
+    }
+  }, [activeConversation, user, queryClient, messagesLimit, toast, sendWebSocketMessage, fetchConversations]);
+
+  // Criar nova conversa
+  const createConversationMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest('POST', '/api/admin/chat/conversations', { participantId: userId });
+      return response.json();
+    },
+    onSuccess: (data: ChatConversation) => {
+      // Atualizar lista de conversas e selecionar a nova
+      fetchConversations();
+      setActiveConversation(data);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erro ao criar conversa',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Criar ou selecionar conversa existente
+  const createConversation = useCallback(async (userId: number) => {
+    // Verificar se já existe conversa com este usuário
+    const existingConversation = conversations.find(c => c.participantId === userId);
+    if (existingConversation) {
+      setActiveConversation(existingConversation);
+      return existingConversation;
+    }
+    
+    // Criar nova conversa
+    return await createConversationMutation.mutateAsync(userId);
+  }, [conversations, createConversationMutation]);
+
+  // Marcar mensagens como lidas quando a conversa estiver ativa
+  useEffect(() => {
+    if (activeConversation && !isLoadingMessages && !isFetchingMessages && messages.length > 0) {
+      const timeoutId = setTimeout(() => {
+        markAllAsRead();
+      }, 1000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [activeConversation, isLoadingMessages, isFetchingMessages, messages.length, markAllAsRead]);
+
+  // Verificar se é admin
   const isAdminChat = user?.role === UserRole.ADMIN;
   
-  // Estado para controlar a animação de envio de mensagem
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
-  
-  // Formatador de data para mensagens
+  // Formatador de data
   const formatMessageDate = useCallback((date: Date) => {
     return format(date, "dd 'de' MMMM', às' HH:mm", { locale: ptBR });
   }, []);
@@ -580,7 +454,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         activeConversation,
         setActiveConversation,
         messages,
-        conversations: filteredConversations,
+        conversations: filterConversations(conversations),
         unreadCount,
         usersOnline,
         sendMessage,
