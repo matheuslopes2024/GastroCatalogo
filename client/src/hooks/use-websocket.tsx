@@ -192,11 +192,33 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   
   // Conectar/desconectar quando o usuário mudar
   useEffect(() => {
+    console.log(`[WS] Efeito do usuário executado: ${user?.id ? `usuário ${user.id} (${user.role})` : 'sem usuário'}`);
+    
+    // Um contador de conexão para evitar condições de corrida
+    const connectionAttempt = Date.now();
+    const attemptId = `conn-${connectionAttempt}`;
+    
     if (user) {
-      connectWebSocket();
+      // Colocar em uma função assíncrona para melhor controle
+      const setupConnection = async () => {
+        // Se alguém já está tentando conectar, aguardar
+        if (ws.current && ws.current.readyState === WebSocket.CONNECTING) {
+          console.log(`[WS:${attemptId}] Aguardando conexão pendente...`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // Agora conectar
+        console.log(`[WS:${attemptId}] Iniciando conexão para usuário ${user.id} (${user.role})`);
+        connectWebSocket();
+        console.log(`[WS:${attemptId}] Conexão WebSocket iniciada`);
+      };
+      
+      // Iniciar processo de conexão
+      setupConnection();
     } else {
       // Fechar conexão existente se houver
       if (ws.current) {
+        console.log("[WS] Fechando conexão WebSocket (usuário desconectado)");
         ws.current.close();
       }
       setConnected(false);
@@ -204,12 +226,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     
     // Limpeza
     return () => {
+      console.log(`[WS:${attemptId}] Limpando efeito de conexão`);
       if (reconnectTimeout.current) {
         clearTimeout(reconnectTimeout.current);
+        reconnectTimeout.current = null;
       }
-      if (ws.current) {
-        ws.current.close();
-      }
+      
+      // Não fechar a conexão no cleanup - isso pode causar desconexões inesperadas
+      // durante re-renderizações. Deixamos a conexão ser gerenciada pelo próximo efeito.
     };
   }, [user?.id]);
   
