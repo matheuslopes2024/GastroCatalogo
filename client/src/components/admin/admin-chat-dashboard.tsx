@@ -145,13 +145,20 @@ export function AdminChatDashboard() {
     ? usersOnline.has(activeConversation.participantId)
     : false;
   
-  // Função para agrupar mensagens por data
+  // Função para agrupar mensagens por data (garantindo ordem cronológica)
   const getMessageGroups = () => {
+    // Certificar que as mensagens estão ordenadas por data (antigas primeiro)
+    const sortedMessages = [...messages].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
     const groups: {date: string, messages: ChatMessage[]}[] = [];
     let currentDate = '';
     let currentGroup: ChatMessage[] = [];
     
-    for (const message of messages) {
+    for (const message of sortedMessages) {
       const messageDate = format(new Date(message.createdAt), 'yyyy-MM-dd');
       
       if (messageDate !== currentDate) {

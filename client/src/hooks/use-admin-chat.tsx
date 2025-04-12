@@ -545,13 +545,16 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         }
         
         // Notificação de nova mensagem em conversa específica
-        else if (message.type === 'new_message_received') {
-          console.log('[AdminChat] Notificação de nova mensagem recebida para a conversa:', message.conversationId);
+        else if (message.type === 'new_message_received' || message.type === 'admin_chat_message') {
+          console.log('[AdminChat] Notificação de nova mensagem recebida:', message.type, 'para a conversa:', message.conversationId);
           
           // A mensagem completa está no objeto message.message
-          if (message.message && message.conversationId) {
+          if (message.message && (message.conversationId || message.message.conversationId)) {
+            const conversationId = message.conversationId || message.message.conversationId;
+            console.log('[AdminChat] Processando mensagem para conversa:', conversationId);
+            
             // Atualização manual do estado para conversas e mensagens
-            if (activeConversation && activeConversation.id === message.conversationId) {
+            if (activeConversation && activeConversation.id === conversationId) {
               console.log('[AdminChat] Atualizando mensagens da conversa ativa após notificação');
               
               // Atualizar mensagens no cache do React Query
@@ -561,12 +564,20 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
                   if (!old) return [message.message];
                   
                   // Verificar se a mensagem já existe no array
-                  const exists = old.some(m => m.id === message.message.id);
-                  if (exists) return old;
+                  const msgId = typeof message.message.id === 'number' ? message.message.id : -1;
+                  const exists = old.some(m => m.id === msgId);
+                  if (exists) {
+                    console.log('[AdminChat] Mensagem já existe no cache, ignorando duplicação');
+                    return old;
+                  }
                   
-                  // Adicionar a nova mensagem e ordenar por data
+                  console.log('[AdminChat] Adicionando nova mensagem ao cache:', msgId);
+                  
+                  // Adicionar a nova mensagem e ordenar por data (novas embaixo)
                   const updated = [...old, message.message].sort((a, b) => {
-                    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                    const dateA = new Date(a.createdAt);
+                    const dateB = new Date(b.createdAt);
+                    return dateA.getTime() - dateB.getTime();
                   });
                   
                   return updated;
@@ -776,9 +787,16 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(
         ['/api/admin/chat/messages', activeConversation.id, messagesLimit],
         (oldMessages: ChatMessage[] = []) => {
-          return oldMessages
-            .filter(msg => typeof msg.id === 'string' ? msg.id !== tempId : true)
-            .concat(sentMessage);
+          // Remover a mensagem temporária
+          const filteredMessages = oldMessages
+            .filter(msg => typeof msg.id === 'string' ? msg.id !== tempId : true);
+            
+          // Adicionar a mensagem real e garantir ordenação correta (antigas primeiro)
+          return [...filteredMessages, sentMessage].sort((a, b) => {
+            const dateA = new Date(a.createdAt);
+            const dateB = new Date(b.createdAt);
+            return dateA.getTime() - dateB.getTime();
+          });
         }
       );
       
