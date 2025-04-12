@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
@@ -207,31 +207,32 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
                 )} />
               </button>
             ) : (
-              <Link href={item.href}>
-                <a className={cn(
+              <Link 
+                href={item.href}
+                className={cn(
                   "flex items-center p-2 rounded-md hover:bg-muted/50 transition-colors",
                   active && "bg-primary/10 text-primary font-medium",
                   isMobile && "py-3"
+                )}
+              >
+                <span className={cn(
+                  "text-muted-foreground group-hover:text-foreground transition-colors",
+                  active && "text-primary"
                 )}>
-                  <span className={cn(
-                    "text-muted-foreground group-hover:text-foreground transition-colors",
-                    active && "text-primary"
-                  )}>
-                    {item.icon}
-                  </span>
-                  <span className={cn(
-                    "ml-2.5 flex-1",
-                    (!isSidebarOpen && !isMobile) && "hidden"
-                  )}>
-                    {item.title}
-                  </span>
-                  
-                  {item.count && (isSidebarOpen || isMobile) && (
-                    <Badge className="ml-auto" variant={active ? "default" : "secondary"}>
-                      {item.count}
-                    </Badge>
-                  )}
-                </a>
+                  {item.icon}
+                </span>
+                <span className={cn(
+                  "ml-2.5 flex-1",
+                  (!isSidebarOpen && !isMobile) && "hidden"
+                )}>
+                  {item.title}
+                </span>
+                
+                {item.count && (isSidebarOpen || isMobile) && (
+                  <Badge className="ml-auto" variant={active ? "default" : "secondary"}>
+                    {item.count}
+                  </Badge>
+                )}
               </Link>
             )}
             
@@ -239,13 +240,15 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
             {item.submenu && activeAccordion === item.title && (isSidebarOpen || isMobile) && (
               <div className="mt-1 ml-8 space-y-1">
                 {item.submenu.map((subitem, subindex) => (
-                  <Link key={subindex} href={subitem.href}>
-                    <a className={cn(
+                  <Link 
+                    key={subindex} 
+                    href={subitem.href}
+                    className={cn(
                       "block p-2 text-sm rounded-md hover:bg-muted/50 transition-colors",
                       isActive(subitem.href) && "bg-primary/5 text-primary"
-                    )}>
-                      {subitem.title}
-                    </a>
+                    )}
+                  >
+                    {subitem.title}
                   </Link>
                 ))}
               </div>

@@ -1,0 +1,231 @@
+Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+client:536 WebSocket connection to 'wss://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/?token=f-Y-5DqhwAzx' failed: 
+setupWebSocket @ client:536Understand this error
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=f-Y-5DqhwAzx' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+20react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420240382:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420240382:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420240382:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420240382&v=naLqqVGP1HDwPHPDuJUF9:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:337:18
+    at div
+    at nav
+    at div
+    at div
+    at https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=f9bbb7cb:41:13
+    at https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-scroll-area.js?v=f9bbb7cb:114:13
+    at div
+    at https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=f9bbb7cb:41:13
+    at Provider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LSQNWB54.js?v=f9bbb7cb:38:15)
+    at https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-scroll-area.js?v=f9bbb7cb:52:7
+    at _c (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/scroll-area.tsx:21:11)
+    at aside
+    at LayoutAside (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:42:31)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420240382:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420240382:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420240382:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420240382&v=naLqqVGP1HDwPHPDuJUF9:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ chunk-RPCDYKBN.js?v=f9bbb7cb:521Understand this error
+use-websocket.tsx:224 [WS] Efeito do usuário executado: sem usuário
+20react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420240382:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420240382:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420240382:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420240382&v=naLqqVGP1HDwPHPDuJUF9:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+21react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420240382:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420240382:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420240382:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420240382&v=naLqqVGP1HDwPHPDuJUF9:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+use-websocket.tsx:258 [WS:conn-1744420292818] Limpando efeito de conexão
+queryClient.ts:32 Enviando request para: /api/chat/conversations com método: GET e corpo do tipo: undefined
+use-websocket.tsx:224 [WS] Efeito do usuário executado: usuário 1 (admin)
+use-websocket.tsx:240 [WS:conn-1744420293159] Iniciando conexão para usuário 1 (admin)
+use-websocket.tsx:242 [WS:conn-1744420293159] Conexão WebSocket iniciada
+40react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420240382:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420240382:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420240382:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420240382&v=naLqqVGP1HDwPHPDuJUF9:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+21react_jsx-dev-runtime.js?v=f9bbb7cb:64 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420240382:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420240382:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420240382:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420240382:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420240382&v=naLqqVGP1HDwPHPDuJUF9:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64Understand this error
+admin-chat-conversations-list.tsx:149 Erro ao buscar usuários: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+queryFn @ admin-chat-conversations-list.tsx:149Understand this error
+use-websocket.tsx:73 WebSocket conectado!
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420293898
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420293898
+use-websocket.tsx:275 [WS:ping-1744420293899] Iniciando pings periódicos
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420293898
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420294070
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420294070
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420294070
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420294106
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420294106
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+use-chat.tsx:362 Lista de conversas atualizada: Array(17)
+queryClient.ts:32 Enviando request para: /api/chat/conversations com método: GET e corpo do tipo: undefined
+2use-admin-chat.tsx:176 [AdminChat] Solicitando lista de conversas...
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+use-admin-chat.tsx:255 [AdminChat] Recebido 17 conversas
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420294106
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420294977
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420294978
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+2use-admin-chat.tsx:255 [AdminChat] Recebido 17 conversas
+use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420294977
+use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420294978
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420295011
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420295011
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+2use-admin-chat.tsx:176 [AdminChat] Solicitando lista de conversas...
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+use-admin-chat.tsx:255 [AdminChat] Recebido 17 conversas
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420295011
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420295897
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420295897
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+use-admin-chat.tsx:255 [AdminChat] Recebido 17 conversas
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420295897
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420295922
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420295922
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+2use-admin-chat.tsx:176 [AdminChat] Solicitando lista de conversas...
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+use-admin-chat.tsx:255 [AdminChat] Recebido 17 conversas
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420295922
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420296809
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420296809
+use-chat.tsx:328 Processando mensagem WebSocket: Object
+use-websocket.tsx:102 Mensagem WebSocket recebida: Object
+use-websocket.tsx:125 Processando mensagem WebSocket: Object
+use-admin-chat.tsx:255 [AdminChat] Recebido 17 conversas
+2use-admin-chat.tsx:341 [AdminChat] Removendo handler WebSocket: admin-chat-1744420296809
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
+use-admin-chat.tsx:222 [AdminChat] Registrando handler WebSocket: admin-chat-1744420296818
