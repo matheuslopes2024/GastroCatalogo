@@ -208,7 +208,16 @@ const productCommissionFormSchema = z.object({
     }),
   active: z.boolean().default(true),
   remarks: z.string().max(255, "Observações devem ter no máximo 255 caracteres").optional(),
-  validUntil: z.string().optional(),
+  validUntil: z.string().optional().refine(
+    (date) => {
+      if (!date) return true; // Se não foi informada data, não valida
+      const selectedDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Redefine para o início do dia
+      return selectedDate >= today;
+    },
+    { message: "A data de validade não pode ser no passado" }
+  ),
 });
 
 type ProductCommissionFormValues = z.infer<typeof productCommissionFormSchema>;
@@ -221,6 +230,8 @@ interface ProductCommissionSetting {
   rate: string;
   active: boolean;
   createdAt: string;
+  remarks?: string;
+  validUntil?: string;
 }
 
 // Componente principal para a página de comissões do fornecedor
@@ -949,12 +960,15 @@ function ProductCommissionForm({
   isLoading,
   selectedProduct
 }: ProductCommissionFormProps) {
+  const { toast } = useToast();
   const form = useForm<ProductCommissionFormValues>({
     resolver: zodResolver(productCommissionFormSchema),
     defaultValues: {
       productId: selectedProduct?.id || editingCommission?.productId || 0,
       rate: editingCommission?.rate || "",
       active: editingCommission?.active ?? true,
+      remarks: editingCommission?.remarks || "",
+      validUntil: editingCommission?.validUntil || "",
     },
   });
   
@@ -971,8 +985,66 @@ function ProductCommissionForm({
       form.setValue("productId", editingCommission.productId);
       form.setValue("rate", editingCommission.rate);
       form.setValue("active", editingCommission.active);
+      
+      if (editingCommission.remarks) {
+        form.setValue("remarks", editingCommission.remarks);
+      }
+      
+      if (editingCommission.validUntil) {
+        form.setValue("validUntil", editingCommission.validUntil);
+      }
     }
   }, [editingCommission, form]);
+
+  // Função para pré-visualizar o impacto financeiro da taxa
+  const previewCommissionImpact = () => {
+    const selectedProductId = form.getValues("productId");
+    const rateValue = parseFloat(form.getValues("rate") || "0");
+    
+    if (!selectedProductId || isNaN(rateValue)) return null;
+    
+    const product = products.find(p => p.id === selectedProductId);
+    if (!product) return null;
+    
+    const price = parseFloat(product.price);
+    const commissionAmount = (price * rateValue) / 100;
+    const netValue = price - commissionAmount;
+    
+    return {
+      price,
+      commissionAmount,
+      netValue,
+      product
+    };
+  };
+  
+  const impactPreview = previewCommissionImpact();
+  
+  // Handler para simular o impacto
+  const handleSimulateImpact = () => {
+    const impact = previewCommissionImpact();
+    if (!impact) {
+      toast({
+        title: "Informações incompletas",
+        description: "Selecione um produto e defina uma taxa válida para simular o impacto.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Simulação de Comissão",
+      description: (
+        <div className="mt-2 space-y-1 text-sm">
+          <p><strong>Produto:</strong> {impact.product.name}</p>
+          <p><strong>Preço de venda:</strong> {formatCurrency(impact.price.toString())}</p>
+          <p><strong>Comissão ({form.getValues("rate")}%):</strong> {formatCurrency(impact.commissionAmount.toString())}</p>
+          <p className="font-semibold text-primary"><strong>Valor líquido:</strong> {formatCurrency(impact.netValue.toString())}</p>
+        </div>
+      ),
+      duration: 5000,
+    });
+  };
   
   return (
     <Form {...form}>
@@ -1023,8 +1095,81 @@ function ProductCommissionForm({
                   />
                 </FormControl>
               </div>
+              <FormDescription className="flex justify-between">
+                <span>Informe a taxa de comissão em porcentagem (ex: 2.5 para 2.5%).</span>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs"
+                  onClick={handleSimulateImpact}
+                >
+                  <Calculator className="h-3.5 w-3.5 mr-1" />
+                  Simular impacto
+                </Button>
+              </FormDescription>
+              <FormMessage />
+              
+              {impactPreview && (
+                <div className="mt-2 text-sm p-2 bg-gray-50 rounded-md">
+                  <div className="text-muted-foreground">Previsão de valores:</div>
+                  <div className="flex justify-between mt-1">
+                    <span>Comissão estimada:</span>
+                    <span className="font-medium text-amber-600">
+                      {formatCurrency(((impactPreview.price * parseFloat(field.value || "0")) / 100).toString())}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Valor líquido:</span>
+                    <span className="font-medium text-green-600">
+                      {formatCurrency((impactPreview.price - ((impactPreview.price * parseFloat(field.value || "0")) / 100)).toString())}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="validUntil"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Validade</FormLabel>
+              <div className="relative">
+                <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <FormControl>
+                  <Input 
+                    type="date"
+                    placeholder="Data de validade" 
+                    {...field} 
+                    className="pl-10"
+                  />
+                </FormControl>
+              </div>
               <FormDescription>
-                Informe a taxa de comissão em porcentagem (ex: 2.5 para 2.5%).
+                Data opcional até quando esta comissão será válida. Deixe em branco para não definir prazo.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="remarks"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Observações</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Observações adicionais sobre esta comissão" 
+                  {...field} 
+                />
+              </FormControl>
+              <FormDescription>
+                Informações complementares para referência interna (opcional).
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -1052,8 +1197,21 @@ function ProductCommissionForm({
           )}
         />
         
-        <DialogFooter>
-          <Button type="submit" disabled={isLoading}>
+        <DialogFooter className="gap-2 sm:space-x-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={handleSimulateImpact}
+            className="w-full sm:w-auto"
+          >
+            <Calculator className="h-4 w-4 mr-2" />
+            Simular
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
             {isLoading && (
               <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             )}
