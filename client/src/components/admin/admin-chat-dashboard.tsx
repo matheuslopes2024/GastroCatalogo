@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useAdminChat } from '@/hooks/use-admin-chat';
 import { cn } from '@/lib/utils';
 import { AdminChatMessage, AdminChatMessageDateDisplay, AdminChatMessageInput } from './admin-chat-message-components';
@@ -15,11 +15,13 @@ import {
   MoreVertical, 
   ArrowLeft,
   Building2,
-  Crown
+  Crown,
+  RefreshCw
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { UserRole, ChatMessage } from '@shared/schema';
+import { useToast } from '@/hooks/use-toast';
 
 // Componente principal do dashboard de chat
 export function AdminChatDashboard() {
@@ -28,8 +30,13 @@ export function AdminChatDashboard() {
     messages, 
     sendMessage, 
     isLoadingMessages, 
-    usersOnline 
+    usersOnline,
+    refreshConversations,
+    isLoadingConversations 
   } = useAdminChat();
+  
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -95,6 +102,33 @@ export function AdminChatDashboard() {
     </div>
   );
   
+  // Função para atualizar manualmente as conversas
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    
+    try {
+      refreshConversations();
+      
+      toast({
+        title: "Atualizando conversas",
+        description: "Buscando novas mensagens e conversas...",
+      });
+      
+      // Desativar o estado de atualização após um delay
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Erro ao atualizar conversas:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar as conversas",
+        variant: "destructive"
+      });
+      setIsRefreshing(false);
+    }
+  };
+
   // Renderizar o cabeçalho da conversa
   const renderConversationHeader = () => {
     if (!activeConversation) return null;
@@ -154,6 +188,15 @@ export function AdminChatDashboard() {
         </div>
         
         <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoadingConversations}
+            className={cn(isRefreshing && "animate-spin")}
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon">
             <Phone className="h-4 w-4" />
           </Button>
