@@ -196,9 +196,19 @@ function CommissionTypeIndicator({ type }: { type: "category" | "supplier" | "sp
 const productCommissionFormSchema = z.object({
   productId: z.number({
     required_error: "Produto é obrigatório",
-  }),
-  rate: z.string().min(1, "Taxa é obrigatória").regex(/^\d+(\.\d{1,2})?$/, "Formato inválido, use apenas números (ex: 2.5)"),
+  }).min(1, "Selecione um produto válido"),
+  rate: z.string()
+    .min(1, "Taxa é obrigatória")
+    .regex(/^\d+(\.\d{1,2})?$/, "Formato inválido, use apenas números (ex: 2.5)")
+    .refine((val) => {
+      const numVal = parseFloat(val);
+      return numVal >= 0.1 && numVal <= 15;
+    }, {
+      message: "A taxa deve estar entre 0.1% e 15%"
+    }),
   active: z.boolean().default(true),
+  remarks: z.string().max(255, "Observações devem ter no máximo 255 caracteres").optional(),
+  validUntil: z.string().optional(),
 });
 
 type ProductCommissionFormValues = z.infer<typeof productCommissionFormSchema>;
