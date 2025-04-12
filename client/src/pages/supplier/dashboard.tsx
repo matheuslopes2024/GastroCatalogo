@@ -69,7 +69,7 @@ function SupplierSidebar() {
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
       <nav className="space-y-2">
-        <Link href="/fornecedor" className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
+        <Link href="/fornecedor/dashboard" className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
           <BarChart className="mr-2 h-5 w-5" />
           Dashboard
         </Link>

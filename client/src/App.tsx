@@ -97,6 +97,11 @@ function MainRoutes() {
           allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
         />
         <ProtectedRoute 
+          path="/fornecedor/dashboard" 
+          component={SupplierDashboard} 
+          allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+        />
+        <ProtectedRoute 
           path="/fornecedor/produtos" 
           component={SupplierProductManagement} 
           allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
