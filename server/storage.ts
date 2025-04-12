@@ -4,6 +4,7 @@ import {
   products, type Product, type InsertProduct, 
   sales, type Sale, type InsertSale, 
   commissionSettings, type CommissionSetting, type InsertCommissionSetting, 
+  productCommissionSettings, type ProductCommissionSetting, type InsertProductCommissionSetting,
   productImages, type ProductImage, type InsertProductImage,
   faqCategories, type FaqCategory, type InsertFaqCategory,
   faqItems, type FaqItem, type InsertFaqItem,
@@ -208,6 +209,7 @@ export class MemStorage implements IStorage {
   private faqItems: Map<number, FaqItem>;
   private chatMessages: Map<number, ChatMessage>;
   private chatConversations: Map<number, ChatConversation>;
+  private productCommissionSettings: Map<number, ProductCommissionSetting>;
   
   // Mapas para as novas entidades de comparação de produtos
   private productGroups: Map<number, ProductGroup>;
@@ -254,6 +256,7 @@ export class MemStorage implements IStorage {
     this.productSearches = new Map();
     this.productComparisons = new Map();
     this.productComparisonDetails = new Map();
+    this.productCommissionSettings = new Map();
     
     this.currentUserId = 1;
     this.currentCategoryId = 1;

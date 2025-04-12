@@ -164,6 +164,11 @@ export const insertCommissionSettingSchema = createInsertSchema(commissionSettin
   createdAt: true,
 });
 
+export const insertProductCommissionSettingSchema = createInsertSchema(productCommissionSettings).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -182,6 +187,9 @@ export type InsertCommissionSetting = z.infer<typeof insertCommissionSettingSche
 
 export type ProductImage = typeof productImages.$inferSelect;
 export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
+
+export type ProductCommissionSetting = typeof productCommissionSettings.$inferSelect;
+export type InsertProductCommissionSetting = z.infer<typeof insertProductCommissionSettingSchema>;
 
 // FAQ Categories Table (para organizar as perguntas frequentes em categorias)
 export const faqCategories = pgTable("faq_categories", {
