@@ -314,105 +314,95 @@ export function Header() {
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 md:w-[600px] md:grid-cols-2 lg:w-[750px]">
                       <li className="col-span-2">
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            className="flex w-full select-none flex-col justify-end rounded-md bg-gradient-to-r from-primary/80 to-primary p-6 no-underline outline-none focus:shadow-md overflow-hidden relative group"
-                            href="/busca"
-                          >
-                            <motion.div 
-                              className="absolute top-0 left-0 w-full h-full bg-white/10"
-                              initial={{ x: '-100%' }}
-                              animate={{ 
-                                x: ['100%', '-100%'],
-                                transition: { 
-                                  repeat: Infinity, 
-                                  duration: 1.5,
-                                  ease: "linear",
-                                  repeatDelay: 0.5
-                                } 
-                              }}
-                            />
-                            <div className="mt-4 mb-2 text-lg font-medium text-white flex items-center gap-2">
-                              <Search className="h-5 w-5" />
-                              <span>Ver Todas as Categorias</span>
-                            </div>
-                            <p className="text-sm leading-tight text-white/90">
-                              Explore todas as categorias disponíveis em nosso marketplace profissional
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div
+                          onClick={() => window.location.href = '/busca'}
+                          className="flex w-full select-none flex-col justify-end rounded-md bg-gradient-to-r from-primary/80 to-primary p-6 no-underline outline-none focus:shadow-md overflow-hidden relative group cursor-pointer"
+                        >
+                          <motion.div 
+                            className="absolute top-0 left-0 w-full h-full bg-white/10"
+                            initial={{ x: '-100%' }}
+                            animate={{ 
+                              x: ['100%', '-100%'],
+                              transition: { 
+                                repeat: Infinity, 
+                                duration: 1.5,
+                                ease: "linear",
+                                repeatDelay: 0.5
+                              } 
+                            }}
+                          />
+                          <div className="mt-4 mb-2 text-lg font-medium text-white flex items-center gap-2">
+                            <Search className="h-5 w-5" />
+                            <span>Ver Todas as Categorias</span>
+                          </div>
+                          <p className="text-sm leading-tight text-white/90">
+                            Explore todas as categorias disponíveis em nosso marketplace profissional
+                          </p>
+                        </div>
                       </li>
                       
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/busca?categoria=1"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <Utensils className="h-5 w-5 text-primary" />
-                              <span>Utensílios</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Talheres, pratos, copos e utensílios diversos para seu restaurante
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/busca?categoria=1'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <Utensils className="h-5 w-5 text-primary" />
+                            <span>Utensílios</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Talheres, pratos, copos e utensílios diversos para seu restaurante
+                          </p>
+                        </div>
                       </li>
                       
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/busca?categoria=2"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <ChefHat className="h-5 w-5 text-primary" />
-                              <span>Equipamentos</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Fornos, fogões, chapas e equipamentos profissionais de alta performance
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/busca?categoria=2'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <ChefHat className="h-5 w-5 text-primary" />
+                            <span>Equipamentos</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Fornos, fogões, chapas e equipamentos profissionais de alta performance
+                          </p>
+                        </div>
                       </li>
                       
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/busca?categoria=3"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <Refrigerator className="h-5 w-5 text-primary" />
-                              <span>Refrigeração</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Geladeiras, freezers e equipamentos de refrigeração de alta qualidade
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/busca?categoria=3'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <Refrigerator className="h-5 w-5 text-primary" />
+                            <span>Refrigeração</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Geladeiras, freezers e equipamentos de refrigeração de alta qualidade
+                          </p>
+                        </div>
                       </li>
                       
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/busca?categoria=4"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <Coffee className="h-5 w-5 text-primary" />
-                              <span>Cafeteria</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Máquinas de café, moedores e acessórios para cafeterias profissionais
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/busca?categoria=4'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <Coffee className="h-5 w-5 text-primary" />
+                            <span>Cafeteria</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Máquinas de café, moedores e acessórios para cafeterias profissionais
+                          </p>
+                        </div>
                       </li>
                     </ul>
                   </NavigationMenuContent>
@@ -439,55 +429,49 @@ export function Header() {
                   <NavigationMenuContent>
                     <ul className="grid w-[320px] gap-3 p-4">
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/como-funciona"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <Info className="h-5 w-5 text-primary" />
-                              <span>Como Funciona</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Entenda como nossa plataforma funciona e os benefícios para seu negócio
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/como-funciona'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <Info className="h-5 w-5 text-primary" />
+                            <span>Como Funciona</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Entenda como nossa plataforma funciona e os benefícios para seu negócio
+                          </p>
+                        </div>
                       </li>
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/para-fornecedores"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <Truck className="h-5 w-5 text-primary" />
-                              <span>Para Fornecedores</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Venda seus produtos e aumente o alcance do seu negócio na nossa plataforma
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/para-fornecedores'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <Truck className="h-5 w-5 text-primary" />
+                            <span>Para Fornecedores</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Venda seus produtos e aumente o alcance do seu negócio na nossa plataforma
+                          </p>
+                        </div>
                       </li>
                       <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            href="/contato"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative"
-                          >
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                              <Phone className="h-5 w-5 text-primary" />
-                              <span>Contato</span>
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Entre em contato com nossa equipe especializada
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        <div 
+                          onClick={() => window.location.href = '/contato'}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
+                        >
+                          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                          <div className="flex items-center gap-2 font-medium leading-none">
+                            <Phone className="h-5 w-5 text-primary" />
+                            <span>Contato</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Entre em contato com nossa equipe especializada
+                          </p>
+                        </div>
                       </li>
                     </ul>
                   </NavigationMenuContent>
