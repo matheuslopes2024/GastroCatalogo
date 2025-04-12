@@ -1,0 +1,175 @@
+2queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+use-chat.tsx:328 Processando mensagem WebSocket: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.964Z'}
+use-admin-chat.tsx:70 Conversas carregadas via API: 17
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.971Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.974Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.974Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.976Z'}
+queryClient.ts:35 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+apiRequest @ queryClient.ts:35
+fetchConversations @ use-admin-chat.tsx:68
+(anonymous) @ use-admin-chat.tsx:87
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=f9bbb7cb:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=f9bbb7cb:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=f9bbb7cb:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=f9bbb7cb:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=f9bbb7cb:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=f9bbb7cb:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=f9bbb7cb:19447:22)
+fetchConversations @ use-admin-chat.tsx:73
+await in fetchConversations
+(anonymous) @ use-admin-chat.tsx:87
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+queryClient.ts:35 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+apiRequest @ queryClient.ts:35
+fetchConversations @ use-admin-chat.tsx:68
+(anonymous) @ use-admin-chat.tsx:87
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=f9bbb7cb:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=f9bbb7cb:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=f9bbb7cb:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=f9bbb7cb:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=f9bbb7cb:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=f9bbb7cb:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=f9bbb7cb:19447:22)
+fetchConversations @ use-admin-chat.tsx:73
+await in fetchConversations
+(anonymous) @ use-admin-chat.tsx:87
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+2queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+use-chat.tsx:328 Processando mensagem WebSocket: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.976Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.988Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.992Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.994Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.995Z'}
+use-websocket.tsx:85 Mensagem WebSocket recebida: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.997Z'}
+queryClient.ts:35 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/admin/chat/conversations net::ERR_INSUFFICIENT_RESOURCES
+apiRequest @ queryClient.ts:35
+fetchConversations @ use-admin-chat.tsx:68
+(anonymous) @ use-admin-chat.tsx:87
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+use-admin-chat.tsx:73 Erro ao buscar conversas: TypeError: Failed to fetch
+    at apiRequest (queryClient.ts:35:21)
+    at fetchConversations (use-admin-chat.tsx:68:32)
+    at use-admin-chat.tsx:87:5
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=f9bbb7cb:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=f9bbb7cb:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=f9bbb7cb:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=f9bbb7cb:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=f9bbb7cb:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=f9bbb7cb:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=f9bbb7cb:19447:22)
+fetchConversations @ use-admin-chat.tsx:73
+await in fetchConversations
+(anonymous) @ use-admin-chat.tsx:87
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+2queryClient.ts:32 Enviando request para: /api/admin/chat/conversations com método: GET e corpo do tipo: undefined
+use-chat.tsx:328 Processando mensagem WebSocket: {type: 'admin_conversations_list', conversations: Array(17), timestamp: '2025-04-12T00:37:58.997Z'}
