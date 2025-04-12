@@ -193,7 +193,10 @@ const Pagination = ({
           whileTap={{ scale: 0.9 }}
           animate={{ 
             width: active === index ? 24 : 10,
-            backgroundColor: active === index ? 'rgb(var(--primary))' : 'rgba(var(--primary), 0.3)'
+            opacity: active === index ? 1 : 0.3
+          }}
+          style={{
+            backgroundColor: 'rgb(var(--primary))'
           }}
           transition={{ 
             type: "spring", 
@@ -222,7 +225,7 @@ export function FeaturedCarousel() {
         const res = await apiRequest('GET', '/api/products');
         const data = await res.json();
         // Filtrar apenas produtos com desconto
-        const featuredProducts = data.filter((p: Product) => p.discount > 0);
+        const featuredProducts = data.filter((p: Product) => p.discount && p.discount > 0);
         setProducts(featuredProducts.length > 0 ? featuredProducts : data.slice(0, 5));
         setLoading(false);
       } catch (error) {
