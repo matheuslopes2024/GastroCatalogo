@@ -329,12 +329,16 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>Notificações</span>
-                  <button 
-                    onClick={() => window.location.href = '/admin/notificacoes'} 
-                    className="text-xs text-primary hover:underline"
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-xs text-primary hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = '/admin/notificacoes';
+                    }}
                   >
                     Ver todas
-                  </button>
+                  </Button>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {notifications && notifications.length > 0 ? (
@@ -374,12 +378,16 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>Mensagens</span>
-                  <button 
-                    onClick={() => window.location.href = '/admin/chat'} 
-                    className="text-xs text-primary hover:underline"
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-xs text-primary hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = '/admin/chat';
+                    }}
                   >
                     Ver todas
-                  </button>
+                  </Button>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {messages && messages.length > 0 ? (
@@ -427,14 +435,20 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => window.location.href = '/admin/perfil'}>
-                  <span className="flex w-full">Perfil</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/perfil" className="flex w-full">
+                    <span>Perfil</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.location.href = '/admin/configuracoes'}>
-                  <span className="flex w-full">Configurações</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/configuracoes" className="flex w-full">
+                    <span>Configurações</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.location.href = '/admin/ajuda'}>
-                  <span className="flex w-full">Ajuda & Suporte</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/ajuda" className="flex w-full">
+                    <span>Ajuda & Suporte</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleLogout}>
@@ -473,12 +487,12 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               
               {breadcrumbs && breadcrumbs.length > 0 && (
                 <nav className="flex mt-1 text-sm">
-                  <button 
-                    onClick={() => window.location.href = '/admin'} 
-                    className="text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer text-sm p-0"
+                  <Link 
+                    href="/admin"
+                    className="text-muted-foreground hover:text-foreground text-sm"
                   >
                     Dashboard
-                  </button>
+                  </Link>
                   
                   {breadcrumbs.map((crumb, index) => (
                     <React.Fragment key={index}>
@@ -486,12 +500,12 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
                       {index === breadcrumbs.length - 1 ? (
                         <span className="font-medium">{crumb.title}</span>
                       ) : (
-                        <button 
-                          onClick={() => window.location.href = crumb.href}
-                          className="text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer text-sm p-0"
+                        <Link 
+                          href={crumb.href}
+                          className="text-muted-foreground hover:text-foreground text-sm"
                         >
                           {crumb.title}
-                        </button>
+                        </Link>
                       )}
                     </React.Fragment>
                   ))}
