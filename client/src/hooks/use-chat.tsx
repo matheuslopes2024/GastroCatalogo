@@ -15,6 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@shared/schema";
 import { useWebSocket, WebSocketMessage } from "@/hooks/use-websocket";
 
+// Função auxiliar para verificar se um usuário é administrador
+export function isAdminUser(user: any): boolean {
+  if (!user) return false;
+  const role = user.role || '';
+  return role === 'ADMIN' || role === 'admin' || role === UserRole.ADMIN;
+}
+
 export interface ChatMessage {
   id: number;
   message: string;
@@ -225,7 +232,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               // Fornecedores sempre enviam mensagens para o admin padrão
               payload.receiverId = 1; // Admin ID padrão
               console.log("Usando admin ID 1 como destinatário padrão para fornecedor");
-            } else if (user.role === 'ADMIN' || user.role === 'admin') {
+            } else if (isAdminUser(user)) {
               // Administradores podem usar o participantId da conversa se disponível
               if (activeConversation.participantId) {
                 payload.receiverId = activeConversation.participantId;
@@ -467,11 +474,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         // Se estamos falando com um admin (caso de fornecedor->admin), usamos o ID 1 (admin padrão)
         receiverId = 1; // ID do administrador padrão do sistema
         console.log("Definindo destinatário como admin padrão (ID=1)");
-      } else if (!receiverId && activeConversation._participants?.some(p => 
-                 p.role === 'ADMIN' || p.role === 'admin')) {
+      } else if (!receiverId && activeConversation._participants?.some(p => isAdminUser(p))) {
         // Verificação alternativa - se algum participante é admin
-        receiverId = activeConversation._participants.find(p => 
-                     p.role === 'ADMIN' || p.role === 'admin')?.id || 1;
+        receiverId = activeConversation._participants.find(p => isAdminUser(p))?.id || 1;
         console.log("Usando ID admin encontrado nos participantes:", receiverId);
       } else if (!receiverId && activeConversation.participantId) {
         // Se temos um participantId, usamos ele
@@ -607,7 +612,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setIsOpen(true);
     // Verificamos se já existe uma conversa com o admin
     const adminConversation = conversations.find((conv: ChatConversation) => {
-      return conv._participants?.some((p: {role: string}) => p.role === UserRole.ADMIN);
+      return conv._participants?.some((p: {role: string}) => isAdminUser(p));
     });
     
     if (adminConversation) {
