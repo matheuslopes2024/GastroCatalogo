@@ -36,6 +36,15 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -854,6 +863,54 @@ export default function SupplierCommissions() {
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    
+                    {/* Botão para adicionar comissão específica */}
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          onClick={() => {
+                            setEditingCommission(null);
+                            setSelectedProduct(null);
+                          }}
+                          className="flex items-center"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar comissão específica
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center">
+                            {editingCommission ? (
+                              <>
+                                <Edit className="h-5 w-5 mr-2 text-primary" />
+                                Editar comissão específica
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-5 w-5 mr-2 text-primary" />
+                                Nova comissão específica
+                              </>
+                            )}
+                          </DialogTitle>
+                          <DialogDescription>
+                            {editingCommission 
+                              ? "Atualize os detalhes da comissão específica para este produto."
+                              : "Defina uma taxa de comissão específica para um produto."}
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <ProductCommissionForm 
+                          editingCommission={editingCommission} 
+                          products={productsWithCommissions?.map((item: ProductCommission) => item.product) || []}
+                          onSubmit={(data) => {
+                            updateProductCommissionMutation.mutate(data);
+                          }}
+                          isLoading={updateProductCommissionMutation.isPending}
+                          selectedProduct={selectedProduct}
+                        />
+                      </DialogContent>
+                    </Dialog>
                   </div>
                   
                   {/* Tabela de produtos */}
