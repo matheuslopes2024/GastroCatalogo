@@ -696,9 +696,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         options.buyerId = parseInt(req.query.buyerId as string);
       }
       
+      // Opção para filtrar por período
+      if (req.query.period) {
+        const period = req.query.period as string;
+        const now = new Date();
+        let startDate = new Date();
+        
+        switch (period) {
+          case 'week':
+            startDate.setDate(now.getDate() - 7);
+            options.startDate = startDate;
+            break;
+          case 'month':
+            startDate.setMonth(now.getMonth() - 1);
+            options.startDate = startDate;
+            break;
+          case 'quarter':
+            startDate.setMonth(now.getMonth() - 3);
+            options.startDate = startDate;
+            break;
+          case 'year':
+            startDate.setFullYear(now.getFullYear() - 1);
+            options.startDate = startDate;
+            break;
+          case 'all':
+          default:
+            // Não aplicar filtro de data
+            break;
+        }
+      }
+      
+      // Opções de paginação
+      if (req.query.limit) {
+        options.limit = parseInt(req.query.limit as string);
+      }
+      
+      if (req.query.offset) {
+        options.offset = parseInt(req.query.offset as string);
+      }
+      
       const sales = await storage.getSales(options);
       res.json(sales);
     } catch (error) {
+      console.error("Erro ao buscar vendas:", error);
       res.status(500).json({ message: "Erro ao buscar vendas" });
     }
   });
@@ -719,6 +759,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
       }
       res.status(500).json({ message: "Erro ao registrar venda" });
+    }
+  });
+  
+  // Rota para dashboard do fornecedor - resumo de vendas
+  app.get("/api/supplier/dashboard/sales-summary", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const { period = 'month' } = req.query;
+      
+      // Definir intervalo de datas baseado no período
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'quarter':
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        case 'all':
+          startDate = new Date(0); // Início dos tempos
+          break;
+      }
+      
+      // Buscar vendas do fornecedor no período
+      const sales = await storage.getSales({ 
+        supplierId, 
+        startDate 
+      });
+      
+      // Calcular métricas
+      const totalSales = sales.length;
+      let totalRevenue = 0;
+      let totalCommission = 0;
+      
+      sales.forEach(sale => {
+        totalRevenue += parseFloat(sale.totalPrice);
+        totalCommission += parseFloat(sale.commissionAmount);
+      });
+      
+      // Agrupar vendas por período (dia, semana ou mês)
+      const salesByPeriod: Record<string, { date: string, vendas: number, receita: number, comissao: number }> = {};
+      
+      // Formato de data baseado no período selecionado
+      let dateFormat: string;
+      
+      switch (period) {
+        case 'week':
+          dateFormat = 'DD/MM'; // Diário
+          break;
+        case 'month':
+          dateFormat = 'DD/MM'; // Diário
+          break;
+        case 'quarter':
+          dateFormat = 'MM/YYYY'; // Mensal
+          break;
+        case 'year':
+          dateFormat = 'MM/YYYY'; // Mensal
+          break;
+        case 'all':
+          dateFormat = 'MM/YYYY'; // Mensal
+          break;
+        default:
+          dateFormat = 'DD/MM/YYYY';
+      }
+      
+      sales.forEach(sale => {
+        const saleDate = new Date(sale.createdAt);
+        
+        // Formatar a data baseada no período
+        let periodKey: string;
+        
+        if (period === 'week' || period === 'month') {
+          // Formato diário: DD/MM
+          periodKey = `${saleDate.getDate().toString().padStart(2, '0')}/${(saleDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        } else {
+          // Formato mensal: MM/YYYY
+          periodKey = `${(saleDate.getMonth() + 1).toString().padStart(2, '0')}/${saleDate.getFullYear()}`;
+        }
+        
+        if (!salesByPeriod[periodKey]) {
+          salesByPeriod[periodKey] = {
+            date: periodKey,
+            vendas: 0,
+            receita: 0,
+            comissao: 0
+          };
+        }
+        
+        salesByPeriod[periodKey].vendas += 1;
+        salesByPeriod[periodKey].receita += parseFloat(sale.totalPrice);
+        salesByPeriod[periodKey].comissao += parseFloat(sale.commissionAmount);
+      });
+      
+      // Converter para array e ordenar por data
+      const salesChartData = Object.values(salesByPeriod).sort((a, b) => {
+        // Extrair componentes da data
+        const [dayA, monthA, yearA] = a.date.split(/[\/\.]/);
+        const [dayB, monthB, yearB] = b.date.split(/[\/\.]/);
+        
+        // Comparar ano (se existir)
+        if (yearA && yearB && yearA !== yearB) {
+          return parseInt(yearA) - parseInt(yearB);
+        }
+        
+        // Comparar mês
+        if (monthA !== monthB) {
+          return parseInt(monthA) - parseInt(monthB);
+        }
+        
+        // Comparar dia (se existir)
+        if (dayA && dayB) {
+          return parseInt(dayA) - parseInt(dayB);
+        }
+        
+        return 0;
+      });
+      
+      // Buscar produtos mais vendidos
+      const productSales: Record<number, { 
+        productId: number, 
+        name: string, 
+        totalSales: number, 
+        totalRevenue: number,
+        imageUrl: string | null
+      }> = {};
+      
+      // Preencher dados de vendas por produto
+      for (const sale of sales) {
+        if (!productSales[sale.productId]) {
+          // Buscar informações do produto
+          const product = await storage.getProduct(sale.productId);
+          
+          if (product) {
+            productSales[sale.productId] = {
+              productId: product.id,
+              name: product.name,
+              totalSales: 0,
+              totalRevenue: 0,
+              imageUrl: product.imageUrl
+            };
+          } else {
+            continue; // Pular se o produto não for encontrado
+          }
+        }
+        
+        productSales[sale.productId].totalSales += sale.quantity || 1;
+        productSales[sale.productId].totalRevenue += parseFloat(sale.totalPrice);
+      }
+      
+      // Converter para array e ordenar por total de vendas
+      const topProducts = Object.values(productSales)
+        .sort((a, b) => b.totalSales - a.totalSales)
+        .slice(0, 5); // Top 5 produtos
+      
+      // Preparar resultado
+      const result = {
+        summary: {
+          totalSales,
+          totalRevenue,
+          totalCommission,
+          netRevenue: totalRevenue - totalCommission
+        },
+        salesChartData,
+        topProducts,
+        recentSales: sales.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ).slice(0, 10) // Últimas 10 vendas
+      };
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao gerar resumo do dashboard:", error);
+      res.status(500).json({ message: "Erro ao gerar resumo do dashboard" });
+    }
+  });
+
+  // Rota para dashboard do fornecedor - produtos mais visualizados
+  app.get("/api/supplier/dashboard/top-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      // Buscar todos os produtos do fornecedor
+      const products = await storage.getProductsBySupplier(supplierId);
+      
+      // Organizar os produtos por visualizações e vendas
+      const enhancedProducts = await Promise.all(products.map(async (product) => {
+        // Buscar número de vendas
+        const sales = await storage.getSales({ productId: product.id });
+        const totalSales = sales.length;
+        
+        // Calcular receita total
+        const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.totalPrice), 0);
+        
+        // Calcular comissão total
+        const totalCommission = sales.reduce((sum, sale) => sum + parseFloat(sale.commissionAmount), 0);
+        
+        return {
+          ...product,
+          totalSales,
+          totalRevenue,
+          totalCommission,
+          netRevenue: totalRevenue - totalCommission,
+          conversion: product.views > 0 ? (totalSales / product.views) * 100 : 0
+        };
+      }));
+      
+      // Ordenar produtos por diferentes métricas
+      const topByViews = [...enhancedProducts].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
+      const topBySales = [...enhancedProducts].sort((a, b) => b.totalSales - a.totalSales).slice(0, 10);
+      const topByRevenue = [...enhancedProducts].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
+      const topByConversion = [...enhancedProducts]
+        .filter(p => (p.views || 0) > 0) // Filtrar produtos com visualizações
+        .sort((a, b) => b.conversion - a.conversion)
+        .slice(0, 10);
+      
+      res.json({
+        topByViews,
+        topBySales,
+        topByRevenue,
+        topByConversion
+      });
+    } catch (error) {
+      console.error("Erro ao buscar produtos mais populares:", error);
+      res.status(500).json({ message: "Erro ao buscar produtos mais populares" });
     }
   });
   

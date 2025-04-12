@@ -108,21 +108,29 @@ export default function SupplierDashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   
-  // Fetch supplier products
-  const { data: products, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["/api/products", { supplierId: user?.id }],
-    enabled: !!user?.id,
+  // Fetch dashboard summary (includes sales, products, metrics)
+  const { 
+    data: dashboardData, 
+    isLoading: isLoadingDashboard,
+    error: dashboardError,
+    refetch: refetchDashboard
+  } = useQuery({
+    queryKey: ["/api/supplier/dashboard/sales-summary", { period: timeframeFilter }],
+    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
-  // Fetch supplier sales
-  const { data: sales, isLoading: isLoadingSales } = useQuery({
-    queryKey: ["/api/sales", { supplierId: user?.id }],
-    enabled: !!user?.id,
+  // Fetch top products data
+  const {
+    data: topProductsData,
+    isLoading: isLoadingTopProducts
+  } = useQuery({
+    queryKey: ["/api/supplier/dashboard/top-products"],
+    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
-
-  // Fetch supplier-specific commission settings
-  const { data: commissionSettings, isLoading: isLoadingCommissions } = useQuery({
-    queryKey: ["/api/commission-settings", { supplierId: user?.id }],
+  
+  // Fetch recent products
+  const { data: products, isLoading: isLoadingProducts } = useQuery({
+    queryKey: ["/api/products", { supplierId: user?.id, limit: 5 }],
     enabled: !!user?.id,
   });
   
@@ -131,134 +139,75 @@ export default function SupplierDashboard() {
     queryKey: ["/api/categories"],
   });
   
-  // Filter sales data based on selected timeframe
-  const filteredSales = useMemo(() => {
-    if (!sales || sales.length === 0) return [];
-    
-    const now = new Date();
-    let filterDate = new Date();
-    
-    switch (timeframeFilter) {
-      case "week":
-        filterDate.setDate(now.getDate() - 7);
-        break;
-      case "month":
-        filterDate.setMonth(now.getMonth() - 1);
-        break;
-      case "quarter":
-        filterDate.setMonth(now.getMonth() - 3);
-        break;
-      case "year":
-        filterDate.setFullYear(now.getFullYear() - 1);
-        break;
-      case "all":
-      default:
-        return sales;
-    }
-    
-    return sales.filter(sale => new Date(sale.createdAt) >= filterDate);
-  }, [sales, timeframeFilter]);
-  
-  // Generate chart data from actual sales data
+  // Usar dados do dashboard diretamente da API
   const salesData = useMemo(() => {
-    if (!filteredSales || filteredSales.length === 0) {
-      // Se não houver dados de vendas, usar dados de exemplo para demonstração
-      return [
-        { month: 'Jan', vendas: 4000, comissao: 240 },
-        { month: 'Fev', vendas: 3000, comissao: 180 },
-        { month: 'Mar', vendas: 5000, comissao: 300 },
-        { month: 'Abr', vendas: 2780, comissao: 167 },
-        { month: 'Mai', vendas: 1890, comissao: 113 },
-        { month: 'Jun', vendas: 2390, comissao: 143 },
-        { month: 'Jul', vendas: 3490, comissao: 209 },
-      ];
+    if (isLoadingDashboard || !dashboardData || !dashboardData.salesChartData) {
+      return [];
     }
     
-    // Agrupar vendas por mês
-    const salesByMonth = filteredSales.reduce((acc, sale) => {
-      const date = new Date(sale.createdAt);
-      const monthYear = `${date.toLocaleString('pt-BR', { month: 'short' })}/${date.getFullYear()}`;
-      
-      if (!acc[monthYear]) {
-        acc[monthYear] = {
-          month: monthYear,
-          vendas: 0,
-          comissao: 0
-        };
-      }
-      
-      acc[monthYear].vendas += Number(sale.totalPrice);
-      acc[monthYear].comissao += Number(sale.commissionAmount);
-      
-      return acc;
-    }, {} as Record<string, { month: string, vendas: number, comissao: number }>);
+    // Transformar dados para o formato esperado pelo gráfico
+    return dashboardData.salesChartData.map(item => ({
+      month: item.date,
+      vendas: item.receita,
+      comissao: item.comissao
+    }));
+  }, [dashboardData, isLoadingDashboard]);
+  
+  // Extrair métricas do dashboard
+  const dashboardSummary = useMemo(() => {
+    if (isLoadingDashboard || !dashboardData || !dashboardData.summary) {
+      return {
+        totalSales: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalCommission: 0,
+        netRevenue: 0,
+        avgCommissionRate: "0.00"
+      };
+    }
     
-    // Converter objeto para array e ordenar por data
-    return Object.values(salesByMonth).sort((a, b) => {
-      // Extrair mês e ano da string no formato "MMM/YYYY"
-      const [aMonth, aYear] = a.month.split('/');
-      const [bMonth, bYear] = b.month.split('/');
+    const { totalSales, totalRevenue, totalCommission, netRevenue } = dashboardData.summary;
+    
+    // Calcular taxa média de comissão
+    const avgCommissionRate = totalRevenue > 0
+      ? (totalCommission / totalRevenue * 100).toFixed(2)
+      : "0.00";
       
-      // Comparar por ano primeiro
-      if (aYear !== bYear) return Number(aYear) - Number(bYear);
-      
-      // Depois comparar por mês
-      const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      return months.indexOf(aMonth.toLowerCase()) - months.indexOf(bMonth.toLowerCase());
-    });
-  }, [filteredSales]);
+    return {
+      totalOrders: totalSales,
+      totalSales: totalRevenue,
+      totalCommission,
+      netRevenue,
+      avgCommissionRate
+    };
+  }, [dashboardData, isLoadingDashboard]);
   
-  // Calculate earnings
-  const totalSales = filteredSales?.reduce((acc, sale) => acc + Number(sale.totalPrice), 0) || 0;
-  const totalCommission = filteredSales?.reduce((acc, sale) => acc + Number(sale.commissionAmount), 0) || 0;
-  const netEarnings = totalSales - totalCommission;
+  // Extrair produtos mais vendidos
+  const topProducts = useMemo(() => {
+    if (isLoadingDashboard || !dashboardData || !dashboardData.topProducts) {
+      return [];
+    }
+    
+    return dashboardData.topProducts.map(product => ({
+      productId: product.productId,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      totalValue: product.totalRevenue,
+      count: product.totalSales
+    }));
+  }, [dashboardData, isLoadingDashboard]);
   
-  // Calculate average commission rate
-  const avgCommissionRate = totalSales > 0
-    ? (totalCommission / totalSales * 100).toFixed(2)
-    : "0.00";
+  // Extrair vendas recentes
+  const recentSales = useMemo(() => {
+    if (isLoadingDashboard || !dashboardData || !dashboardData.recentSales) {
+      return [];
+    }
+    
+    return dashboardData.recentSales;
+  }, [dashboardData, isLoadingDashboard]);
   
   // Get total active products
   const activeProducts = products?.filter(p => p.active).length || 0;
-  
-  // Calculate top performing products
-  const topProducts = useMemo(() => {
-    if (!filteredSales || !products) return [];
-    
-    // Agregar vendas por produto
-    const salesByProduct = filteredSales.reduce((acc, sale) => {
-      if (!acc[sale.productId]) {
-        acc[sale.productId] = {
-          productId: sale.productId,
-          totalSales: 0,
-          totalValue: 0,
-          count: 0
-        };
-      }
-      
-      acc[sale.productId].totalValue += Number(sale.totalPrice);
-      acc[sale.productId].count += Number(sale.quantity);
-      
-      return acc;
-    }, {} as Record<number, { productId: number, totalSales: number, totalValue: number, count: number }>);
-    
-    // Mapear IDs de produto para objetos de produto completos
-    return Object.values(salesByProduct)
-      .map(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) return null;
-        
-        return {
-          ...item,
-          product,
-          name: product.name,
-          imageUrl: product.imageUrl
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b!.totalValue - a!.totalValue)
-      .slice(0, 5);
-  }, [filteredSales, products]);
   
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
@@ -349,10 +298,10 @@ export default function SupplierDashboard() {
                       <div>
                         <p className="text-sm font-medium text-gray-500">Vendas</p>
                         <h3 className="text-2xl font-bold">
-                          {isLoadingSales ? <Loading /> : sales?.length || 0}
+                          {isLoadingDashboard ? <Loading /> : dashboardSummary.totalOrders || 0}
                         </h3>
                         <p className="text-xs text-green-600 mt-1">
-                          {filteredSales?.length || 0} no período selecionado
+                          Período: {timeframeFilter}
                         </p>
                       </div>
                       <div className="p-2 bg-green-100 rounded-full">
@@ -368,10 +317,10 @@ export default function SupplierDashboard() {
                       <div>
                         <p className="text-sm font-medium text-gray-500">Faturamento</p>
                         <h3 className="text-2xl font-bold">
-                          {isLoadingSales ? <Loading /> : formatCurrency(totalSales)}
+                          {isLoadingDashboard ? <Loading /> : formatCurrency(dashboardSummary.totalSales)}
                         </h3>
                         <p className="text-xs text-green-600 mt-1">
-                          {formatCurrency(netEarnings)} líquido
+                          {formatCurrency(dashboardSummary.netRevenue)} líquido
                         </p>
                       </div>
                       <div className="p-2 bg-blue-100 rounded-full">
