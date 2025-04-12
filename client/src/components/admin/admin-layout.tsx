@@ -427,20 +427,14 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/perfil" className="flex w-full">
-                    <span>Perfil</span>
-                  </Link>
+                <DropdownMenuItem onClick={() => window.location.href = "/admin/perfil"}>
+                  <span>Perfil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/configuracoes" className="flex w-full">
-                    <span>Configurações</span>
-                  </Link>
+                <DropdownMenuItem onClick={() => window.location.href = "/admin/configuracoes"}>
+                  <span>Configurações</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/ajuda" className="flex w-full">
-                    <span>Ajuda & Suporte</span>
-                  </Link>
+                <DropdownMenuItem onClick={() => window.location.href = "/admin/ajuda"}>
+                  <span>Ajuda & Suporte</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleLogout}>
