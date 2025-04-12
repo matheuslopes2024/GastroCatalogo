@@ -776,6 +776,489 @@ export class MemStorage implements IStorage {
       lastActivityAt: new Date()
     });
   }
+
+  // --- Métodos para grupos de produtos (Product Groups) ---
+  async getProductGroup(id: number): Promise<ProductGroup | undefined> {
+    return this.productGroups.get(id);
+  }
+
+  async getProductGroupBySlug(slug: string): Promise<ProductGroup | undefined> {
+    return Array.from(this.productGroups.values()).find(
+      (group) => group.slug === slug
+    );
+  }
+
+  async createProductGroup(insertGroup: InsertProductGroup): Promise<ProductGroup> {
+    const id = this.currentProductGroupId++;
+    const group: ProductGroup = {
+      ...insertGroup,
+      id,
+      itemsCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.productGroups.set(id, group);
+    return group;
+  }
+
+  async updateProductGroup(id: number, groupData: Partial<ProductGroup>): Promise<ProductGroup | undefined> {
+    const group = await this.getProductGroup(id);
+    if (!group) return undefined;
+
+    const updatedGroup = { 
+      ...group, 
+      ...groupData,
+      updatedAt: new Date() 
+    };
+    this.productGroups.set(id, updatedGroup);
+    return updatedGroup;
+  }
+
+  async getProductGroups(options?: {
+    categoryId?: number;
+    search?: string;
+    active?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<ProductGroup[]> {
+    let groups = Array.from(this.productGroups.values());
+
+    if (options) {
+      if (options.categoryId !== undefined) {
+        groups = groups.filter(group => group.categoryId === options.categoryId);
+      }
+
+      if (options.search) {
+        const searchTerm = options.search.toLowerCase();
+        groups = groups.filter(group =>
+          group.name.toLowerCase().includes(searchTerm) ||
+          (group.description && group.description.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      if (options.active !== undefined) {
+        groups = groups.filter(group => group.active === options.active);
+      }
+
+      // Ordenar do mais recente para o mais antigo
+      groups = groups.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+      if (options.offset !== undefined) {
+        groups = groups.slice(options.offset);
+      }
+
+      if (options.limit !== undefined) {
+        groups = groups.slice(0, options.limit);
+      }
+    }
+
+    return groups;
+  }
+
+  // --- Métodos para itens de grupos de produtos (Product Group Items) ---
+  async getProductGroupItem(id: number): Promise<ProductGroupItem | undefined> {
+    return this.productGroupItems.get(id);
+  }
+
+  async getProductGroupItemByProductId(groupId: number, productId: number): Promise<ProductGroupItem | undefined> {
+    return Array.from(this.productGroupItems.values()).find(
+      (item) => item.groupId === groupId && item.productId === productId
+    );
+  }
+
+  async createProductGroupItem(insertItem: InsertProductGroupItem): Promise<ProductGroupItem> {
+    const id = this.currentProductGroupItemId++;
+    const item: ProductGroupItem = {
+      ...insertItem,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.productGroupItems.set(id, item);
+    
+    // Atualizar contagem de itens no grupo
+    const group = await this.getProductGroup(insertItem.groupId);
+    if (group) {
+      await this.updateProductGroup(group.id, {
+        itemsCount: group.itemsCount + 1
+      });
+    }
+    
+    return item;
+  }
+
+  async updateProductGroupItem(id: number, itemData: Partial<ProductGroupItem>): Promise<ProductGroupItem | undefined> {
+    const item = await this.getProductGroupItem(id);
+    if (!item) return undefined;
+
+    const updatedItem = { 
+      ...item, 
+      ...itemData,
+      updatedAt: new Date() 
+    };
+    this.productGroupItems.set(id, updatedItem);
+    return updatedItem;
+  }
+
+  async getProductGroupItems(groupId: number, options?: {
+    supplierId?: number;
+    highlighted?: boolean;
+    limit?: number;
+    orderBy?: string; // Opções: price_asc, price_desc, sales_desc
+  }): Promise<ProductGroupItem[]> {
+    let items = Array.from(this.productGroupItems.values())
+      .filter(item => item.groupId === groupId);
+
+    if (options) {
+      if (options.supplierId !== undefined) {
+        // Filtramos com base no supplierId do produto relacionado
+        const productsForSupplier = Array.from(this.products.values())
+          .filter(product => product.supplierId === options.supplierId)
+          .map(product => product.id);
+        
+        items = items.filter(item => productsForSupplier.includes(item.productId));
+      }
+
+      if (options.highlighted !== undefined) {
+        items = items.filter(item => item.highlighted === options.highlighted);
+      }
+
+      // Ordenação
+      if (options.orderBy) {
+        switch (options.orderBy) {
+          case 'price_asc':
+            items = items.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            break;
+          case 'price_desc':
+            items = items.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            break;
+          case 'sales_desc':
+            // Ordernar por vendas - se tiver contagem de vendas no item, usar, se não, ordenar por popularidade
+            items = items.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
+            break;
+        }
+      } else {
+        // Por padrão, ordenar pelo menor preço
+        items = items.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      }
+
+      if (options.limit) {
+        items = items.slice(0, options.limit);
+      }
+    }
+
+    return items;
+  }
+
+  // --- Métodos para pesquisas de produtos (Product Searches) ---
+  async createProductSearch(insertSearch: InsertProductSearch): Promise<ProductSearch> {
+    const id = this.currentProductSearchId++;
+    const search: ProductSearch = {
+      ...insertSearch,
+      id,
+      createdAt: new Date()
+    };
+    this.productSearches.set(id, search);
+    return search;
+  }
+
+  async getProductSearches(options?: {
+    userId?: number;
+    query?: string;
+    categoryId?: number;
+    limit?: number;
+    daysAgo?: number;
+  }): Promise<ProductSearch[]> {
+    let searches = Array.from(this.productSearches.values());
+
+    if (options) {
+      if (options.userId !== undefined) {
+        searches = searches.filter(search => search.userId === options.userId);
+      }
+
+      if (options.query) {
+        searches = searches.filter(search => search.searchTerm.includes(options.query!));
+      }
+
+      if (options.categoryId !== undefined) {
+        searches = searches.filter(search => search.categoryId === options.categoryId);
+      }
+
+      if (options.daysAgo !== undefined) {
+        const now = new Date();
+        const cutoffDate = new Date();
+        cutoffDate.setDate(now.getDate() - options.daysAgo);
+        searches = searches.filter(search => search.createdAt >= cutoffDate);
+      }
+
+      // Ordenar do mais recente para o mais antigo
+      searches = searches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      if (options.limit) {
+        searches = searches.slice(0, options.limit);
+      }
+    }
+
+    return searches;
+  }
+
+  // --- Métodos para comparações de produtos (Product Comparisons) ---
+  async getProductComparison(id: number): Promise<ProductComparison | undefined> {
+    return this.productComparisons.get(id);
+  }
+
+  async createProductComparison(insertComparison: InsertProductComparison): Promise<ProductComparison> {
+    const id = this.currentProductComparisonId++;
+    const comparison: ProductComparison = {
+      ...insertComparison,
+      id,
+      status: insertComparison.status || ProductComparisonStatus.IN_PROGRESS,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.productComparisons.set(id, comparison);
+    return comparison;
+  }
+
+  async updateProductComparison(id: number, comparisonData: Partial<ProductComparison>): Promise<ProductComparison | undefined> {
+    const comparison = await this.getProductComparison(id);
+    if (!comparison) return undefined;
+
+    const updatedComparison = {
+      ...comparison,
+      ...comparisonData,
+      updatedAt: new Date()
+    };
+    this.productComparisons.set(id, updatedComparison);
+    return updatedComparison;
+  }
+
+  async getProductComparisons(options?: {
+    userId?: number;
+    groupId?: number;
+    status?: ProductComparisonStatusType;
+    limit?: number;
+  }): Promise<ProductComparison[]> {
+    let comparisons = Array.from(this.productComparisons.values());
+
+    if (options) {
+      if (options.userId !== undefined) {
+        comparisons = comparisons.filter(comparison => comparison.userId === options.userId);
+      }
+
+      if (options.groupId !== undefined) {
+        comparisons = comparisons.filter(comparison => comparison.groupId === options.groupId);
+      }
+
+      if (options.status !== undefined) {
+        comparisons = comparisons.filter(comparison => comparison.status === options.status);
+      }
+
+      // Ordenar do mais recente para o mais antigo
+      comparisons = comparisons.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+      if (options.limit) {
+        comparisons = comparisons.slice(0, options.limit);
+      }
+    }
+
+    return comparisons;
+  }
+
+  // --- Métodos para detalhes de comparações de produtos (Product Comparison Details) ---
+  async createProductComparisonDetail(insertDetail: InsertProductComparisonDetail): Promise<ProductComparisonDetail> {
+    const id = this.currentProductComparisonDetailId++;
+    const detail: ProductComparisonDetail = {
+      ...insertDetail,
+      id,
+      createdAt: new Date()
+    };
+    this.productComparisonDetails.set(id, detail);
+    return detail;
+  }
+
+  async getProductComparisonDetails(comparisonId: number): Promise<ProductComparisonDetail[]> {
+    return Array.from(this.productComparisonDetails.values())
+      .filter(detail => detail.comparisonId === comparisonId);
+  }
+  
+  // --- Métodos avançados para comparação estilo Trivago ---
+  async compareProducts(groupId: number, options?: {
+    sortType?: ProductSortTypeValue;
+    maxResults?: number;
+    filters?: any;
+    userId?: number;
+  }): Promise<{
+    group: ProductGroup;
+    items: (ProductGroupItem & { product: Product; supplier: User })[];
+    cheapestItem?: ProductGroupItem & { product: Product; supplier: User };
+    bestRatedItem?: ProductGroupItem & { product: Product; supplier: User };
+  }> {
+    // Obter o grupo de produtos
+    const group = await this.getProductGroup(groupId);
+    if (!group) {
+      throw new Error(`Grupo de produtos com ID ${groupId} não encontrado`);
+    }
+
+    // Obter os itens do grupo
+    let items = await this.getProductGroupItems(groupId, {
+      limit: options?.maxResults || 6
+    });
+
+    // Enriquecer os itens com informações de produto e fornecedor
+    const enrichedItems = await Promise.all(
+      items.map(async (item) => {
+        const product = await this.getProduct(item.productId);
+        if (!product) {
+          throw new Error(`Produto com ID ${item.productId} não encontrado`);
+        }
+
+        const supplier = await this.getUser(product.supplierId);
+        if (!supplier) {
+          throw new Error(`Fornecedor com ID ${product.supplierId} não encontrado`);
+        }
+
+        return { ...item, product, supplier };
+      })
+    );
+
+    // Aplicar filtros adicionais se necessário
+    let filteredItems = enrichedItems;
+    if (options?.filters) {
+      // Exemplo: Filtrar por intervalo de preço
+      if (options.filters.minPrice !== undefined) {
+        filteredItems = filteredItems.filter(item => 
+          parseFloat(item.price) >= parseFloat(options.filters.minPrice)
+        );
+      }
+      if (options.filters.maxPrice !== undefined) {
+        filteredItems = filteredItems.filter(item => 
+          parseFloat(item.price) <= parseFloat(options.filters.maxPrice)
+        );
+      }
+      // Mais filtros podem ser implementados conforme necessário
+    }
+
+    // Ordenar os itens de acordo com o tipo de ordenação
+    if (options?.sortType) {
+      switch (options.sortType) {
+        case ProductSortType.PRICE_ASC:
+          filteredItems.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+          break;
+        case ProductSortType.PRICE_DESC:
+          filteredItems.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+          break;
+        case ProductSortType.RATING_DESC:
+          filteredItems.sort((a, b) => parseFloat(b.product.rating) - parseFloat(a.product.rating));
+          break;
+        case ProductSortType.NEWEST:
+          filteredItems.sort((a, b) => b.product.createdAt.getTime() - a.product.createdAt.getTime());
+          break;
+        default:
+          // Padrão: ordenar por preço (menor para maior)
+          filteredItems.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      }
+    } else {
+      // Padrão: ordenar por preço (menor para maior)
+      filteredItems.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+    }
+
+    // Limitar o número de resultados se especificado
+    if (options?.maxResults && filteredItems.length > options.maxResults) {
+      filteredItems = filteredItems.slice(0, options.maxResults);
+    }
+
+    // Encontrar o item mais barato
+    const cheapestItem = filteredItems.length > 0 
+      ? filteredItems.reduce((min, item) => 
+          parseFloat(item.price) < parseFloat(min.price) ? item : min, 
+          filteredItems[0]
+        )
+      : undefined;
+
+    // Encontrar o item melhor avaliado
+    const bestRatedItem = filteredItems.length > 0 
+      ? filteredItems.reduce((max, item) => 
+          parseFloat(item.product.rating) > parseFloat(max.product.rating) ? item : max, 
+          filteredItems[0]
+        )
+      : undefined;
+
+    // Registrar pesquisa para análise, se userId fornecido
+    if (options?.userId) {
+      await this.createProductSearch({
+        userId: options.userId,
+        searchTerm: group.name,
+        categoryId: group.categoryId,
+        productsCompared: filteredItems.length,
+        selectedProductId: null // Será atualizado quando o usuário selecionar um produto
+      });
+    }
+
+    return {
+      group,
+      items: filteredItems,
+      cheapestItem,
+      bestRatedItem
+    };
+  }
+
+  // --- Método para buscas de produtos estilo Trivago ---
+  async searchProducts(query: string, options?: {
+    categoryId?: number;
+    sortType?: ProductSortTypeValue;
+    maxResults?: number;
+    filters?: any;
+    userId?: number;
+  }): Promise<{
+    groups: ProductGroup[];
+    searchId: number;
+    totalMatches: number;
+  }> {
+    // Buscar grupos de produtos que correspondem à consulta
+    let groups = await this.getProductGroups({
+      search: query,
+      categoryId: options?.categoryId,
+      active: true
+    });
+
+    // Registrar a pesquisa para análise, se userId fornecido
+    let searchId = 0;
+    if (options?.userId) {
+      const search = await this.createProductSearch({
+        userId: options.userId,
+        searchTerm: query,
+        categoryId: options?.categoryId || null,
+        productsCompared: 0,
+        selectedProductId: null
+      });
+      searchId = search.id;
+    }
+
+    // Aplicar ordenação aos grupos
+    if (options?.sortType) {
+      switch (options.sortType) {
+        case ProductSortType.NEWEST:
+          groups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          break;
+        case ProductSortType.ALPHABETICAL:
+          groups.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        // Outras ordenações podem ser implementadas conforme necessário
+      }
+    }
+
+    // Limitar o número de resultados se especificado
+    if (options?.maxResults && groups.length > options.maxResults) {
+      groups = groups.slice(0, options.maxResults);
+    }
+
+    return {
+      groups,
+      searchId,
+      totalMatches: groups.length
+    };
+  }
 }
 
 export class DatabaseStorage implements IStorage {
