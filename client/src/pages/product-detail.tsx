@@ -717,6 +717,13 @@ export default function ProductDetailPage() {
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           
+                          // Verificar valores para debugging
+                          console.log("Navegando para detalhes do fornecedor:", {
+                            productId: product.id,
+                            supplierId: option.supplierId,
+                            optionSlug: option.slug
+                          });
+                          
                           // Se tivermos o ID do fornecedor, usamos a nova rota de fornecedor específico
                           if (option.supplierId && product.id) {
                             // Navega para a página de detalhes do produto fornecido por um fornecedor específico
