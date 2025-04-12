@@ -2769,6 +2769,120 @@ export class DatabaseStorage implements IStorage {
       totalMatches: groups.length
     };
   }
+  
+  // Método específico para buscar produtos por fornecedor com opções avançadas
+  async getProductsBySupplier(supplierId: number, options?: { 
+    limit?: number;
+    categoryId?: number; 
+    orderBy?: string;
+    active?: boolean;
+  }): Promise<Product[]> {
+    if (!supplierId) return [];
+    
+    let query = db.select().from(products)
+      .where(eq(products.supplierId, supplierId));
+    
+    // Aplicar filtros adicionais
+    if (options) {
+      // Filtrar por categoria
+      if (options.categoryId) {
+        // Buscamos produtos onde:
+        // 1. A categoria principal seja a selecionada OU
+        // 2. A categoria esteja presente no array de categorias adicionais
+        query = query.where(
+          or(
+            // Categoria principal
+            eq(products.categoryId, options.categoryId),
+            // Busca em array JSON de categorias adicionais
+            sql`${products.additionalCategories} @> ${JSON.stringify([options.categoryId])}`
+          )
+        );
+      }
+      
+      // Filtrar produtos ativos
+      if (options.active !== undefined) {
+        query = query.where(eq(products.active, options.active));
+      }
+      
+      // Aplicar limite de resultados
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+    }
+    
+    const supplierProducts = await query;
+    
+    // Aplicar ordenação (deve ser feita após a consulta no Drizzle)
+    if (options?.orderBy) {
+      switch (options.orderBy) {
+        case 'price_asc':
+          supplierProducts.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+          break;
+        case 'price_desc':
+          supplierProducts.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+          break;
+        case 'rating_desc':
+          supplierProducts.sort((a, b) => parseFloat(b.rating || '0') - parseFloat(a.rating || '0'));
+          break;
+        case 'newest':
+          supplierProducts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
+        default:
+          // Ordenação padrão: mais novos primeiro
+          supplierProducts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+    }
+    
+    return supplierProducts;
+  }
+  
+  // Método para contar produtos de um fornecedor
+  async getSupplierProductsCount(supplierId: number): Promise<number> {
+    if (!supplierId) return 0;
+    
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(eq(products.supplierId, supplierId));
+      
+    return result[0]?.count || 0;
+  }
+  
+  // Método para buscar categorias de produtos de um fornecedor
+  async getSupplierCategories(supplierId: number): Promise<Category[]> {
+    if (!supplierId) return [];
+    
+    // Primeiro buscar os IDs de categoria dos produtos do fornecedor
+    const supplierProducts = await db.select({
+      categoryId: products.categoryId,
+      additionalCategories: products.additionalCategories
+    })
+    .from(products)
+    .where(eq(products.supplierId, supplierId));
+    
+    // Extrair IDs únicos das categorias
+    const categoryIds = new Set<number>();
+    
+    supplierProducts.forEach(product => {
+      // Adicionar categoria principal
+      categoryIds.add(product.categoryId);
+      
+      // Adicionar categorias adicionais, se houver
+      if (product.additionalCategories) {
+        product.additionalCategories.forEach(catId => {
+          if (catId) categoryIds.add(catId);
+        });
+      }
+    });
+    
+    if (categoryIds.size === 0) return [];
+    
+    // Buscar as categorias pelo ID
+    const foundCategories = await db.select()
+      .from(categories)
+      .where(inArray(categories.id, Array.from(categoryIds)));
+    
+    return foundCategories;
+  }
 }
 
 // Usar o armazenamento de banco de dados PostgreSQL
