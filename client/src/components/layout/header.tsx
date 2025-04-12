@@ -293,16 +293,16 @@ export function Header() {
             <NavigationMenu>
               <NavigationMenuList className="gap-1">
                 <NavigationMenuItem>
-                  <Link href="/">
-                    <NavigationMenuLink className={cn(
-                      navigationMenuTriggerStyle(),
-                      "bg-transparent hover:bg-primary/5",
-                      isActive("/") && "text-primary font-medium"
-                    )}>
+                  <NavigationMenuLink asChild className={cn(
+                    navigationMenuTriggerStyle(),
+                    "bg-transparent hover:bg-primary/5",
+                    isActive("/") && "text-primary font-medium"
+                  )}>
+                    <Link href="/">
                       <Home className="h-4 w-4 mr-1" />
                       Início
-                    </NavigationMenuLink>
-                  </Link>
+                    </Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
 
                 {/* Categorias com Submenu - Redesenhado com visual premium */}
@@ -409,16 +409,16 @@ export function Header() {
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
-                  <Link href="/fornecedores">
-                    <NavigationMenuLink className={cn(
-                      navigationMenuTriggerStyle(),
-                      "bg-transparent hover:bg-primary/5",
-                      isActive("/fornecedores") && "text-primary font-medium"
-                    )}>
+                  <NavigationMenuLink asChild className={cn(
+                    navigationMenuTriggerStyle(),
+                    "bg-transparent hover:bg-primary/5",
+                    isActive("/fornecedores") && "text-primary font-medium"
+                  )}>
+                    <Link href="/fornecedores">
                       <Store className="h-4 w-4 mr-1" />
                       Fornecedores
-                    </NavigationMenuLink>
-                  </Link>
+                    </Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
