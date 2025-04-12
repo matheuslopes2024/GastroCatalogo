@@ -1,14 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/hooks/use-chat";
+import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@shared/schema";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+} from "@/components/ui/card";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Package, 
   DollarSign, 
@@ -17,11 +34,13 @@ import {
   Plus, 
   BarChart, 
   MessageCircle, 
-  Bell, 
-  Paperclip, 
-  Send, 
+  Bell,
+  Settings,
   Building2,
-  Settings
+  Edit,
+  Calendar,
+  Paperclip, 
+  Send
 } from "lucide-react";
 import {
   AreaChart,
@@ -250,11 +269,40 @@ export default function SupplierDashboard() {
       
       <main className="flex-grow bg-gray-100 py-8">
         <div className="container mx-auto px-4">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold">Dashboard do Fornecedor</h1>
-            <p className="text-gray-600">
-              Bem-vindo, {user?.name}! Gerencie seus produtos e acompanhe suas vendas.
-            </p>
+          {/* Cabeçalho com informações mais completas */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
+                  Dashboard do Fornecedor
+                </h1>
+                <p className="text-gray-600">
+                  Bem-vindo, <span className="font-medium">{user?.name}</span>! Gerencie seus produtos e acompanhe suas vendas.
+                </p>
+              </div>
+              <div className="flex flex-col md:flex-row gap-3">
+                <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Selecione o período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="week">Última semana</SelectItem>
+                    <SelectItem value="month">Último mês</SelectItem>
+                    <SelectItem value="quarter">Último trimestre</SelectItem>
+                    <SelectItem value="year">Último ano</SelectItem>
+                    <SelectItem value="all">Todo o período</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center" 
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Configurações
+                </Button>
+              </div>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
