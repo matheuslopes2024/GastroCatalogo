@@ -528,193 +528,228 @@ export default function ProductDetailPage() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 gap-4 mb-4">
+          {/* Seção de Opções de Fornecedores - Layout Redesenhado */}
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            {/* Título da seção com mais destaque */}
+            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <Store size={18} className="text-primary" />
+                </div>
+                <h3 className="font-semibold text-gray-800">Opções de fornecedores disponíveis</h3>
+              </div>
+              <Badge className="bg-gradient-to-r from-blue-600 to-blue-700">
+                {supplierOptions?.length || 0} opções encontradas
+              </Badge>
+            </div>
+            
+            {/* Lista de fornecedores com layout aprimorado */}
             {supplierOptions.map((option, index) => (
               <Card 
                 key={option.id} 
-                className={`overflow-hidden transition-all border-2 ${option.isBestPrice ? 'border-primary' : 'border-gray-200 hover:border-primary/50'}`}
+                className={`overflow-hidden transition-all border-2 ${
+                  option.isBestPrice 
+                    ? 'border-primary shadow-md shadow-primary/10' 
+                    : 'border-gray-200 hover:border-primary/50 hover:shadow-md'
+                }`}
               >
+                {/* Faixa "Melhor Preço" com design aprimorado */}
+                {option.isBestPrice && (
+                  <div className="absolute -top-1 -left-1 z-20">
+                    <div className="bg-gradient-to-r from-green-600 to-green-500 text-white text-xs py-1 px-3 rounded-br-md font-medium shadow-md transform rotate-0 flex items-center">
+                      <Award size={14} className="mr-1" />
+                      MELHOR PREÇO
+                    </div>
+                  </div>
+                )}
+                
                 <CardContent className="p-0">
-                  <div 
-                    className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-0 relative hover:bg-gray-50/50 transition-colors"
-                  >
-                    {/* Faixa "Melhor Preço" no canto superior esquerdo, se aplicável */}
-                    {option.isBestPrice && (
-                      <div className="absolute top-0 left-0 bg-green-600 text-white text-xs py-1 px-3 z-10 rounded-br-md font-medium">
-                        MELHOR PREÇO
-                      </div>
-                    )}
-                    
-                    {/* Coluna da imagem */}
-                    <div className="bg-white p-4 flex items-center justify-center md:border-r">
-                      <div className="relative group-hover:scale-105 transition-transform duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-0 relative">
+                    {/* Coluna da imagem - ocupando menos espaço */}
+                    <div className="bg-white p-4 flex items-center justify-center md:border-r md:col-span-2">
+                      <div className="relative hover:scale-105 transition-transform duration-300">
                         <img 
                           src={option.imageUrl || option.images?.[0]?.imageUrl || "/assets/produto-sem-imagem.png"}
                           alt={option.name}
                           className="w-24 h-24 object-contain mx-auto"
+                          loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-300 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-primary/10 opacity-0 hover:opacity-100 rounded-md transition-opacity duration-300 flex items-center justify-center">
                           <Maximize2 size={20} className="text-primary" />
                         </div>
                       </div>
                     </div>
                     
-                    {/* Coluna de informações */}
-                    <div className="p-4 md:col-span-2">
-                      <div className="flex flex-col">
-                        <h3 className="font-semibold group-hover:text-primary transition-colors">
-                          {option.name}
-                        </h3>
-                        
-                        <div className="flex items-center mt-1 mb-2">
-                          <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star 
-                                key={star} 
-                                size={14} 
-                                className={`${parseFloat(option.rating || "0") >= star 
-                                  ? "text-yellow-500 fill-yellow-500" 
-                                  : "text-gray-300"}`}
-                              />
-                            ))}
-                            <span className="ml-1 text-xs">{option.rating} ({option.ratingsCount})</span>
-                          </div>
-                          
-                          {option.isBestPrice && (
-                            <Badge className="ml-2 bg-green-600 hover:bg-green-700 text-white text-xs">
-                              Melhor preço
+                    {/* Coluna de informações - Layout aprimorado */}
+                    <div className="p-4 md:col-span-4 border-b md:border-b-0 border-gray-100">
+                      <div className="flex flex-col h-full justify-between">
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-semibold text-gray-800 hover:text-primary transition-colors line-clamp-2">
+                              {option.name}
+                            </h3>
+                            
+                            {/* Indicador de status */}
+                            <Badge 
+                              variant="outline" 
+                              className="ml-2 text-xs bg-green-50 text-green-700 border-green-200 flex items-center gap-1 whitespace-nowrap"
+                            >
+                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                              Online
                             </Badge>
-                          )}
-                        </div>
-                        
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center text-sm">
-                              <Building size={14} className="mr-1 text-gray-500" />
-                              <span className="truncate">{option.supplier?.name || "Fornecedor Verificado"}</span>
-                            </div>
-                            
-                            {/* Selo Premium para fornecedores especiais */}
-                            {(option.supplier?.isPremium || option.isBestPrice) && (
-                              <Badge variant="outline" className="h-5 text-[10px] bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
-                                <Crown size={10} className="text-amber-500" /> Premium
-                              </Badge>
-                            )}
                           </div>
                           
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center text-xs text-gray-500">
-                              <Calendar size={14} className="mr-1" />
-                              <span>{option.supplier?.activeYears || 3} anos no mercado</span>
-                            </div>
-                            
-                            <div className="flex items-center text-xs">
-                              <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
-                                <ShieldCheck size={10} className="text-blue-500" /> Verificado
-                              </Badge>
+                          {/* Avaliações com design melhorado */}
+                          <div className="flex items-center mt-2 mb-2">
+                            <div className="flex items-center bg-yellow-50 px-1.5 py-0.5 rounded">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star 
+                                  key={star} 
+                                  size={14} 
+                                  className={`${parseFloat(option.rating || "0") >= star 
+                                    ? "text-yellow-500 fill-yellow-500" 
+                                    : "text-yellow-200 fill-yellow-200"}`}
+                                />
+                              ))}
+                              <span className="ml-1 text-xs font-medium text-yellow-700">
+                                {option.rating} ({option.ratingsCount})
+                              </span>
                             </div>
                           </div>
                           
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
-                            <DollarSign size={14} className="mr-1" />
-                            <span>
-                              {option.isBestPrice 
-                                ? "Melhor preço confirmado" 
-                                : `${(Math.random() * 20).toFixed(2)}% acima do menor preço`}
-                            </span>
+                          {/* Informações do fornecedor */}
+                          <div className="flex flex-col gap-1.5 mt-1">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center text-sm">
+                                <Building size={14} className="mr-1 text-primary/80" />
+                                <span className="truncate font-medium text-gray-700">
+                                  {option.supplier?.name || "Fornecedor Verificado"}
+                                </span>
+                              </div>
+                              
+                              {/* Selo Premium para fornecedores especiais */}
+                              {(option.supplier?.isPremium || option.isBestPrice) && (
+                                <Badge variant="outline" className="h-5 text-[10px] bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                                  <Crown size={10} className="text-amber-500" /> Premium
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-1">
+                              <div className="flex items-center text-xs text-gray-500">
+                                <Calendar size={12} className="mr-1" />
+                                <span>{option.supplier?.activeYears || 3} anos no mercado</span>
+                              </div>
+                              
+                              <div className="flex items-center text-xs">
+                                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                                  <ShieldCheck size={10} className="text-blue-500" /> Verificado
+                                </Badge>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         
                         {/* Recursos/características do produto destacados */}
-                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                          {option.features?.slice(0, 3).map((feature, idx) => (
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                          {option.features?.slice(0, 2).map((feature, idx) => (
                             <div key={idx} className="flex items-start text-xs">
                               <Check size={12} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
                               <span className="text-gray-600 truncate">{feature}</span>
                             </div>
                           ))}
+                          
+                          {/* Botão "Ver detalhes do fornecedor" específico para layout mobile */}
+                          <div className="md:hidden mt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full border-primary/50 text-primary hover:bg-primary/5 text-xs flex items-center justify-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const targetUrl = (product.id && option.supplierId) 
+                                  ? `/produtos/${product.id}/fornecedor/${option.supplierId}`
+                                  : `/produtos/${option.slug}`;
+                                
+                                navigate(targetUrl);
+                              }}
+                            >
+                              <Building size={12} className="mr-1" />
+                              Ver detalhes do fornecedor
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Coluna de preço e entrega */}
-                    <div className="p-4 bg-gray-50 flex flex-col">
-                      <div className="flex items-baseline">
-                        {option.originalPrice && parseFloat(option.originalPrice) > parseFloat(option.price) && (
-                          <span className="text-muted-foreground line-through text-xs mr-2">
-                            {formatCurrency(option.originalPrice)}
-                          </span>
-                        )}
-                        <span className="text-xl font-bold text-primary">
-                          {formatCurrency(option.price)}
-                        </span>
+                    {/* Coluna de preço e entrega - Layout aprimorado */}
+                    <div className="p-4 bg-gray-50 flex flex-col justify-between md:col-span-3 border-b md:border-b-0 border-gray-100">
+                      <div>
+                        {/* Preço com design mais destacado */}
+                        <div className="flex items-baseline">
+                          {option.originalPrice && parseFloat(option.originalPrice) > parseFloat(option.price) && (
+                            <span className="text-muted-foreground line-through text-xs mr-2">
+                              {formatCurrency(option.originalPrice)}
+                            </span>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-2xl font-bold text-primary">
+                              {formatCurrency(option.price)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Em até 12x no cartão
+                            </span>
+                          </div>
+                          
+                          {/* Exibir desconto quando possível */}
+                          {option.discount && option.discount > 0 && (
+                            <Badge variant="outline" className="ml-2 text-xs bg-red-50 text-red-600 border-red-200 font-semibold">
+                              {option.discount}% OFF
+                            </Badge>
+                          )}
+                        </div>
                         
-                        {/* Exibir desconto quando possível */}
-                        {option.discount && option.discount > 0 && (
-                          <Badge variant="outline" className="ml-2 text-xs bg-red-50 text-red-600 border-red-200">
-                            {option.discount}% OFF
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Em até 12x no cartão
-                      </div>
-                      
-                      <div className="flex items-center mt-2 text-xs">
-                        <Truck size={14} className="mr-1 text-primary" />
-                        <span>Entrega em {option.deliveryTime || '3-5 dias úteis'}</span>
-                      </div>
-
-                      {/* Outras informações */}
-                      <div className="flex items-center mt-1 text-xs">
-                        <Shield size={14} className="mr-1 text-primary" />
-                        <span>Garantia de {option.warranty || '12 meses'}</span>
-                      </div>
-                      
-                      {/* Exibir quando é produto com estoque disponível */}
-                      {option.stock !== undefined && option.stock > 0 && (
-                        <div className="flex items-center mt-1 text-xs text-green-600">
-                          <Check size={14} className="mr-1" />
-                          <span>Em estoque: {option.stock} unidades</span>
+                        {/* Informações de envio e garantia */}
+                        <div className="mt-3 space-y-1.5">
+                          <div className="flex items-center text-xs">
+                            <Truck size={14} className="mr-1 text-primary" />
+                            <span>Entrega em <strong>{option.deliveryTime || '3-5 dias úteis'}</strong></span>
+                          </div>
+                          
+                          <div className="flex items-center text-xs">
+                            <Shield size={14} className="mr-1 text-primary" />
+                            <span>Garantia de <strong>{option.warranty || '12 meses'}</strong></span>
+                          </div>
+                          
+                          {/* Exibir quando é produto com estoque disponível */}
+                          {option.stock !== undefined && option.stock > 0 && (
+                            <div className="flex items-center text-xs text-green-600">
+                              <Check size={14} className="mr-1" />
+                              <span><strong>Em estoque:</strong> {option.stock} unidades</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                       
-                      {/* Status do fornecedor */}
-                      <div className="flex items-center mt-2 text-xs">
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs bg-green-50 text-green-700 border-green-200 flex items-center gap-1"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                          Online agora
-                        </Badge>
+                      {/* Comparação de preços */}
+                      <div className="mt-3 p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
+                        <div className="flex items-center">
+                          <TrendingUp size={14} className="mr-1 text-blue-500" />
+                          <span>
+                            {option.isBestPrice 
+                              ? "Melhor preço confirmado" 
+                              : `${(Math.random() * 20).toFixed(2)}% acima do menor preço`}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Coluna de ação - redesenhada para destacar os botões */}
-                    <div className="p-4 flex flex-col justify-center items-center gap-3 border-l border-gray-100">
-                      {/* Botão de Comprar com design de destaque */}
-                      <Button 
-                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Evita navegação duplicada
-                          navigate(`/produtos/${option.slug}`);
-                          toast({
-                            title: "Prosseguindo para compra",
-                            description: `Você selecionou: ${option.name}`,
-                            duration: 3000,
-                          });
-                        }}
-                      >
-                        <ShoppingCart size={14} className="mr-1" />
-                        Comprar
-                      </Button>
-                      
-                      {/* Botão de Ver Fornecedor com nova aparência para destacar melhor */}
+                    {/* Coluna de ação - Layout aprimorado com botões mais destacados */}
+                    <div className="p-4 md:col-span-3 flex flex-col justify-center items-center gap-2.5 border-t md:border-t-0 md:border-l border-gray-100 bg-white">
+                      {/* Botão "Ver detalhes do fornecedor" com mais destaque */}
                       <Button 
                         variant="secondary"
-                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium shadow-sm hidden md:flex"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           
@@ -738,34 +773,77 @@ export default function ProductDetailPage() {
                           });
                         }}
                       >
-                        <Building size={14} className="mr-1" />
-                        Ver fornecedor
+                        <Building size={14} className="mr-1.5" />
+                        Ver detalhes do fornecedor
+                      </Button>
+                      
+                      {/* Botão de Comprar com design de destaque */}
+                      <Button 
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Evita navegação duplicada
+                          navigate(`/produtos/${option.slug}`);
+                          toast({
+                            title: "Prosseguindo para compra",
+                            description: `Você selecionou: ${option.name}`,
+                            duration: 3000,
+                          });
+                        }}
+                      >
+                        <ShoppingCart size={14} className="mr-1.5" />
+                        Comprar agora
                       </Button>
                       
                       {/* Botão adicional de comparação - totalmente clicável */}
                       <Button
-                        variant="ghost"
-                        className="w-full text-muted-foreground hover:text-primary hover:bg-primary/5"
+                        variant="outline"
+                        className="w-full hover:text-primary hover:bg-primary/5 border-gray-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/produtos/comparar/${product.categoryId}`);
                         }}
                       >
-                        <ChevronRightCircle size={14} className="mr-1" /> 
-                        Comparar opções
+                        <ArrowsCompare size={14} className="mr-1.5" /> 
+                        Comparar com similares
                       </Button>
                       
-                      {/* Tooltip indicando interatividade */}
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Ícones adicionais de ação */}
+                      <div className="flex items-center justify-center gap-3 mt-1 w-full">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="p-1 bg-primary/10 rounded-full cursor-help">
-                                <Info size={14} className="text-primary" />
-                              </div>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
+                                <Heart size={16} className="text-gray-500 hover:text-red-500" />
+                              </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="left">
-                              <p className="text-xs">Clique para ver produto completo</p>
+                            <TooltipContent>
+                              <p className="text-xs">Adicionar aos favoritos</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
+                                <Share2 size={16} className="text-gray-500 hover:text-blue-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Compartilhar</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
+                                <AlertCircle size={16} className="text-gray-500 hover:text-amber-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Reportar problema</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
