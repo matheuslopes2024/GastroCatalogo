@@ -1,12 +1,15 @@
 import React, { useEffect } from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
 import AdminChatDashboard from '@/components/admin/admin-chat-dashboard';
-import { AdminChatProvider } from '@/hooks/use-admin-chat';
+import { SimpleAdminChatProvider } from '@/hooks/use-simple-admin-chat';
+import adminChatRealTimeSync from '@/lib/admin-chat-realtime-sync';
 
 export default function ChatAdminPage() {
-  // Aplicar correção WebSocket ao montar a página
+  // Aplicar correção WebSocket e iniciar sistema de sincronização em tempo real
   useEffect(() => {
-    // Aplicar patch para interceptar a criação do WebSocket
+    console.log('[AdminChat] Inicializando página de chat administrativo...');
+
+    // 1. Aplicar patch para interceptar a criação do WebSocket
     if (typeof window !== 'undefined' && window.WebSocket) {
       console.log('[WS:patch] Aplicando correção WebSocket...');
       const originalWebSocket = window.WebSocket;
@@ -38,11 +41,24 @@ export default function ChatAdminPage() {
       console.info('[WS:patch] Patch de WebSocket instalado para corrigir URL');
     }
 
-    // Nenhuma limpeza necessária ao desmontar, pois o patch deve permanecer ativo
+    // 2. Iniciar sistema avançado de sincronização em tempo real
+    console.log('[AdminChat] Iniciando sistema avançado de sincronização em tempo real');
+    adminChatRealTimeSync.startAdminChatSync();
+    
+    // Sincronização inicial forçada
+    setTimeout(() => {
+      adminChatRealTimeSync.synchronizeAdminChat();
+    }, 1000);
+
+    // Limpar recursos ao desmontar o componente
+    return () => {
+      console.log('[AdminChat] Desmontando página de chat administrativo, parando sincronização');
+      adminChatRealTimeSync.stopAdminChatSync();
+    };
   }, []);
 
   return (
-    <AdminChatProvider>
+    <SimpleAdminChatProvider>
       <AdminLayout 
         title="Chat de Suporte" 
         breadcrumbs={[{ title: 'Chat', href: '/admin/chat' }]}
@@ -51,6 +67,6 @@ export default function ChatAdminPage() {
           <AdminChatDashboard />
         </div>
       </AdminLayout>
-    </AdminChatProvider>
+    </SimpleAdminChatProvider>
   );
 }
