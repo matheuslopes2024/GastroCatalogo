@@ -197,19 +197,42 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       if (conversationId) {
         payload.conversationId = conversationId;
         
-        // Adicionar lógica para determinar o destinatário quando apenas o conversationId é fornecido
+        // Adicionar lógica melhorada para determinar o destinatário quando apenas o conversationId é fornecido
         if (!receiverId && activeConversation) {
-          // Extrair o destinatário com base nos participantes da conversa ativa
-          const otherParticipantId = activeConversation.participantIds.find(id => id !== user.id);
-          if (otherParticipantId) {
-            payload.receiverId = otherParticipantId;
-            console.log("Destinatário determinado automaticamente:", otherParticipantId);
-          } else {
+          // Primeiro, tentar encontrar o ID do destinatário a partir dos participantes completos da conversa
+          if (activeConversation._participants?.length) {
+            // Se temos os dados completos dos participantes, usar isso
+            const otherParticipant = activeConversation._participants.find(p => p.id !== user.id);
+            if (otherParticipant) {
+              payload.receiverId = otherParticipant.id;
+              console.log("Destinatário determinado a partir de participantes completos:", otherParticipant.id);
+            }
+          } else if (activeConversation.participantIds?.length) {
+            // Caso contrário, usar o array de IDs de participantes (fallback)
+            const otherParticipantId = activeConversation.participantIds.find(id => id !== user.id);
+            if (otherParticipantId) {
+              payload.receiverId = otherParticipantId;
+              console.log("Destinatário determinado a partir de participantIds:", otherParticipantId);
+            }
+          }
+          
+          // Verificar se encontramos um destinatário
+          if (!payload.receiverId) {
             console.warn("Não foi possível determinar o destinatário na conversa:", conversationId);
-            // Tente usar admin ID 1 como fallback para conversas com fornecedores
+            
+            // Lógica de fallback para roles específicas
             if (user.role === 'SUPPLIER' || user.role === 'supplier') {
+              // Fornecedores sempre enviam mensagens para o admin padrão
               payload.receiverId = 1; // Admin ID padrão
               console.log("Usando admin ID 1 como destinatário padrão para fornecedor");
+            } else if (user.role === 'ADMIN' || user.role === 'admin') {
+              // Administradores podem usar o participantId da conversa se disponível
+              if (activeConversation.participantId) {
+                payload.receiverId = activeConversation.participantId;
+                console.log("Admin usando participantId como destinatário:", payload.receiverId);
+              } else {
+                console.warn("Admin não conseguiu determinar destinatário para:", activeConversation);
+              }
             }
           }
         }
@@ -439,10 +462,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
       
       // Se ainda não temos receiverId, verificamos se é uma conversa com admin
-      if (!receiverId && activeConversation.participantRole === 'ADMIN') {
+      if (!receiverId && (activeConversation.participantRole === 'ADMIN' || 
+                          activeConversation.participantRole === 'admin')) {
         // Se estamos falando com um admin (caso de fornecedor->admin), usamos o ID 1 (admin padrão)
         receiverId = 1; // ID do administrador padrão do sistema
         console.log("Definindo destinatário como admin padrão (ID=1)");
+      } else if (!receiverId && activeConversation._participants?.some(p => 
+                 p.role === 'ADMIN' || p.role === 'admin')) {
+        // Verificação alternativa - se algum participante é admin
+        receiverId = activeConversation._participants.find(p => 
+                     p.role === 'ADMIN' || p.role === 'admin')?.id || 1;
+        console.log("Usando ID admin encontrado nos participantes:", receiverId);
       } else if (!receiverId && activeConversation.participantId) {
         // Se temos um participantId, usamos ele
         receiverId = activeConversation.participantId;
@@ -455,7 +485,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           receiverId = otherId;
           console.log(`Usando participantIds ${receiverId} como destinatário`);
         } else {
-          throw new Error("Destinatário não encontrado - verifique se há participantes na conversa");
+          console.warn("Não foi possível identificar um destinatário válido na conversa", activeConversation);
+          // Tente usar o admin como fallback em último caso
+          if (user?.role !== 'ADMIN') {
+            receiverId = 1; // Admin padrão
+            console.log("Usando admin ID 1 como destinatário de último recurso");
+          } else {
+            throw new Error("Não foi possível determinar o destinatário da mensagem - verifique participantes da conversa");
+          }
         }
       }
     }
