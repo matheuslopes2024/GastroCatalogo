@@ -571,11 +571,26 @@ export default function ProductDetailPage() {
             {supplierOptions.map((option, index) => (
               <Card 
                 key={option.id} 
-                className={`overflow-hidden transition-all border-2 ${
+                className={`overflow-hidden transition-all border-2 cursor-pointer ${
                   option.isBestPrice 
                     ? 'border-primary shadow-md shadow-primary/10' 
                     : 'border-gray-200 hover:border-primary/50 hover:shadow-md'
                 }`}
+                onClick={() => {
+                  // Navegar para a página específica do produto fornecido por este fornecedor
+                  const targetUrl = (product.id && option.supplierId) 
+                    ? `/produtos/${product.id}/fornecedor/${option.supplierId}`
+                    : `/produtos/${option.slug}`;
+                    
+                  console.log("Navegando via card clicável para:", targetUrl);
+                  
+                  navigate(targetUrl);
+                  toast({
+                    title: "Detalhes do fornecedor",
+                    description: `Visualizando: ${option.supplier?.name || 'Fornecedor'}`,
+                    duration: 3000,
+                  });
+                }}
               >
                 {/* Faixa "Melhor Preço" com design aprimorado */}
                 {option.isBestPrice && (
@@ -803,7 +818,7 @@ export default function ProductDetailPage() {
                       
                       {/* Botão de Comprar com design de destaque */}
                       <Button 
-                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-sm"
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-sm relative z-10"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           navigate(`/produtos/${option.slug}`);
@@ -821,7 +836,7 @@ export default function ProductDetailPage() {
                       {/* Botão adicional de comparação - totalmente clicável */}
                       <Button
                         variant="outline"
-                        className="w-full hover:text-primary hover:bg-primary/5 border-gray-200"
+                        className="w-full hover:text-primary hover:bg-primary/5 border-gray-200 relative z-10"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/produtos/comparar/${product.categoryId}`);
@@ -836,8 +851,16 @@ export default function ProductDetailPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
-                                <Heart size={16} className="text-gray-500 hover:text-red-500" />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleWishlist();
+                                }}
+                              >
+                                <Heart size={16} className={`${isInWishlist ? 'text-red-500 fill-red-500' : 'text-gray-500 hover:text-red-500'}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -849,7 +872,15 @@ export default function ProductDetailPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  shareProduct();
+                                }}
+                              >
                                 <Share2 size={16} className="text-gray-500 hover:text-blue-500" />
                               </Button>
                             </TooltipTrigger>
@@ -862,7 +893,19 @@ export default function ProductDetailPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toast({
+                                    title: "Problema reportado",
+                                    description: "Obrigado por nos ajudar a melhorar a plataforma.",
+                                    duration: 3000,
+                                  });
+                                }}
+                              >
                                 <AlertCircle size={16} className="text-gray-500 hover:text-amber-500" />
                               </Button>
                             </TooltipTrigger>
