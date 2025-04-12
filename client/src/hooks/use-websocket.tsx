@@ -70,8 +70,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Criar URL com um token para evitar problemas de cache
-      const token = `t${Math.random().toString(36).substring(2, 15)}`;
+      // Criar URL com um token único para evitar problemas de cache
+      const token = `${Math.random().toString(36).substring(2, 10)}${Date.now().toString(36)}`;
+      // Usar o caminho /ws na URL principal em vez de criar URLs inválidas
       const wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
       console.log(`[WS] Tentando conectar ao WebSocket: ${wsUrl}`);
       

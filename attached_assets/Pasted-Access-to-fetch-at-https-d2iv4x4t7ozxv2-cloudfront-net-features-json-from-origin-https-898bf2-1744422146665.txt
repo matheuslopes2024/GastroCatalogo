@@ -1,0 +1,41 @@
+Access to fetch at 'https://d2iv4x4t7ozxv2.cloudfront.net/features.json' from origin 'https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+spa-maker.js:1 
+            
+            
+           GET https://d2iv4x4t7ozxv2.cloudfront.net/features.json net::ERR_FAILED 304 (Not Modified)
+request @ spa-maker.js:1
+handleRequestUsingCache @ spa-maker.js:1
+await in handleRequestUsingCache
+getCacheEtag @ spa-maker.js:1
+await in getCacheEtag
+getJSON @ spa-maker.js:1
+await in getJSON
+et @ spa-maker.js:1
+(anonymous) @ spa-maker.js:1
+(anonymous) @ spa-maker.js:1
+(anonymous) @ spa-maker.js:1
+(anonymous) @ spa-maker.js:1Understand this error
+admin-layout.tsx:484 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:34:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx:34:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744422115872&v=8cEhnSrUWC2HX8S6WGgRQ:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
