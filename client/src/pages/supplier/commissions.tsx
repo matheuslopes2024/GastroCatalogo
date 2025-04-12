@@ -81,6 +81,7 @@ import {
   CheckCircle2,
   ToggleLeft,
   ToggleRight,
+  CalendarDays,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
