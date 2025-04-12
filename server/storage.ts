@@ -1869,6 +1869,736 @@ export class DatabaseStorage implements IStorage {
     
     return query;
   }
+
+  // --- Métodos para grupos de produtos (Product Groups) ---
+  
+  /**
+   * Obtém um grupo de produtos pelo ID
+   * @param id ID do grupo de produtos
+   * @returns O grupo de produtos ou undefined se não existir
+   */
+  async getProductGroup(id: number): Promise<ProductGroup | undefined> {
+    const [group] = await db
+      .select()
+      .from(productGroups)
+      .where(eq(productGroups.id, id));
+    
+    return group;
+  }
+
+  /**
+   * Obtém um grupo de produtos pelo slug
+   * @param slug Slug do grupo de produtos
+   * @returns O grupo de produtos ou undefined se não existir
+   */
+  async getProductGroupBySlug(slug: string): Promise<ProductGroup | undefined> {
+    const [group] = await db
+      .select()
+      .from(productGroups)
+      .where(eq(productGroups.slug, slug));
+    
+    return group;
+  }
+
+  /**
+   * Cria um novo grupo de produtos
+   * @param insertGroup Dados para criar o grupo
+   * @returns O grupo criado
+   */
+  async createProductGroup(insertGroup: InsertProductGroup): Promise<ProductGroup> {
+    const timestamp = new Date();
+    const [group] = await db
+      .insert(productGroups)
+      .values({
+        ...insertGroup,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        productsCount: 0,
+        suppliersCount: 0,
+        comparisonCount: 0,
+        searchRelevance: 0,
+        isActive: true
+      })
+      .returning();
+    
+    return group;
+  }
+
+  /**
+   * Atualiza um grupo de produtos existente
+   * @param id ID do grupo a atualizar
+   * @param groupData Dados para atualizar
+   * @returns O grupo atualizado ou undefined se não existir
+   */
+  async updateProductGroup(id: number, groupData: Partial<ProductGroup>): Promise<ProductGroup | undefined> {
+    // Remover campos que não devem ser atualizados diretamente
+    const { id: _, createdAt, ...safeData } = groupData as any;
+    
+    const [updatedGroup] = await db
+      .update(productGroups)
+      .set({
+        ...safeData,
+        updatedAt: new Date()
+      })
+      .where(eq(productGroups.id, id))
+      .returning();
+    
+    return updatedGroup;
+  }
+
+  /**
+   * Obtém uma lista de grupos de produtos com várias opções de filtragem
+   * @param options Opções de filtragem e paginação
+   * @returns Lista de grupos de produtos correspondentes aos critérios
+   */
+  async getProductGroups(options?: {
+    categoryId?: number;
+    search?: string;
+    active?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<ProductGroup[]> {
+    let query = db
+      .select()
+      .from(productGroups);
+    
+    if (options) {
+      // Aplicar filtros conforme necessário
+      if (options.categoryId !== undefined) {
+        query = query.where(eq(productGroups.categoryId, options.categoryId));
+      }
+      
+      if (options.active !== undefined) {
+        query = query.where(eq(productGroups.isActive, options.active));
+      }
+      
+      // Pesquisa por texto no nome ou descrição
+      if (options.search) {
+        query = query.where(
+          or(
+            ilike(productGroups.name, `%${options.search}%`),
+            ilike(productGroups.description || '', `%${options.search}%`)
+          )
+        );
+      }
+      
+      // Ordernar por mais recentes primeiro
+      query = query.orderBy(desc(productGroups.updatedAt));
+      
+      // Aplicar paginação
+      if (options.offset !== undefined) {
+        query = query.offset(options.offset);
+      }
+      
+      if (options.limit !== undefined) {
+        query = query.limit(options.limit);
+      }
+    }
+    
+    const groups = await query;
+    return groups;
+  }
+
+  // --- Métodos para itens de grupos de produtos (Product Group Items) ---
+  
+  /**
+   * Obtém um item de grupo de produtos pelo ID
+   * @param id ID do item
+   * @returns O item ou undefined se não existir
+   */
+  async getProductGroupItem(id: number): Promise<ProductGroupItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(productGroupItems)
+      .where(eq(productGroupItems.id, id));
+    
+    return item;
+  }
+
+  /**
+   * Obtém um item de grupo de produtos pelo ID do produto e do grupo
+   * @param groupId ID do grupo
+   * @param productId ID do produto
+   * @returns O item ou undefined se não existir
+   */
+  async getProductGroupItemByProductId(groupId: number, productId: number): Promise<ProductGroupItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(productGroupItems)
+      .where(
+        and(
+          eq(productGroupItems.groupId, groupId),
+          eq(productGroupItems.productId, productId)
+        )
+      );
+    
+    return item;
+  }
+
+  /**
+   * Cria um novo item de grupo de produtos
+   * @param insertItem Dados para criar o item
+   * @returns O item criado
+   */
+  async createProductGroupItem(insertItem: InsertProductGroupItem): Promise<ProductGroupItem> {
+    // Criar o item
+    const [item] = await db
+      .insert(productGroupItems)
+      .values({
+        ...insertItem,
+        totalSales: 0,
+        createdAt: new Date(),
+        isHighlighted: false,
+        priceDifference: null,
+        matchConfidence: "100"
+      })
+      .returning();
+    
+    // Atualizar a contagem de itens no grupo
+    const group = await this.getProductGroup(insertItem.groupId);
+    if (group) {
+      await this.updateProductGroup(group.id, {
+        productsCount: group.productsCount + 1
+      });
+      
+      // Também atualizar a contagem de fornecedores distintos no grupo
+      const uniqueSuppliers = await db
+        .select({ supplierId: productGroupItems.supplierId })
+        .from(productGroupItems)
+        .where(eq(productGroupItems.groupId, group.id))
+        .groupBy(productGroupItems.supplierId);
+      
+      await this.updateProductGroup(group.id, {
+        suppliersCount: uniqueSuppliers.length
+      });
+    }
+    
+    return item;
+  }
+
+  /**
+   * Atualiza um item de grupo de produtos existente
+   * @param id ID do item a atualizar
+   * @param itemData Dados para atualizar
+   * @returns O item atualizado ou undefined se não existir
+   */
+  async updateProductGroupItem(id: number, itemData: Partial<ProductGroupItem>): Promise<ProductGroupItem | undefined> {
+    // Remover campos que não devem ser atualizados diretamente
+    const { id: _, groupId, productId, supplierId, createdAt, ...safeData } = itemData as any;
+    
+    const [updatedItem] = await db
+      .update(productGroupItems)
+      .set(safeData)
+      .where(eq(productGroupItems.id, id))
+      .returning();
+    
+    return updatedItem;
+  }
+
+  /**
+   * Obtém uma lista de itens de um grupo de produtos com várias opções de filtragem
+   * @param groupId ID do grupo
+   * @param options Opções de filtragem e ordenação
+   * @returns Lista de itens do grupo correspondentes aos critérios
+   */
+  async getProductGroupItems(groupId: number, options?: {
+    supplierId?: number;
+    highlighted?: boolean;
+    limit?: number;
+    orderBy?: string; // Opções: price_asc, price_desc, sales_desc
+  }): Promise<ProductGroupItem[]> {
+    // Consulta principal
+    let query = db
+      .select({
+        item: productGroupItems,
+        product: products
+      })
+      .from(productGroupItems)
+      .innerJoin(products, eq(productGroupItems.productId, products.id))
+      .where(eq(productGroupItems.groupId, groupId));
+    
+    if (options) {
+      // Filtrar por fornecedor
+      if (options.supplierId !== undefined) {
+        query = query.where(eq(productGroupItems.supplierId, options.supplierId));
+      }
+      
+      // Filtrar por destaque
+      if (options.highlighted !== undefined) {
+        query = query.where(eq(productGroupItems.isHighlighted, options.highlighted));
+      }
+    }
+    
+    // Executar a consulta
+    const result = await query;
+    
+    // Transformar o resultado
+    let items = result.map(row => ({
+      ...row.item,
+      // Adicionar informações relevantes para a ordenação
+      _price: row.product.price,
+      _rating: row.product.rating
+    }));
+    
+    // Ordenar os resultados
+    if (options?.orderBy) {
+      switch (options.orderBy) {
+        case 'price_asc':
+          items.sort((a, b) => parseFloat(a._price) - parseFloat(b._price));
+          break;
+        case 'price_desc':
+          items.sort((a, b) => parseFloat(b._price) - parseFloat(a._price));
+          break;
+        case 'sales_desc':
+          items.sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0));
+          break;
+        case 'rating_desc':
+          items.sort((a, b) => parseFloat(b._rating || '0') - parseFloat(a._rating || '0'));
+          break;
+      }
+    } else {
+      // Por padrão, ordenar pelo menor preço
+      items.sort((a, b) => parseFloat(a._price) - parseFloat(b._price));
+    }
+    
+    // Aplicar limite
+    if (options?.limit) {
+      items = items.slice(0, options.limit);
+    }
+    
+    // Remover as propriedades temporárias
+    return items.map(item => {
+      const { _price, _rating, ...cleanItem } = item as any;
+      return cleanItem;
+    });
+  }
+
+  // --- Métodos para pesquisas de produtos (Product Searches) ---
+  
+  /**
+   * Cria um novo registro de pesquisa de produtos
+   * @param insertSearch Dados da pesquisa
+   * @returns O registro de pesquisa criado
+   */
+  async createProductSearch(insertSearch: InsertProductSearch): Promise<ProductSearch> {
+    const [search] = await db
+      .insert(productSearches)
+      .values({
+        userId: insertSearch.userId,
+        searchQuery: insertSearch.searchTerm || '',
+        categoryId: insertSearch.categoryId,
+        resultsCount: insertSearch.productsCompared || 0,
+        selectedProductId: insertSearch.selectedProductId,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    return search;
+  }
+
+  /**
+   * Obtém uma lista de pesquisas de produtos com várias opções de filtragem
+   * @param options Opções de filtragem e paginação
+   * @returns Lista de pesquisas correspondentes aos critérios
+   */
+  async getProductSearches(options?: {
+    userId?: number;
+    query?: string;
+    categoryId?: number;
+    limit?: number;
+    daysAgo?: number;
+  }): Promise<ProductSearch[]> {
+    let query = db
+      .select()
+      .from(productSearches);
+    
+    if (options) {
+      // Aplicar filtros conforme necessário
+      if (options.userId !== undefined) {
+        query = query.where(eq(productSearches.userId, options.userId));
+      }
+      
+      if (options.query) {
+        query = query.where(ilike(productSearches.searchQuery, `%${options.query}%`));
+      }
+      
+      if (options.categoryId !== undefined) {
+        query = query.where(eq(productSearches.categoryId, options.categoryId));
+      }
+      
+      // Filtrar por período
+      if (options.daysAgo !== undefined) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - options.daysAgo);
+        query = query.where(gte(productSearches.createdAt, cutoffDate));
+      }
+      
+      // Ordenar do mais recente para o mais antigo
+      query = query.orderBy(desc(productSearches.createdAt));
+      
+      // Aplicar limite
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+    }
+    
+    const searches = await query;
+    return searches;
+  }
+
+  // --- Métodos para comparações de produtos (Product Comparisons) ---
+  
+  /**
+   * Obtém uma comparação de produtos pelo ID
+   * @param id ID da comparação
+   * @returns A comparação ou undefined se não existir
+   */
+  async getProductComparison(id: number): Promise<ProductComparison | undefined> {
+    const [comparison] = await db
+      .select()
+      .from(productComparisons)
+      .where(eq(productComparisons.id, id));
+    
+    return comparison;
+  }
+
+  /**
+   * Cria uma nova comparação de produtos
+   * @param insertComparison Dados da comparação
+   * @returns A comparação criada
+   */
+  async createProductComparison(insertComparison: InsertProductComparison): Promise<ProductComparison> {
+    const [comparison] = await db
+      .insert(productComparisons)
+      .values({
+        ...insertComparison,
+        status: insertComparison.status || ProductComparisonStatus.COMPLETED,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    // Atualizar contador de comparações no grupo
+    if (comparison.groupId) {
+      const group = await this.getProductGroup(comparison.groupId);
+      if (group) {
+        await this.updateProductGroup(group.id, {
+          comparisonCount: group.comparisonCount + 1
+        });
+      }
+    }
+    
+    return comparison;
+  }
+
+  /**
+   * Atualiza uma comparação de produtos existente
+   * @param id ID da comparação a atualizar
+   * @param comparisonData Dados para atualizar
+   * @returns A comparação atualizada ou undefined se não existir
+   */
+  async updateProductComparison(id: number, comparisonData: Partial<ProductComparison>): Promise<ProductComparison | undefined> {
+    // Remover campos que não devem ser atualizados diretamente
+    const { id: _, createdAt, ...safeData } = comparisonData as any;
+    
+    const [updatedComparison] = await db
+      .update(productComparisons)
+      .set(safeData)
+      .where(eq(productComparisons.id, id))
+      .returning();
+    
+    return updatedComparison;
+  }
+
+  /**
+   * Obtém uma lista de comparações de produtos com várias opções de filtragem
+   * @param options Opções de filtragem e paginação
+   * @returns Lista de comparações correspondentes aos critérios
+   */
+  async getProductComparisons(options?: {
+    userId?: number;
+    groupId?: number;
+    status?: ProductComparisonStatusType;
+    limit?: number;
+  }): Promise<ProductComparison[]> {
+    let query = db
+      .select()
+      .from(productComparisons);
+    
+    if (options) {
+      // Aplicar filtros conforme necessário
+      if (options.userId !== undefined) {
+        query = query.where(eq(productComparisons.userId, options.userId));
+      }
+      
+      if (options.groupId !== undefined) {
+        query = query.where(eq(productComparisons.groupId, options.groupId));
+      }
+      
+      if (options.status !== undefined) {
+        query = query.where(eq(productComparisons.status, options.status));
+      }
+      
+      // Ordenar do mais recente para o mais antigo
+      query = query.orderBy(desc(productComparisons.createdAt));
+      
+      // Aplicar limite
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+    }
+    
+    const comparisons = await query;
+    return comparisons;
+  }
+
+  // --- Métodos para detalhes de comparações de produtos (Product Comparison Details) ---
+  
+  /**
+   * Cria um novo detalhe de comparação de produtos
+   * @param insertDetail Dados do detalhe
+   * @returns O detalhe criado
+   */
+  async createProductComparisonDetail(insertDetail: InsertProductComparisonDetail): Promise<ProductComparisonDetail> {
+    const [detail] = await db
+      .insert(productComparisonDetails)
+      .values({
+        ...insertDetail,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    return detail;
+  }
+
+  /**
+   * Obtém os detalhes de uma comparação de produtos
+   * @param comparisonId ID da comparação
+   * @returns Lista de detalhes da comparação
+   */
+  async getProductComparisonDetails(comparisonId: number): Promise<ProductComparisonDetail[]> {
+    const details = await db
+      .select()
+      .from(productComparisonDetails)
+      .where(eq(productComparisonDetails.comparisonId, comparisonId))
+      .orderBy(asc(productComparisonDetails.priceRank));
+    
+    return details;
+  }
+  
+  /**
+   * Compara produtos de um grupo e retorna os resultados formatados
+   * Método avançado para comparação estilo Trivago
+   * @param groupId ID do grupo de produtos
+   * @param options Opções de filtro, ordenação e limite
+   * @returns Resultados da comparação com estatísticas
+   */
+  async compareProducts(groupId: number, options?: {
+    sortType?: ProductSortTypeValue;
+    maxResults?: number;
+    filters?: any;
+    userId?: number;
+  }): Promise<{
+    group: ProductGroup;
+    items: (ProductGroupItem & { product: Product; supplier: User })[];
+    cheapestItem?: ProductGroupItem & { product: Product; supplier: User };
+    bestRatedItem?: ProductGroupItem & { product: Product; supplier: User };
+  }> {
+    // Obter o grupo de produtos
+    const group = await this.getProductGroup(groupId);
+    if (!group) {
+      throw new Error(`Grupo de produtos com ID ${groupId} não encontrado`);
+    }
+
+    // Construir uma consulta que traga os itens com produtos e fornecedores relacionados
+    let query = db
+      .select({
+        item: productGroupItems,
+        product: products,
+        supplier: users
+      })
+      .from(productGroupItems)
+      .innerJoin(products, eq(productGroupItems.productId, products.id))
+      .innerJoin(users, eq(productGroupItems.supplierId, users.id))
+      .where(eq(productGroupItems.groupId, groupId));
+    
+    // Aplicar filtros personalizados se fornecidos
+    if (options?.filters) {
+      if (options.filters.minPrice !== undefined) {
+        query = query.where(gte(products.price, options.filters.minPrice));
+      }
+      if (options.filters.maxPrice !== undefined) {
+        query = query.where(lte(products.price, options.filters.maxPrice));
+      }
+      // Outros filtros podem ser adicionados aqui conforme necessário
+    }
+    
+    // Executar a consulta
+    const results = await query;
+    
+    // Mapear os resultados para o formato esperado
+    let items = results.map(row => ({
+      ...row.item,
+      product: row.product,
+      supplier: row.supplier
+    }));
+    
+    // Ordenar os itens conforme o tipo de ordenação
+    if (options?.sortType) {
+      switch (options.sortType) {
+        case ProductSortType.PRICE_ASC:
+          items.sort((a, b) => parseFloat(a.product.price) - parseFloat(b.product.price));
+          break;
+        case ProductSortType.PRICE_DESC:
+          items.sort((a, b) => parseFloat(b.product.price) - parseFloat(a.product.price));
+          break;
+        case ProductSortType.RATING_DESC:
+          items.sort((a, b) => parseFloat(b.product.rating) - parseFloat(a.product.rating));
+          break;
+        case ProductSortType.NEWEST:
+          items.sort((a, b) => b.product.createdAt.getTime() - a.product.createdAt.getTime());
+          break;
+        default:
+          // Padrão: ordenar por preço (menor para maior)
+          items.sort((a, b) => parseFloat(a.product.price) - parseFloat(b.product.price));
+      }
+    } else {
+      // Padrão: ordenar por preço (menor para maior)
+      items.sort((a, b) => parseFloat(a.product.price) - parseFloat(b.product.price));
+    }
+    
+    // Limitar o número de resultados se especificado
+    if (options?.maxResults && items.length > options.maxResults) {
+      items = items.slice(0, options.maxResults);
+    }
+    
+    // Encontrar o item mais barato
+    const cheapestItem = items.length > 0 
+      ? items.reduce((min, item) => 
+          parseFloat(item.product.price) < parseFloat(min.product.price) ? item : min, 
+          items[0]
+        )
+      : undefined;
+    
+    // Encontrar o item melhor avaliado
+    const bestRatedItem = items.length > 0 
+      ? items.reduce((max, item) => 
+          parseFloat(item.product.rating) > parseFloat(max.product.rating) ? item : max, 
+          items[0]
+        )
+      : undefined;
+    
+    // Registrar pesquisa para análise, se userId fornecido
+    if (options?.userId) {
+      await this.createProductSearch({
+        userId: options.userId,
+        searchTerm: group.name,
+        categoryId: group.categoryId,
+        productsCompared: items.length,
+        selectedProductId: null // Será atualizado quando o usuário selecionar um produto
+      });
+      
+      // Criar um registro de comparação para análise futura
+      await this.createProductComparison({
+        userId: options.userId,
+        groupId: group.id,
+        productsCompared: items.map(item => item.product.id),
+        status: ProductComparisonStatus.COMPLETED,
+        sortType: options.sortType || ProductSortType.PRICE_ASC,
+        filters: options.filters
+      });
+    }
+    
+    return {
+      group,
+      items,
+      cheapestItem,
+      bestRatedItem
+    };
+  }
+
+  /**
+   * Realiza busca de produtos e retorna grupos relevantes
+   * Método para buscas de produtos estilo Trivago
+   * @param query Termo de busca
+   * @param options Opções de filtro, ordenação e limite
+   * @returns Resultados da busca com estatísticas
+   */
+  async searchProducts(query: string, options?: {
+    categoryId?: number;
+    sortType?: ProductSortTypeValue;
+    maxResults?: number;
+    filters?: any;
+    userId?: number;
+  }): Promise<{
+    groups: ProductGroup[];
+    searchId: number;
+    totalMatches: number;
+  }> {
+    // Buscar grupos de produtos que correspondem à consulta
+    let groups = await this.getProductGroups({
+      search: query,
+      categoryId: options?.categoryId,
+      active: true
+    });
+    
+    // Registrar a pesquisa para análise, se userId fornecido
+    let searchId = 0;
+    if (options?.userId) {
+      const search = await this.createProductSearch({
+        userId: options.userId,
+        searchTerm: query,
+        categoryId: options?.categoryId || null,
+        productsCompared: 0,
+        selectedProductId: null
+      });
+      searchId = search.id;
+      
+      // Incrementar relevância de busca para grupos encontrados
+      for (const group of groups) {
+        await this.updateProductGroup(group.id, {
+          searchRelevance: group.searchRelevance + 1
+        });
+      }
+    }
+    
+    // Aplicar ordenação aos grupos
+    if (options?.sortType) {
+      switch (options.sortType) {
+        case ProductSortType.NEWEST:
+          groups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          break;
+        case ProductSortType.PRICE_ASC:
+          groups.sort((a, b) => parseFloat(a.minPrice || '999999') - parseFloat(b.minPrice || '999999'));
+          break;
+        case ProductSortType.PRICE_DESC:
+          groups.sort((a, b) => parseFloat(b.maxPrice || '0') - parseFloat(a.maxPrice || '0'));
+          break;
+        case ProductSortType.POPULARITY:
+          groups.sort((a, b) => b.comparisonCount - a.comparisonCount);
+          break;
+        case ProductSortType.RELEVANCE:
+          groups.sort((a, b) => b.searchRelevance - a.searchRelevance);
+          break;
+        default:
+          // Padrão: ordenar por relevância
+          groups.sort((a, b) => b.searchRelevance - a.searchRelevance);
+      }
+    } else {
+      // Padrão: ordenar por relevância
+      groups.sort((a, b) => b.searchRelevance - a.searchRelevance);
+    }
+    
+    // Limitar o número de resultados se especificado
+    if (options?.maxResults && groups.length > options.maxResults) {
+      groups = groups.slice(0, options.maxResults);
+    }
+    
+    return {
+      groups,
+      searchId,
+      totalMatches: groups.length
+    };
+  }
 }
 
 // Usar o armazenamento de banco de dados PostgreSQL
