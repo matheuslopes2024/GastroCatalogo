@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
-import { Product, Sale } from "@shared/schema";
+import { Product, Sale, UserRole } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
-import { BarChart, Package, DollarSign, Download, Calendar } from "lucide-react";
+import { BarChart, Package, DollarSign, Download, Calendar, Percent } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,67 +29,99 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-
-// Dashboard sidebar with links to other supplier pages
-function SupplierSidebar() {
-  return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
-      <nav className="space-y-2">
-        <Link href="/fornecedor">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <BarChart className="mr-2 h-5 w-5" />
-            Dashboard
-          </a>
-        </Link>
-        <Link href="/fornecedor/produtos">
-          <a className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-            <Package className="mr-2 h-5 w-5" />
-            Meus Produtos
-          </a>
-        </Link>
-        <Link href="/fornecedor/vendas">
-          <a className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
-            <DollarSign className="mr-2 h-5 w-5" />
-            Vendas e Comissões
-          </a>
-        </Link>
-      </nav>
-    </div>
-  );
-}
+import { SupplierSidebar } from "@/components/supplier/supplier-sidebar";
+import { formatCurrency } from "@/lib/utils";
 
 export default function SupplierSales() {
   const { user } = useAuth();
-  const [period, setPeriod] = useState("all");
+  const [period, setPeriod] = useState("month");
   
-  // Fetch supplier sales
-  const { data: sales, isLoading: isLoadingSales } = useQuery<Sale[]>({
-    queryKey: ["/api/sales", { supplierId: user?.id }],
-    enabled: !!user?.id,
+  // Buscar o resumo de vendas do fornecedor usando a API real
+  const { 
+    data: dashboardData, 
+    isLoading: isLoadingDashboard, 
+    error: dashboardError 
+  } = useQuery({
+    queryKey: ["/api/supplier/dashboard/sales-summary", { period }],
+    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
-  // Fetch supplier products for mapping product names
-  const { data: products } = useQuery<Product[]>({
+  // Buscar produtos populares do fornecedor usando a API real
+  const {
+    data: topProductsData,
+    isLoading: isLoadingTopProducts
+  } = useQuery({
+    queryKey: ["/api/supplier/dashboard/top-products"],
+    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
+  });
+  
+  // Buscar produtos do fornecedor para referência
+  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["/api/products", { supplierId: user?.id }],
     enabled: !!user?.id,
   });
   
-  // Calculate earnings
-  const totalSales = sales?.reduce((acc, sale) => acc + Number(sale.totalPrice), 0) || 0;
-  const totalCommission = sales?.reduce((acc, sale) => acc + Number(sale.commissionAmount), 0) || 0;
-  const netEarnings = totalSales - totalCommission;
+  // Extrair métricas do dashboard
+  const dashboardSummary = useMemo(() => {
+    if (isLoadingDashboard || !dashboardData || !dashboardData.summary) {
+      return {
+        totalSales: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalCommission: 0,
+        netRevenue: 0,
+        avgCommissionRate: "0.00"
+      };
+    }
+    
+    const { totalSales, totalRevenue, totalCommission, netRevenue } = dashboardData.summary;
+    
+    // Calcular taxa média de comissão
+    const avgCommissionRate = totalRevenue > 0
+      ? (totalCommission / totalRevenue * 100).toFixed(2)
+      : "0.00";
+      
+    return {
+      totalOrders: totalSales,
+      totalSales: totalRevenue,
+      totalCommission,
+      netRevenue,
+      avgCommissionRate
+    };
+  }, [dashboardData, isLoadingDashboard]);
   
-  // Format currency
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    });
-  };
+  // Preparar dados para o gráfico de vendas por produto
+  const salesByProduct = useMemo(() => {
+    if (!topProductsData || !topProductsData.topProducts) return [];
+    
+    return topProductsData.topProducts
+      .filter(product => product.totalRevenue > 0)
+      .map(product => ({
+        name: product.name,
+        value: Number(product.totalRevenue)
+      }));
+  }, [topProductsData]);
   
-  // Format date
-  const formatDate = (dateString: Date) => {
+  // Preparar dados para o gráfico de vendas mensais
+  const monthlyData = useMemo(() => {
+    if (!dashboardData || !dashboardData.salesChartData) return [];
+    
+    return dashboardData.salesChartData.map(item => ({
+      month: item.date,
+      vendas: Number(item.receita),
+      comissao: Number(item.comissao)
+    }));
+  }, [dashboardData]);
+  
+  // Extrair vendas recentes para a tabela
+  const recentSales = useMemo(() => {
+    if (!dashboardData || !dashboardData.recentSales) return [];
+    
+    return dashboardData.recentSales;
+  }, [dashboardData]);
+  
+  // Função para formatar datas
+  const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: '2-digit',
@@ -97,82 +129,26 @@ export default function SupplierSales() {
     });
   };
   
-  // Filter sales by period if needed
-  const filteredSales = sales ? [...sales] : [];
-  if (period !== "all" && filteredSales.length > 0) {
-    const today = new Date();
-    const periodStartDate = new Date();
-    
-    switch(period) {
-      case "week":
-        periodStartDate.setDate(today.getDate() - 7);
-        break;
-      case "month":
-        periodStartDate.setMonth(today.getMonth() - 1);
-        break;
-      case "quarter":
-        periodStartDate.setMonth(today.getMonth() - 3);
-        break;
-      case "year":
-        periodStartDate.setFullYear(today.getFullYear() - 1);
-        break;
+  // Obter o nome do produto pelo ID
+  const getProductName = (productId: number) => {
+    if (topProductsData?.topProducts) {
+      const product = topProductsData.topProducts.find(p => p.productId === productId);
+      if (product) return product.name;
     }
     
-    filteredSales.filter(sale => new Date(sale.createdAt) >= periodStartDate);
-  }
-  
-  // Get product name by ID
-  const getProductName = (productId: number) => {
-    return products?.find(p => p.id === productId)?.name || `Produto ${productId}`;
+    if (products) {
+      const product = products.find(p => p.id === productId);
+      if (product) return product.name;
+    }
+    
+    return `Produto ${productId}`;
   };
   
-  // Data for sales by product chart
-  const salesByProduct = products?.map(product => {
-    const productSales = sales?.filter(sale => sale.productId === product.id) || [];
-    const total = productSales.reduce((acc, sale) => acc + Number(sale.totalPrice), 0);
-    
-    return {
-      name: product.name,
-      value: total
-    };
-  }).filter(item => item.value > 0) || [];
-  
-  // Data for monthly sales chart
-  const getMonthlyData = () => {
-    if (!sales || sales.length === 0) return [];
-    
-    const monthlyData = new Map();
-    
-    sales.forEach(sale => {
-      const date = new Date(sale.createdAt);
-      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      
-      if (!monthlyData.has(monthYear)) {
-        monthlyData.set(monthYear, {
-          month: monthYear,
-          vendas: 0,
-          comissao: 0
-        });
-      }
-      
-      const entry = monthlyData.get(monthYear);
-      entry.vendas += Number(sale.totalPrice);
-      entry.comissao += Number(sale.commissionAmount);
-    });
-    
-    return Array.from(monthlyData.values()).sort((a, b) => {
-      const [aMonth, aYear] = a.month.split('/').map(Number);
-      const [bMonth, bYear] = b.month.split('/').map(Number);
-      
-      if (aYear !== bYear) return aYear - bYear;
-      return aMonth - bMonth;
-    });
-  };
-  
-  const monthlyData = getMonthlyData();
-  
-  // Colors for the pie chart
+  // Cores para o gráfico de pizza
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF5A60'];
+  
+  // Define se há dados para mostrar
+  const hasData = !!(dashboardData && dashboardData.summary && dashboardData.summary.totalSales > 0);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -190,7 +166,7 @@ export default function SupplierSales() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="md:col-span-1">
-              <SupplierSidebar />
+              <SupplierSidebar activeItem="vendas" />
               
               <Card className="mt-6">
                 <CardHeader>
@@ -210,11 +186,11 @@ export default function SupplierSales() {
                           <SelectValue placeholder="Selecione um período" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
                           <SelectItem value="week">Última semana</SelectItem>
                           <SelectItem value="month">Último mês</SelectItem>
                           <SelectItem value="quarter">Último trimestre</SelectItem>
                           <SelectItem value="year">Último ano</SelectItem>
+                          <SelectItem value="all">Todo o período</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -227,6 +203,13 @@ export default function SupplierSales() {
                     <Button className="w-full" variant="outline">
                       <Download className="mr-2 h-4 w-4" />
                       Exportar relatório
+                    </Button>
+                    
+                    <Button className="w-full" variant="outline" asChild>
+                      <Link href="/fornecedor/comissoes">
+                        <Percent className="mr-2 h-4 w-4" />
+                        Detalhes de Comissões
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -241,13 +224,13 @@ export default function SupplierSales() {
                   <CardContent className="pt-6">
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-500">Vendas Totais</p>
-                      {isLoadingSales ? (
+                      {isLoadingDashboard ? (
                         <Loading />
                       ) : (
                         <>
-                          <h3 className="text-2xl font-bold">{formatCurrency(totalSales)}</h3>
+                          <h3 className="text-2xl font-bold">{formatCurrency(dashboardSummary.totalSales)}</h3>
                           <p className="text-xs text-gray-500">
-                            {filteredSales.length} {filteredSales.length === 1 ? 'venda' : 'vendas'} realizadas
+                            {dashboardSummary.totalOrders} {dashboardSummary.totalOrders === 1 ? 'venda' : 'vendas'} realizadas
                           </p>
                         </>
                       )}
@@ -259,13 +242,13 @@ export default function SupplierSales() {
                   <CardContent className="pt-6">
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-500">Comissões</p>
-                      {isLoadingSales ? (
+                      {isLoadingDashboard ? (
                         <Loading />
                       ) : (
                         <>
-                          <h3 className="text-2xl font-bold">{formatCurrency(totalCommission)}</h3>
+                          <h3 className="text-2xl font-bold">{formatCurrency(dashboardSummary.totalCommission)}</h3>
                           <p className="text-xs text-gray-500">
-                            Taxa média: {((totalCommission / totalSales) * 100).toFixed(1)}%
+                            Taxa média: {dashboardSummary.avgCommissionRate}%
                           </p>
                         </>
                       )}
@@ -277,11 +260,11 @@ export default function SupplierSales() {
                   <CardContent className="pt-6">
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-500">Receita Líquida</p>
-                      {isLoadingSales ? (
+                      {isLoadingDashboard ? (
                         <Loading />
                       ) : (
                         <>
-                          <h3 className="text-2xl font-bold">{formatCurrency(netEarnings)}</h3>
+                          <h3 className="text-2xl font-bold">{formatCurrency(dashboardSummary.netRevenue)}</h3>
                           <p className="text-xs text-gray-500">
                             Após descontar comissão
                           </p>
@@ -303,9 +286,9 @@ export default function SupplierSales() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {isLoadingSales ? (
+                    {isLoadingDashboard || isLoadingTopProducts ? (
                       <Loading />
-                    ) : salesByProduct.length === 0 ? (
+                    ) : !hasData || salesByProduct.length === 0 ? (
                       <div className="h-full flex items-center justify-center">
                         <p className="text-gray-500">Nenhuma venda registrada ainda</p>
                       </div>
@@ -343,9 +326,9 @@ export default function SupplierSales() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {isLoadingSales ? (
+                    {isLoadingDashboard ? (
                       <Loading />
-                    ) : monthlyData.length === 0 ? (
+                    ) : !hasData || monthlyData.length === 0 ? (
                       <div className="h-full flex items-center justify-center">
                         <p className="text-gray-500">Nenhuma venda registrada ainda</p>
                       </div>
@@ -371,13 +354,13 @@ export default function SupplierSales() {
                 <CardHeader>
                   <CardTitle>Histórico de Vendas</CardTitle>
                   <CardDescription>
-                    Lista de todas as suas vendas na plataforma
+                    Lista de suas vendas recentes na plataforma
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isLoadingSales ? (
+                  {isLoadingDashboard ? (
                     <Loading />
-                  ) : !filteredSales || filteredSales.length === 0 ? (
+                  ) : !hasData || !recentSales || recentSales.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-500 mb-4">
                         Nenhuma venda registrada neste período.
@@ -406,10 +389,10 @@ export default function SupplierSales() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {filteredSales.map((sale) => {
-                            const totalValue = Number(sale.totalPrice);
-                            const commission = Number(sale.commissionAmount);
-                            const net = totalValue - commission;
+                          {recentSales.map((sale: any) => {
+                            const commissionValue = Number(sale.commissionAmount);
+                            const saleValue = Number(sale.totalPrice);
+                            const netValue = saleValue - commissionValue;
                             
                             return (
                               <tr key={sale.id}>
@@ -420,18 +403,18 @@ export default function SupplierSales() {
                                   <div className="text-sm font-medium text-gray-900">
                                     {getProductName(sale.productId)}
                                   </div>
-                                  <div className="text-sm text-gray-500">
-                                    ID: {sale.productId}
-                                  </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {formatCurrency(totalValue)}
+                                  {formatCurrency(saleValue)}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500">
-                                  -{formatCurrency(commission)}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {formatCurrency(commissionValue)}
+                                  <span className="text-xs text-gray-400 ml-1">
+                                    ({Number(sale.commissionRate)}%)
+                                  </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                                  {formatCurrency(net)}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                  {formatCurrency(netValue)}
                                 </td>
                               </tr>
                             );

@@ -13,10 +13,12 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChat } from "@/hooks/use-chat";
 
 // Componente para o sidebar do fornecedor com navegação completa
-export default function SupplierSidebar({ activeItem = "dashboard" }: { activeItem?: string }) {
+export function SupplierSidebar({ activeItem = "dashboard" }: { activeItem?: string }) {
   const [location] = useLocation();
+  const { unreadCount } = useChat();
   
   // Array de itens do menu para facilitar manutenção
   const menuItems = [
@@ -55,6 +57,7 @@ export default function SupplierSidebar({ activeItem = "dashboard" }: { activeIt
       label: "Mensagens",
       href: "/fornecedor/chat",
       icon: MessageSquare,
+      badge: unreadCount > 0 ? unreadCount : undefined,
     },
     {
       id: "clientes",
@@ -105,7 +108,12 @@ export default function SupplierSidebar({ activeItem = "dashboard" }: { activeIt
                 )}
               >
                 <item.icon className="mr-2 h-5 w-5" />
-                {item.label}
+                <span className="flex-grow">{item.label}</span>
+                {item.badge && (
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
               </a>
             </Link>
           );
@@ -141,3 +149,6 @@ export default function SupplierSidebar({ activeItem = "dashboard" }: { activeIt
     </div>
   );
 }
+
+// Exportar como default para compatibilidade com código existente
+export default SupplierSidebar;
