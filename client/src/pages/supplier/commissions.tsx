@@ -26,6 +26,11 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger
+} from "@/components/ui/hover-card";
 import { 
   Select, 
   SelectContent, 
@@ -393,6 +398,14 @@ export default function SupplierCommissions() {
     },
   });
 
+  // Função para encontrar detalhes de uma comissão específica para um produto
+  const getSpecificCommissionDetails = (productId: number) => {
+    if (!productCommissions) return null;
+    return productCommissions.find((commission: ProductCommissionSetting) => 
+      commission.productId === productId && commission.active
+    );
+  };
+
   // Filtrar produtos baseado na busca e categoria
   const filteredProducts = productsWithCommissions ? productsWithCommissions.filter((item: ProductCommission) => {
     const matchesSearch = searchTerm === "" || 
@@ -592,7 +605,47 @@ export default function SupplierCommissions() {
                       {formatCurrency(item.product.price)}
                     </TableCell>
                     <TableCell>
-                      <CommissionRateIndicator rate={item.commission.rate} />
+                      {item.commission.type === "specific" ? (
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <div className="cursor-help">
+                              <CommissionRateIndicator rate={item.commission.rate} />
+                            </div>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-80">
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold">Detalhes da Comissão Específica</h4>
+                              {(() => {
+                                const details = getSpecificCommissionDetails(item.product.id);
+                                return (
+                                  <div className="text-sm">
+                                    {details?.remarks && (
+                                      <div className="mt-2">
+                                        <span className="font-medium">Observações:</span>
+                                        <p className="text-gray-600">{details.remarks}</p>
+                                      </div>
+                                    )}
+                                    {details?.validUntil && (
+                                      <div className="mt-2 flex items-center">
+                                        <span className="font-medium">Válido até:</span>
+                                        <span className="text-gray-600 ml-1 flex items-center">
+                                          <CalendarDays className="h-3 w-3 mr-1" />
+                                          {new Date(details.validUntil).toLocaleDateString('pt-BR')}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {!details?.remarks && !details?.validUntil && (
+                                      <p className="text-gray-500">Nenhum detalhe adicional disponível.</p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      ) : (
+                        <CommissionRateIndicator rate={item.commission.rate} />
+                      )}
                     </TableCell>
                     <TableCell>
                       <CommissionTypeIndicator type={item.commission.type} />
