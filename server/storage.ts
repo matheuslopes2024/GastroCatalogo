@@ -433,6 +433,108 @@ export class MemStorage implements IStorage {
     return updatedProduct;
   }
   
+  // Método específico para buscar produtos por fornecedor com opções avançadas
+  async getProductsBySupplier(supplierId: number, options?: { 
+    limit?: number;
+    categoryId?: number; 
+    orderBy?: string;
+    active?: boolean;
+  }): Promise<Product[]> {
+    if (!supplierId) return [];
+    
+    let products = Array.from(this.products.values()).filter(
+      product => product.supplierId === supplierId
+    );
+    
+    // Aplicar filtros adicionais
+    if (options) {
+      // Filtrar por categoria
+      if (options.categoryId) {
+        products = products.filter(product => 
+          product.categoryId === options.categoryId || 
+          (product.additionalCategories && 
+           product.additionalCategories.includes(options.categoryId!))
+        );
+      }
+      
+      // Filtrar produtos ativos
+      if (options.active !== undefined) {
+        products = products.filter(product => product.active === options.active);
+      }
+      
+      // Ordenação dos produtos
+      if (options.orderBy) {
+        switch (options.orderBy) {
+          case 'price_asc':
+            products.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            break;
+          case 'price_desc':
+            products.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            break;
+          case 'rating_desc':
+            products.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+            break;
+          case 'newest':
+            products.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            break;
+          default:
+            // Ordenação padrão: mais novos primeiro
+            products.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        }
+      }
+      
+      // Aplicar limite
+      if (options.limit) {
+        products = products.slice(0, options.limit);
+      }
+    }
+    
+    return products;
+  }
+  
+  // Método para contar produtos de um fornecedor
+  async getSupplierProductsCount(supplierId: number): Promise<number> {
+    if (!supplierId) return 0;
+    
+    const products = Array.from(this.products.values()).filter(
+      product => product.supplierId === supplierId
+    );
+    
+    return products.length;
+  }
+  
+  // Método para buscar categorias de produtos de um fornecedor
+  async getSupplierCategories(supplierId: number): Promise<Category[]> {
+    if (!supplierId) return [];
+    
+    // Buscar todos os produtos do fornecedor
+    const supplierProducts = Array.from(this.products.values()).filter(
+      product => product.supplierId === supplierId
+    );
+    
+    // Extrair IDs únicos das categorias
+    const categoryIds = new Set<number>();
+    
+    supplierProducts.forEach(product => {
+      // Adicionar categoria principal
+      categoryIds.add(product.categoryId);
+      
+      // Adicionar categorias adicionais, se houver
+      if (product.additionalCategories) {
+        product.additionalCategories.forEach(catId => {
+          if (catId) categoryIds.add(catId);
+        });
+      }
+    });
+    
+    // Buscar objetos das categorias
+    const categories = Array.from(categoryIds)
+      .map(id => this.categories.get(id))
+      .filter(Boolean) as Category[];
+    
+    return categories;
+  }
+  
   async getProducts(options?: { 
     categoryId?: number; 
     supplierId?: number; 
