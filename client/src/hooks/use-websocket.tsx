@@ -35,7 +35,7 @@ interface WebSocketContextType {
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 // Provider para o contexto do WebSocket
-export function WebSocketProvider({ children }: { children: ReactNode }) {
+export function WebSocketProvider({ children }: { children: ReactNode }): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
   const [connected, setConnected] = useState(false);

@@ -56,8 +56,8 @@ export interface ChatConversation {
 }
 
 export interface Attachment {
-  data: string;
-  type: string;
+  data: string | null;
+  type: string | null;
   name: string;
   size: number;
 }

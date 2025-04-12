@@ -68,10 +68,10 @@ function SupplierSidebar() {
 }
 
 // Usando a interface ChatMessage do hook para compatibilidade
-import { ChatMessage } from "@/hooks/use-chat";
+import { ChatMessage as ChatMessageType } from "@/hooks/use-chat";
 
 // Interface local para exibição de mensagens
-interface Message extends Partial<ChatMessage> {
+interface Message extends Partial<ChatMessageType> {
   id: number;
   text?: string;        // Para manter compatibilidade com o código existente
   message?: string;     // Do ChatMessage
@@ -100,7 +100,7 @@ function formatMessageTime(createdAt: string) {
 }
 
 // Componente de mensagem
-function ChatMessage({ message, currentUserId }: { message: Message; currentUserId: number }) {
+function MessageItem({ message, currentUserId }: { message: Message; currentUserId: number }) {
   const isOutgoing = message.senderId === currentUserId;
   const hasAttachment = !!message.attachmentUrl;
   
@@ -149,7 +149,10 @@ function ChatMessage({ message, currentUserId }: { message: Message; currentUser
           <div>
             <p className="break-words">{message.text || message.message || message.content}</p>
             <div className={`text-xs mt-1 ${isOutgoing ? 'text-white/70' : 'text-gray-500'} text-right`}>
-              {formatMessageTime(message.createdAt.toString())}
+              {typeof message.createdAt === 'string' ? 
+                formatMessageTime(message.createdAt) : 
+                formatMessageTime(message.createdAt instanceof Date ? 
+                  message.createdAt.toISOString() : new Date().toISOString())}
             </div>
           </div>
         </div>
