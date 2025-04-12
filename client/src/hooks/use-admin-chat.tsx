@@ -411,9 +411,9 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     
     // Filtra apenas mensagens não lidas que não foram enviadas pelo usuário atual
     const unreadMessageIds = messages
-      .filter(msg => !msg.read && msg.senderId !== user.id)
-      .map(msg => msg.id)
-      .filter(id => typeof id === 'number'); // Garante que só IDs numéricos são usados
+      .filter((msg: {read: boolean, senderId: number, id: number}) => !msg.read && msg.senderId !== user.id)
+      .map((msg: {id: number}) => msg.id)
+      .filter((id: any) => typeof id === 'number'); // Garante que só IDs numéricos são usados
     
     if (unreadMessageIds.length === 0) return;
     
@@ -425,7 +425,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(
         ['/api/admin/chat/messages', activeConversation.id, messagesLimit],
         (oldMessages: ChatMessage[] = []) => {
-          return oldMessages.map(msg => {
+          return oldMessages.map((msg: any) => {
             if (unreadMessageIds.includes(msg.id as number)) {
               return { ...msg, read: true };
             }

@@ -1,0 +1,1096 @@
+3chat:1 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+client:536 WebSocket connection to 'wss://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/?token=jzCAMS1TQWyb' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531Understand this error
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=jzCAMS1TQWyb' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+
+                
+          
+          
+          
+         Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.Understand this warning
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:286
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14926
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15914
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18678
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:453
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14926
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15914
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18678
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+use-websocket.tsx:230 [WS] Efeito do usuário executado: sem usuário
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:286
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:453
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:286
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14926
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15914
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:453
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14926
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15914
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+admin-layout.tsx:475 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:475
+AdminLayout @ admin-layout.tsx:474
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14926
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15914
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+use-websocket.tsx:264 [WS:conn-1744420922286] Limpando efeito de conexão
+queryClient.ts:32 Enviando request para: /api/chat/conversations com método: GET e corpo do tipo: undefined
+use-websocket.tsx:230 [WS] Efeito do usuário executado: usuário 1 (admin)
+use-websocket.tsx:246 [WS:conn-1744420922575] Iniciando conexão para usuário 1 (admin)
+use-websocket.tsx:248 [WS:conn-1744420922575] Conexão WebSocket iniciada
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:286
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:453
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:286
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:453
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:286
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+10admin-layout.tsx:176 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:176
+renderNavLinks @ admin-layout.tsx:172
+AdminLayout @ admin-layout.tsx:453
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+admin-layout.tsx:475 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at ChatAdminPage
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at div
+    at main
+    at LayoutContent (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:50:33)
+    at div
+    at LayoutBody (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:34:30)
+    at div
+    at Layout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/ui/layout.tsx:18:26)
+    at AdminLayout (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/components/admin/admin-layout.tsx:165:31)
+    at AdminChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-chat.tsx?t=1744420878225:31:37)
+    at AdminRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744420878225:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744420878225:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744420878225:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744420878225&v=7VcN3Ie002ntKn66JXWX8:349:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+printWarning @ react_jsx-dev-runtime.js?v=f9bbb7cb:64
+error @ react_jsx-dev-runtime.js?v=f9bbb7cb:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=f9bbb7cb:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=f9bbb7cb:874
+(anonymous) @ admin-layout.tsx:475
+AdminLayout @ admin-layout.tsx:474
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+admin-chat-conversations-list.tsx:149 Erro ao buscar usuários: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+queryFn @ admin-chat-conversations-list.tsx:149
+await in queryFn
+fetchFn @ @tanstack_react-query.js?v=f9bbb7cb:840
+run @ @tanstack_react-query.js?v=f9bbb7cb:494
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+use-websocket.tsx:73 WebSocket conectado!
+use-admin-chat.tsx:157 [AdminChat] Inicializando chat administrativo...
+use-admin-chat.tsx:166 [AdminChat] Registrando administrador para receber notificações...
