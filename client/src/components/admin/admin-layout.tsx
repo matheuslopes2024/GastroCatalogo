@@ -173,7 +173,7 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
       const active = isActive(item.href);
       
       return (
-        <div key={index} className="nav-item-container">
+        <div key={`nav-item-${index}`} className="nav-item-container">
           {item.divider && <div className="mx-3 my-3 h-px bg-muted/30" />}
           
           <div className={cn(
