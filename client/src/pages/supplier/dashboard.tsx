@@ -1052,7 +1052,7 @@ export default function SupplierDashboard() {
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-semibold text-green-600">
-                              +{(item?.totalValue / totalSales * 100 || 0).toFixed(1)}%
+                              +{(item?.totalValue / (dashboardSummary?.totalSales || 1) * 100 || 0).toFixed(1)}%
                             </div>
                             <div className="text-xs text-gray-500">
                               do total
