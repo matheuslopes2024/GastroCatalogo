@@ -70,6 +70,7 @@ type ChatContextType = {
   activeConversation: ChatConversation | null;
   activeConversationId?: number; // Para compatibilidade com componentes existentes
   setActiveConversation: (conversation: ChatConversation | null) => void;
+  selectConversation: (conversation: ChatConversation) => void; // Novo método para selecionar conversa
   conversations: ChatConversation[];
   messages: ChatMessage[];
   isLoadingConversations: boolean;
@@ -490,6 +491,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [startConversationMutation, wsConnected, wsSendMessage, user, toast]);
 
+  // Método para selecionar uma conversa existente
+  const selectConversation = useCallback((conversation: ChatConversation) => {
+    setActiveConversation(conversation);
+    
+    // Marcar as mensagens não lidas como lidas quando selecionar a conversa
+    // A marcação efetiva ocorrerá no useEffect que monitora as mensagens não lidas
+    console.log(`Selecionando conversa ${conversation.id}`);
+    
+    // Notificar via WebSocket que o usuário está visualizando a conversa
+    if (wsConnected && user) {
+      wsSendMessage({
+        type: "conversation_opened",
+        conversationId: conversation.id,
+        userId: user.id
+      });
+    }
+  }, [setActiveConversation, wsConnected, wsSendMessage, user]);
+
   // Atalho para abrir chat diretamente com administrador
   const openChatWithAdmin = useCallback(() => {
     setIsOpen(true);
@@ -559,6 +578,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         activeConversation,
         activeConversationId,
         setActiveConversation,
+        selectConversation,
         conversations: filteredConversations,
         messages,
         isLoadingConversations,

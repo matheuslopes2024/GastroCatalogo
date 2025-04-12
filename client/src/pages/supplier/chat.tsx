@@ -462,10 +462,12 @@ export default function SupplierChat() {
                         {activeConversationIsAdmin ? (
                           <AvatarFallback className="bg-primary/20 text-primary">S</AvatarFallback>
                         ) : (
-                          <AvatImage src="" />
-                          <AvatarFallback className="bg-gray-200 text-gray-700">
-                            {conversationPartnerName.charAt(0).toUpperCase()}
-                          </AvatarFallback>
+                          <>
+                            <AvatarImage src="" />
+                            <AvatarFallback className="bg-gray-200 text-gray-700">
+                              {conversationPartnerName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </>
                         )}
                       </Avatar>
                       
