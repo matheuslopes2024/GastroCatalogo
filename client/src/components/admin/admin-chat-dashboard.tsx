@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useAdminChat } from '@/hooks/use-admin-chat';
 import { cn } from '@/lib/utils';
 import { AdminChatMessage, AdminChatMessageDateDisplay, AdminChatMessageInput } from './admin-chat-message-components';
@@ -16,12 +16,18 @@ import {
   ArrowLeft,
   Building2,
   Crown,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { UserRole, ChatMessage } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useWebSocket } from '@/hooks/use-websocket';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Componente principal do dashboard de chat
 export function AdminChatDashboard() {
@@ -40,13 +46,99 @@ export function AdminChatDashboard() {
   
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const messageUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMessageCountRef = useRef<number>(0);
+  const { connected } = useWebSocket();
+  
+  // Estado de conexão para mostrar ao usuário
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState<boolean>(true);
   
   // Rolar para o final quando as mensagens mudarem
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+    
+    // Atualizar contagem de mensagens para detecção de novas mensagens
+    lastMessageCountRef.current = messages.length;
+    
+    // Marcar hora da última atualização para feedback ao usuário
+    setLastUpdated(new Date());
   }, [messages]);
+  
+  // Monitor de status da conexão WebSocket
+  useEffect(() => {
+    if (connected) {
+      setConnectionStatus('connected');
+    } else {
+      setConnectionStatus('disconnected');
+    }
+  }, [connected]);
+  
+  // Configurar timer para atualizações periódicas se o auto-refresh estiver ativado
+  useEffect(() => {
+    // Função para verificar e atualizar mensagens periodicamente
+    const setupRefreshTimer = () => {
+      if (autoRefreshEnabled && activeConversation) {
+        if (messageUpdateTimerRef.current) {
+          clearTimeout(messageUpdateTimerRef.current);
+        }
+        
+        // Configurar timer para atualizar a cada 10 segundos
+        messageUpdateTimerRef.current = setTimeout(() => {
+          console.log('[AdminChatDashboard] Executando atualização periódica');
+          refreshConversations(); 
+          
+          // Configurar o próximo ciclo
+          setupRefreshTimer();
+        }, 10000);
+      }
+    };
+    
+    // Iniciar o timer
+    setupRefreshTimer();
+    
+    // Limpar ao desmontar
+    return () => {
+      if (messageUpdateTimerRef.current) {
+        clearTimeout(messageUpdateTimerRef.current);
+      }
+    };
+  }, [autoRefreshEnabled, activeConversation, refreshConversations]);
+  
+  // Configurar listeners de evento para atualizações em tempo real
+  useEffect(() => {
+    // Handler para mensagens atualizadas
+    const messagesUpdatedHandler = (event: CustomEvent) => {
+      console.log('[AdminChatDashboard] Evento de mensagens atualizadas detectado:', event.detail);
+      // Já não precisamos fazer nada aqui pois o hook use-admin-chat atualiza o estado diretamente
+      // Só atualizamos o último horário de atualização
+      setLastUpdated(new Date());
+    };
+    
+    // Handler para conversas atualizadas
+    const conversationsUpdatedHandler = (event: CustomEvent) => {
+      console.log('[AdminChatDashboard] Evento de conversas atualizadas detectado:', event.detail);
+      // Podemos usar para feedback visual ou sonoro ao usuário
+      setLastUpdated(new Date());
+    };
+    
+    // Registrar listeners para eventos personalizados
+    if (typeof window !== 'undefined') {
+      window.addEventListener('admin-chat:messages-updated', messagesUpdatedHandler as EventListener);
+      window.addEventListener('admin-chat:conversations-updated', conversationsUpdatedHandler as EventListener);
+    }
+    
+    // Limpar ao desmontar
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('admin-chat:messages-updated', messagesUpdatedHandler as EventListener);
+        window.removeEventListener('admin-chat:conversations-updated', conversationsUpdatedHandler as EventListener);
+      }
+    };
+  }, []);
 
   // Verificar se o usuário ativo está online
   const isParticipantOnline = activeConversation && activeConversation.participantId
@@ -191,6 +283,49 @@ export function AdminChatDashboard() {
         </div>
         
         <div className="flex items-center gap-1">
+          {/* Indicador de status da conexão */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="mr-2 flex items-center">
+                  {connectionStatus === 'connected' ? (
+                    <span className="flex items-center text-xs text-green-600">
+                      <Wifi className="h-3 w-3 mr-1" />
+                    </span>
+                  ) : connectionStatus === 'connecting' ? (
+                    <span className="flex items-center text-xs text-yellow-600">
+                      <Wifi className="h-3 w-3 mr-1 animate-pulse" />
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-xs text-red-600">
+                      <WifiOff className="h-3 w-3 mr-1" />
+                    </span>
+                  )}
+                  
+                  {lastUpdated && (
+                    <span className="hidden md:inline text-xs text-muted-foreground ml-1">
+                      {format(lastUpdated, 'HH:mm:ss')}
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {connectionStatus === 'connected' ? (
+                  <p className="text-xs">Conectado em tempo real</p>
+                ) : connectionStatus === 'connecting' ? (
+                  <p className="text-xs">Conectando ao servidor...</p>
+                ) : (
+                  <p className="text-xs">Desconectado. Tentando reconectar...</p>
+                )}
+                {lastUpdated && (
+                  <p className="text-xs mt-1">
+                    Última atualização: {format(lastUpdated, 'HH:mm:ss')}
+                  </p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
           <Button 
             variant="ghost" 
             size="icon" 
@@ -200,6 +335,32 @@ export function AdminChatDashboard() {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
+          
+          {/* Botão para ativar/desativar atualização automática */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant={autoRefreshEnabled ? "default" : "outline"} 
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+                >
+                  {autoRefreshEnabled ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">
+                  {autoRefreshEnabled ? 'Atualização automática ativada' : 'Atualização automática desativada'}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
           <Button variant="ghost" size="icon">
             <Phone className="h-4 w-4" />
           </Button>
