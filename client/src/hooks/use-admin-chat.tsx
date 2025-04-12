@@ -56,6 +56,7 @@ type AdminChatContextType = {
   formatMessageDate: (date: Date) => string;
   isSendingMessage: boolean;
   refreshConversations: () => void;
+  deleteConversation: (conversationId: number) => Promise<void>;
 };
 
 // Contexto com valor inicial undefined
@@ -897,6 +898,66 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     return format(date, "dd 'de' MMMM', às' HH:mm", { locale: ptBR });
   }, []);
   
+  // Função para excluir uma conversa
+  const deleteConversation = useCallback(async (conversationId: number) => {
+    if (!conversationId || !user || user.role !== UserRole.ADMIN) {
+      console.error('[AdminChat] Tentativa de excluir conversa sem ID ou sem permissões');
+      toast({
+        title: "Operação não permitida",
+        description: "Você não tem permissão para excluir esta conversa",
+        variant: "destructive"
+      });
+      return Promise.reject(new Error("Operação não permitida"));
+    }
+    
+    console.log(`[AdminChat] Excluindo conversa ${conversationId}...`);
+    setIsLoadingConversations(true);
+    
+    try {
+      // Enviar requisição para excluir a conversa no servidor
+      const response = await apiRequest("DELETE", `/api/admin/chat/conversation/${conversationId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Erro desconhecido" }));
+        throw new Error(errorData.message || "Falha ao excluir conversa");
+      }
+      
+      // Se a conversa excluída era a conversa ativa, limpar a seleção
+      if (activeConversation && activeConversation.id === conversationId) {
+        setActiveConversation(null);
+      }
+      
+      // Atualizar a lista de conversas localmente removendo a conversa excluída
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      // Informar sucesso ao usuário
+      toast({
+        title: "Conversa excluída",
+        description: "A conversa foi excluída com sucesso",
+      });
+      
+      // Atualizar o cache do React Query para refletir a mudança
+      queryClient.invalidateQueries(['/api/admin/chat/conversations']);
+      
+      // Verificar se é necessário atualizar outras conversas
+      console.log('[AdminChat] Forçando atualização após exclusão');
+      refreshConversations();
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error("[AdminChat] Erro ao excluir conversa:", error);
+      
+      toast({
+        title: "Erro ao excluir conversa",
+        description: error.message || "Ocorreu um erro ao excluir a conversa",
+        variant: "destructive"
+      });
+      
+      setIsLoadingConversations(false);
+      return Promise.reject(error);
+    }
+  }, [user, activeConversation, toast, queryClient, refreshConversations]);
+  
   // Disponibilizar o contexto completo do chat administrativo
   const chatContextValue: AdminChatContextType = {
     activeConversation,
@@ -917,7 +978,8 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     setFilterMode,
     formatMessageDate,
     isSendingMessage,
-    refreshConversations
+    refreshConversations,
+    deleteConversation
   };
   
   return (
