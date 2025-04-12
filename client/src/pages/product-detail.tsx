@@ -150,11 +150,15 @@ export default function ProductDetailPage() {
   const { data: supplierOptions, isLoading: loadingSuppliers } = useQuery({
     queryKey: ["/api/products/suppliers", slug],
     queryFn: async () => {
+      console.log(`Buscando fornecedores para produto: ${slug}`);
       const res = await fetch(`/api/products/${slug}/suppliers`);
       if (!res.ok) {
+        console.error("Erro ao buscar fornecedores:", res.status, res.statusText);
         throw new Error("Falha ao carregar opções de fornecedores");
       }
-      return res.json() as Promise<Product[]>;
+      const data = await res.json();
+      console.log("Fornecedores encontrados:", data.length, data);
+      return data as Product[];
     },
     enabled: !!slug && !!product
   });
@@ -567,21 +571,29 @@ export default function ProductDetailPage() {
               </Badge>
             </div>
             
-            {/* Lista de fornecedores com layout aprimorado */}
+            {/* Lista de fornecedores com layout aprimorado - cards 100% clicáveis */}
             {supplierOptions.map((option, index) => (
               <Card 
                 key={option.id} 
-                className={`overflow-hidden transition-all border-2 cursor-pointer ${
+                className={`overflow-hidden transition-all border-2 cursor-pointer relative group ${
                   option.isBestPrice 
                     ? 'border-primary shadow-md shadow-primary/10' 
                     : 'border-gray-200 hover:border-primary/50 hover:shadow-md'
                 }`}
-                onClick={() => {
+                onClick={(e) => {
+                  // Prevenir clique caso esteja clicando em um botão
+                  if (e.target instanceof HTMLElement && 
+                     (e.target.tagName === 'BUTTON' || 
+                      e.target.closest('button') || 
+                      e.target.getAttribute('role') === 'button')) {
+                    return;
+                  }
+                  
                   // Navegar para a página específica do produto fornecido por este fornecedor
                   const targetUrl = (product.id && option.supplierId) 
                     ? `/produtos/${product.id}/fornecedor/${option.supplierId}`
                     : `/produtos/${option.slug}`;
-                    
+                  
                   console.log("Navegando via card clicável para:", targetUrl);
                   
                   navigate(targetUrl);
@@ -592,6 +604,8 @@ export default function ProductDetailPage() {
                   });
                 }}
               >
+                {/* Overlay com hover para indicar clicabilidade do card */}
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-0"></div>
                 {/* Faixa "Melhor Preço" com design aprimorado */}
                 {option.isBestPrice && (
                   <div className="absolute -top-1 -left-1 z-20">
@@ -788,7 +802,7 @@ export default function ProductDetailPage() {
                       {/* Botão "Ver detalhes do fornecedor" com mais destaque */}
                       <Button 
                         variant="secondary"
-                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium shadow-sm hidden md:flex"
+                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium shadow-sm hidden md:flex relative z-30"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           
@@ -818,7 +832,7 @@ export default function ProductDetailPage() {
                       
                       {/* Botão de Comprar com design de destaque */}
                       <Button 
-                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-sm relative z-10"
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-sm relative z-30"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           navigate(`/produtos/${option.slug}`);
@@ -836,7 +850,7 @@ export default function ProductDetailPage() {
                       {/* Botão adicional de comparação - totalmente clicável */}
                       <Button
                         variant="outline"
-                        className="w-full hover:text-primary hover:bg-primary/5 border-gray-200 relative z-10"
+                        className="w-full hover:text-primary hover:bg-primary/5 border-gray-200 relative z-30"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/produtos/comparar/${product.categoryId}`);
@@ -854,7 +868,7 @@ export default function ProductDetailPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-10"
+                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-30"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   toggleWishlist();
