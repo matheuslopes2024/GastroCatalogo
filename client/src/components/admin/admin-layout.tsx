@@ -1,4 +1,4 @@
-import React, { useState, ReactNode, useMemo } from 'react';
+import React, { useState, ReactNode, useMemo, Fragment } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
@@ -329,16 +329,12 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>Notificações</span>
-                  <Button 
-                    variant="link" 
+                  <Link 
+                    href="/admin/notificacoes"
                     className="h-auto p-0 text-xs text-primary hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = '/admin/notificacoes';
-                    }}
                   >
                     Ver todas
-                  </Button>
+                  </Link>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {notifications && notifications.length > 0 ? (
@@ -378,16 +374,12 @@ export function AdminLayout({ children, title = 'Painel do Administrador', bread
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>Mensagens</span>
-                  <Button 
-                    variant="link" 
+                  <Link 
+                    href="/admin/chat"
                     className="h-auto p-0 text-xs text-primary hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = '/admin/chat';
-                    }}
                   >
                     Ver todas
-                  </Button>
+                  </Link>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {messages && messages.length > 0 ? (
