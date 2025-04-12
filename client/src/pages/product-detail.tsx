@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -86,6 +86,7 @@ interface Product {
   deliveryTime?: string;
   warranty?: string;
   longDescription?: string;
+  isBestPrice?: boolean; // Indica se é a melhor opção de preço entre fornecedores
 }
 
 // Funções auxiliares
@@ -482,7 +483,7 @@ export default function ProductDetailPage() {
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                     {/* Coluna da imagem */}
                     <div className="bg-white p-4 flex items-center justify-center md:border-r">
-                      <Link to={`/produtos/${option.slug}`}>
+                      <Link href={`/produtos/${option.slug}`}>
                         <img 
                           src={option.imageUrl || "https://via.placeholder.com/150"}
                           alt={option.name}
@@ -494,7 +495,7 @@ export default function ProductDetailPage() {
                     {/* Coluna de informações */}
                     <div className="p-4 md:col-span-2">
                       <div className="flex flex-col">
-                        <Link to={`/produtos/${option.slug}`} className="font-semibold hover:text-primary transition-colors">
+                        <Link href={`/produtos/${option.slug}`} className="font-semibold hover:text-primary transition-colors">
                           {option.name}
                         </Link>
                         
