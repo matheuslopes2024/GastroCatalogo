@@ -1,9 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useSimpleAdminChat } from '@/hooks/use-simple-admin-chat';
+import { useAdminChat } from '@/hooks/use-admin-chat';
 import { cn } from '@/lib/utils';
 import { AdminChatMessage, AdminChatMessageDateDisplay, AdminChatMessageInput } from './admin-chat-message-components';
 import AdminChatConversationsList from './admin-chat-conversations-list';
-import AdminChatRealtimeMonitor from './admin-chat-realtime-monitor';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { 
@@ -28,7 +27,6 @@ import { format } from 'date-fns';
 import { UserRole, ChatMessage } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useWebSocket } from '@/hooks/use-websocket';
-// Removida dependência do admin-chat-realtime-sync para simplificar
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Componente principal do dashboard de chat
@@ -41,11 +39,7 @@ export function AdminChatDashboard() {
     usersOnline,
     refreshConversations,
     isLoadingConversations 
-  } = useSimpleAdminChat();
-  
-  // Não usaremos o componente diretamente dentro do JSX para evitar problemas
-  // com o compilador TypeScript. Em vez disso, renderizamos condicionalmente.
-  const useRealtimeMonitor = true;
+  } = useAdminChat();
   
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -446,11 +440,6 @@ export function AdminChatDashboard() {
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 h-full gap-4">
-      {/* Implementamos atualização automática diretamente no useEffect deste componente */}
-      {useRealtimeMonitor && (
-        <AdminChatRealtimeMonitor />
-      )}
-      
       {/* Lista de conversas (escondida em mobile quando uma conversa está ativa) */}
       <div className={cn(
         "md:col-span-1 lg:col-span-1 xl:col-span-1 h-full",

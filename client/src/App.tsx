@@ -14,7 +14,7 @@ import { CartProvider } from "./hooks/use-cart";
 import { ChatProvider } from "./hooks/use-chat";
 import { WebSocketProvider } from "./hooks/use-websocket";
 import ChatWidget from "./components/chat/chat-widget";
-import { SimpleAdminChatProvider } from "./hooks/use-simple-admin-chat";
+import { AdminChatProvider } from "./hooks/use-admin-chat";
 import { AdminStatusProvider } from "./hooks/use-admin-status";
 import { AdminLayout } from "@/components/admin/admin-layout";
 
@@ -99,7 +99,7 @@ function MainRoutes() {
 // Rotas de administração com layout de Admin
 function AdminRoutes() {
   return (
-    <SimpleAdminChatProvider>
+    <AdminChatProvider>
       <AdminLayout>
         <Switch>
           <ProtectedRoute 
@@ -136,7 +136,7 @@ function AdminRoutes() {
           </Route>
         </Switch>
       </AdminLayout>
-    </SimpleAdminChatProvider>
+    </AdminChatProvider>
   );
 }
 
