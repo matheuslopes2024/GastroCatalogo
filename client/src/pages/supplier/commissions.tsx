@@ -90,15 +90,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 
 // Tipos relacionados às comissões
@@ -929,5 +920,137 @@ export default function SupplierCommissions() {
       
       <Footer />
     </div>
+  );
+}
+
+// Componente de formulário para adicionar/editar comissões específicas por produto
+interface ProductCommissionFormProps {
+  editingCommission: ProductCommissionSetting | null;
+  products: Product[];
+  onSubmit: (data: ProductCommissionFormValues) => void;
+  isLoading: boolean;
+  selectedProduct: Product | null;
+}
+
+function ProductCommissionForm({
+  editingCommission,
+  products,
+  onSubmit,
+  isLoading,
+  selectedProduct
+}: ProductCommissionFormProps) {
+  const form = useForm<ProductCommissionFormValues>({
+    resolver: zodResolver(productCommissionFormSchema),
+    defaultValues: {
+      productId: selectedProduct?.id || editingCommission?.productId || 0,
+      rate: editingCommission?.rate || "",
+      active: editingCommission?.active ?? true,
+    },
+  });
+  
+  // Atualizar form quando selectedProduct mudar
+  React.useEffect(() => {
+    if (selectedProduct) {
+      form.setValue("productId", selectedProduct.id);
+    }
+  }, [selectedProduct, form]);
+  
+  // Atualizar form quando editingCommission mudar
+  React.useEffect(() => {
+    if (editingCommission) {
+      form.setValue("productId", editingCommission.productId);
+      form.setValue("rate", editingCommission.rate);
+      form.setValue("active", editingCommission.active);
+    }
+  }, [editingCommission, form]);
+  
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="productId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Produto</FormLabel>
+              <Select
+                disabled={!!selectedProduct || !!editingCommission}
+                onValueChange={(value) => field.onChange(parseInt(value))}
+                value={field.value ? field.value.toString() : undefined}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id.toString()}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Escolha o produto para aplicar a taxa específica de comissão.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="rate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Taxa de Comissão (%)</FormLabel>
+              <div className="relative">
+                <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <FormControl>
+                  <Input 
+                    placeholder="2.5" 
+                    {...field} 
+                    className="pl-10"
+                  />
+                </FormControl>
+              </div>
+              <FormDescription>
+                Informe a taxa de comissão em porcentagem (ex: 2.5 para 2.5%).
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="active"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Status da comissão</FormLabel>
+                <FormDescription>
+                  Desative a comissão temporariamente sem excluí-la.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        
+        <DialogFooter>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && (
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            )}
+            {editingCommission ? "Atualizar" : "Criar"} Comissão
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 }
