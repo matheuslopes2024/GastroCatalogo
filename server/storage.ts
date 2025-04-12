@@ -8,7 +8,16 @@ import {
   faqCategories, type FaqCategory, type InsertFaqCategory,
   faqItems, type FaqItem, type InsertFaqItem,
   chatMessages, type ChatMessage, type InsertChatMessage,
-  chatConversations, type ChatConversation, type InsertChatConversation
+  chatConversations, type ChatConversation, type InsertChatConversation,
+  // Importações para o sistema de comparação de produtos
+  productGroups, type ProductGroup, type InsertProductGroup,
+  productGroupItems, type ProductGroupItem, type InsertProductGroupItem,
+  productSearches, type ProductSearch, type InsertProductSearch,
+  productComparisons, type ProductComparison, type InsertProductComparison,
+  productComparisonDetails, type ProductComparisonDetail, type InsertProductComparisonDetail,
+  // Tipos para ordenação e status
+  type ProductSortTypeValue, ProductSortType,
+  type ProductComparisonStatusType, ProductComparisonStatus
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -102,6 +111,82 @@ export interface IStorage {
   getAllChatConversations(): Promise<ChatConversation[]>;
   updateChatConversationLastMessage(conversationId: number, message: ChatMessage): Promise<void>;
   
+  // Métodos para grupos de produtos (Product Groups)
+  getProductGroup(id: number): Promise<ProductGroup | undefined>;
+  getProductGroupBySlug(slug: string): Promise<ProductGroup | undefined>;
+  createProductGroup(group: InsertProductGroup): Promise<ProductGroup>;
+  updateProductGroup(id: number, groupData: Partial<ProductGroup>): Promise<ProductGroup | undefined>;
+  getProductGroups(options?: { 
+    categoryId?: number; 
+    search?: string; 
+    active?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<ProductGroup[]>;
+
+  // Métodos para itens de grupos de produtos (Product Group Items)
+  getProductGroupItem(id: number): Promise<ProductGroupItem | undefined>;
+  getProductGroupItemByProductId(groupId: number, productId: number): Promise<ProductGroupItem | undefined>;
+  createProductGroupItem(item: InsertProductGroupItem): Promise<ProductGroupItem>;
+  updateProductGroupItem(id: number, itemData: Partial<ProductGroupItem>): Promise<ProductGroupItem | undefined>;
+  getProductGroupItems(groupId: number, options?: {
+    supplierId?: number;
+    highlighted?: boolean;
+    limit?: number;
+    orderBy?: string; // Opções: price_asc, price_desc, sales_desc
+  }): Promise<ProductGroupItem[]>;
+  
+  // Métodos para pesquisas de produtos (Product Searches)
+  createProductSearch(search: InsertProductSearch): Promise<ProductSearch>;
+  getProductSearches(options?: {
+    userId?: number;
+    query?: string; 
+    categoryId?: number;
+    limit?: number;
+    daysAgo?: number;
+  }): Promise<ProductSearch[]>;
+  
+  // Métodos para comparações de produtos (Product Comparisons)
+  getProductComparison(id: number): Promise<ProductComparison | undefined>;
+  createProductComparison(comparison: InsertProductComparison): Promise<ProductComparison>;
+  updateProductComparison(id: number, comparisonData: Partial<ProductComparison>): Promise<ProductComparison | undefined>;
+  getProductComparisons(options?: {
+    userId?: number;
+    groupId?: number;
+    status?: ProductComparisonStatusType;
+    limit?: number;
+  }): Promise<ProductComparison[]>;
+  
+  // Métodos para detalhes de comparações de produtos (Product Comparison Details)
+  createProductComparisonDetail(detail: InsertProductComparisonDetail): Promise<ProductComparisonDetail>;
+  getProductComparisonDetails(comparisonId: number): Promise<ProductComparisonDetail[]>;
+  
+  // Métodos avançados para comparação estilo Trivago
+  compareProducts(groupId: number, options?: {
+    sortType?: ProductSortTypeValue;
+    maxResults?: number; // Máximo de produtos a retornar por comparação (padrão: 6)
+    filters?: any; // Filtros adicionais
+    userId?: number; // Usuário que está fazendo a comparação (para análise)
+  }): Promise<{
+    group: ProductGroup; 
+    items: (ProductGroupItem & { product: Product; supplier: User })[];
+    cheapestItem?: ProductGroupItem & { product: Product; supplier: User };
+    bestRatedItem?: ProductGroupItem & { product: Product; supplier: User };
+  }>;
+  
+  // Método para buscas de produtos estilo Trivago
+  searchProducts(query: string, options?: {
+    categoryId?: number;
+    sortType?: ProductSortTypeValue;
+    maxResults?: number;
+    filters?: any;
+    userId?: number;
+  }): Promise<{
+    groups: ProductGroup[];
+    searchId: number;
+    totalMatches: number;
+  }>;
+
   // Session store
   sessionStore: any;
 }
@@ -118,6 +203,13 @@ export class MemStorage implements IStorage {
   private chatMessages: Map<number, ChatMessage>;
   private chatConversations: Map<number, ChatConversation>;
   
+  // Mapas para as novas entidades de comparação de produtos
+  private productGroups: Map<number, ProductGroup>;
+  private productGroupItems: Map<number, ProductGroupItem>;
+  private productSearches: Map<number, ProductSearch>;
+  private productComparisons: Map<number, ProductComparison>;
+  private productComparisonDetails: Map<number, ProductComparisonDetail>;
+  
   currentUserId: number;
   currentCategoryId: number;
   currentProductId: number;
@@ -128,6 +220,13 @@ export class MemStorage implements IStorage {
   currentFaqItemId: number;
   currentChatMessageId: number;
   currentChatConversationId: number;
+  
+  // Contadores para as novas entidades
+  currentProductGroupId: number;
+  currentProductGroupItemId: number;
+  currentProductSearchId: number;
+  currentProductComparisonId: number;
+  currentProductComparisonDetailId: number;
   
   sessionStore: any;
 
@@ -143,6 +242,13 @@ export class MemStorage implements IStorage {
     this.chatMessages = new Map();
     this.chatConversations = new Map();
     
+    // Inicializar os novos mapas para produtos
+    this.productGroups = new Map();
+    this.productGroupItems = new Map();
+    this.productSearches = new Map();
+    this.productComparisons = new Map();
+    this.productComparisonDetails = new Map();
+    
     this.currentUserId = 1;
     this.currentCategoryId = 1;
     this.currentProductId = 1;
@@ -153,6 +259,13 @@ export class MemStorage implements IStorage {
     this.currentFaqItemId = 1;
     this.currentChatMessageId = 1;
     this.currentChatConversationId = 1;
+    
+    // Inicializar contadores para os novos itens
+    this.currentProductGroupId = 1;
+    this.currentProductGroupItemId = 1;
+    this.currentProductSearchId = 1;
+    this.currentProductComparisonId = 1;
+    this.currentProductComparisonDetailId = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
