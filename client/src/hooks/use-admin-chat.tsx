@@ -497,8 +497,17 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         (oldMessages: ChatMessage[] = []) => [...oldMessages, optimisticMessage]
       );
       
-      // Enviar a mensagem para o servidor
-      const response = await apiRequest('POST', '/api/admin/chat/send-message', newMessage);
+      // Enviar a mensagem para o servidor através da rota correta
+      const response = await apiRequest('POST', '/api/admin/chat/messages', newMessage);
+      
+      // Tratar possíveis erros de resposta
+      if (!response.ok) {
+        console.error('[AdminChat] Erro HTTP:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('[AdminChat] Resposta de erro:', errorText);
+        throw new Error(`Erro ao enviar mensagem: ${response.status} ${response.statusText}`);
+      }
+      
       const sentMessage = await response.json();
       
       console.log('[AdminChat] Mensagem enviada com sucesso:', sentMessage.id);
@@ -536,9 +545,49 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
         (oldMessages: ChatMessage[] = []) => oldMessages.filter(msg => typeof msg.id === 'string' ? msg.id !== tempId : true)
       );
       
+      // Análise e tratamento detalhado de erros para apresentar mensagens específicas ao usuário
+      const errorDetail = error instanceof Error ? error.message : 'Erro de comunicação com o servidor';
+      
+      // Verificar se o erro é um problema de rede/API específico baseado na mensagem
+      let errorMessage = '';
+      if (errorDetail.includes('fetch') || errorDetail.includes('network') || errorDetail.includes('Unexpected token')) {
+        errorMessage = 'Erro de conexão com o servidor. Verifique sua internet e tente novamente.';
+      } else if (errorDetail.includes('timeout')) {
+        errorMessage = 'Tempo limite excedido ao enviar mensagem. Tente novamente.';
+      } else if (errorDetail.includes('401') || errorDetail.includes('Unauthorized')) {
+        errorMessage = 'Sua sessão expirou. Por favor, faça login novamente.';
+      } else if (errorDetail.includes('403') || errorDetail.includes('Forbidden')) {
+        errorMessage = 'Você não tem permissão para enviar mensagens nesta conversa.';
+      } else if (errorDetail.includes('500')) {
+        errorMessage = 'Erro interno no servidor. Nossa equipe foi notificada do problema.';
+      } else {
+        errorMessage = 'Não foi possível enviar sua mensagem. Tente novamente.';
+      }
+      
+      // Adicionar mensagem de erro ao chat para feedback visual imediato
+      const errorSystemMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        conversationId: activeConversation.id,
+        senderId: -1, // ID especial para sistema
+        receiverId: user.id,
+        text: errorMessage,
+        message: errorMessage,
+        createdAt: new Date(),
+        isSystemError: true, // Flag para identificar mensagens de erro
+        isRead: true,
+        read: true
+      };
+      
+      // Adicionar a mensagem de erro ao chat localmente (não persistente)
+      queryClient.setQueryData(
+        ['/api/admin/chat/messages', activeConversation.id, messagesLimit],
+        (oldMessages: ChatMessage[] = []) => [...oldMessages, errorSystemMessage]
+      );
+      
+      // Exibir também no toast para garantir que o usuário veja
       toast({
         title: 'Erro ao enviar mensagem',
-        description: error instanceof Error ? error.message : 'Erro ao enviar mensagem',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {

@@ -357,13 +357,31 @@ export function AdminChatMessageInput({
     setText(e.target.value);
   };
   
-  // Lidar com o envio da mensagem
-  const handleSend = () => {
+  // Lidar com o envio da mensagem com tratamento de erro melhorado
+  const handleSend = async () => {
     if ((text.trim() === '' && attachments.length === 0) || disabled) return;
     
-    onSend(text, attachments);
-    setText('');
-    setAttachments([]);
+    try {
+      // Armazenar o texto atual para limpar o campo imediatamente
+      const currentText = text;
+      const currentAttachments = [...attachments];
+      
+      // Limpar os campos de entrada antes da resposta da API para melhor UX
+      setText('');
+      setAttachments([]);
+      
+      // Chamar a função de envio com tratamento de erro adequado
+      await onSend(currentText, currentAttachments);
+      
+      console.log('[AdminChat] Mensagem enviada com sucesso pela interface');
+    } catch (error) {
+      console.error('[AdminChat] Erro ao enviar mensagem pela interface:', error);
+      
+      // Se o erro for crítico, podemos optar por restaurar o texto no campo
+      // Descomentando as linhas abaixo caso seja necessário
+      // setText(text);
+      // setAttachments(attachments);
+    }
   };
   
   // Selecionar arquivo
