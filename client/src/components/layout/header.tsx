@@ -429,8 +429,8 @@ export function Header() {
                   <NavigationMenuContent>
                     <ul className="grid w-[320px] gap-3 p-4">
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/como-funciona'}
+                        <Link 
+                          href="/como-funciona"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -441,11 +441,11 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Entenda como nossa plataforma funciona e os benefícios para seu negócio
                           </p>
-                        </div>
+                        </Link>
                       </li>
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/para-fornecedores'}
+                        <Link 
+                          href="/para-fornecedores"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -456,11 +456,11 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Venda seus produtos e aumente o alcance do seu negócio na nossa plataforma
                           </p>
-                        </div>
+                        </Link>
                       </li>
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/contato'}
+                        <Link 
+                          href="/contato"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -471,7 +471,7 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Entre em contato com nossa equipe especializada
                           </p>
-                        </div>
+                        </Link>
                       </li>
                     </ul>
                   </NavigationMenuContent>
