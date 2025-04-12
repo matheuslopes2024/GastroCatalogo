@@ -2,8 +2,12 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Header } from "@/components/common/header";
-import { Footer } from "@/components/common/footer";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { queryClient } from "@/lib/queryClient";
 import { 
   Card, 
   CardContent, 
@@ -86,11 +90,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { queryClient } from "@/lib/queryClient";
 import { Switch } from "@/components/ui/switch";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 
 // Tipos relacionados às comissões
 interface Category {
@@ -223,6 +223,106 @@ export default function SupplierCommissions() {
   const [sortOrder, setSortOrder] = useState<string>("rate_desc");
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingCommission, setEditingCommission] = useState<ProductCommissionSetting | null>(null);
+  
+  // Buscar as comissões específicas por produto
+  const { data: productCommissions, isLoading: isLoadingProductCommissions } = useQuery({
+    queryKey: ["/api/supplier/products/commissions/specific"],
+    queryFn: async () => {
+      const res = await fetch("/api/supplier/products/commissions/specific");
+      if (!res.ok) {
+        throw new Error("Erro ao carregar comissões específicas por produto");
+      }
+      return res.json();
+    },
+  });
+  
+  // Mutation para criar/atualizar comissão específica de produto
+  const updateProductCommissionMutation = useMutation({
+    mutationFn: async (data: ProductCommissionFormValues) => {
+      const url = editingCommission 
+        ? `/api/supplier/products/commissions/${editingCommission.id}` 
+        : "/api/supplier/products/commissions";
+      
+      const method = editingCommission ? "PUT" : "POST";
+      
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao salvar comissão específica");
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: editingCommission ? "Comissão atualizada" : "Comissão criada",
+        description: editingCommission 
+          ? "A comissão específica foi atualizada com sucesso." 
+          : "Nova comissão específica criada com sucesso.",
+        variant: "default",
+      });
+      
+      // Resetar o estado e fechar o diálogo
+      setIsDialogOpen(false);
+      setSelectedProduct(null);
+      setEditingCommission(null);
+      
+      // Invalidar as queries para recarregar os dados
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/products/commissions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/products/commissions/specific"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/commissions/summary"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation para excluir comissão específica de produto
+  const deleteProductCommissionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/supplier/products/commissions/${id}`, {
+        method: "DELETE"
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao excluir comissão específica");
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Comissão excluída",
+        description: "A comissão específica foi removida com sucesso.",
+        variant: "default",
+      });
+      
+      // Invalidar as queries para recarregar os dados
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/products/commissions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/products/commissions/specific"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/commissions/summary"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Buscar as configurações de comissão aplicáveis a este fornecedor
   const { data: commissionSettings, isLoading: isLoadingCommissions } = useQuery({
