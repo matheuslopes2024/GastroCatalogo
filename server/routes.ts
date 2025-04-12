@@ -1181,6 +1181,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const message = await storage.createChatMessage(validatedData);
+      
+      // Obter nome do remetente para notificações
+      const sender = req.user;
+      const senderName = sender.name || sender.username;
+      
+      // Encontrar o outro participante da conversa (destinatário)
+      let recipientId = validatedData.receiverId;
+      if (validatedData.conversationId) {
+        const conversation = await storage.getChatConversation(validatedData.conversationId);
+        if (conversation) {
+          recipientId = conversation.participantIds.find(id => id !== req.user.id);
+        }
+      }
+      
+      // Distribuir mensagem em tempo real para todos os destinatários
+      distributeRealTimeMessage(
+        {
+          type: 'new_message_received',
+          message,
+          senderId: req.user.id,
+        },
+        {
+          recipientId,
+          senderId: req.user.id,
+          conversationId: validatedData.conversationId,
+          senderName,
+          skipSender: false, // Enviar ao remetente também para confirmar envio
+          notifyAdmins: true // Notificar administradores
+        }
+      );
+      
+      // Atualizar a última atividade da conversa se houver
+      if (validatedData.conversationId) {
+        await storage.updateChatConversation(validatedData.conversationId, {
+          lastMessageId: message.id,
+          lastMessageText: message.text,
+          lastMessageDate: message.createdAt,
+          lastActivityAt: new Date()
+        });
+        
+        // Notificar atualizações nas listas de conversas
+        const updatedConversations = await storage.getChatConversations(req.user.id);
+        const senderClient = clients.get(req.user.id);
+        if (senderClient && senderClient.ws && senderClient.ws.readyState === WebSocket.OPEN) {
+          sendWebSocketMessage(senderClient.ws, {
+            type: 'conversations_update',
+            conversations: updatedConversations
+          });
+        }
+        
+        // Notificar o destinatário sobre a atualização da lista de conversas
+        if (recipientId) {
+          const recipientConversations = await storage.getChatConversations(recipientId);
+          const recipientClient = clients.get(recipientId);
+          if (recipientClient && recipientClient.ws && recipientClient.ws.readyState === WebSocket.OPEN) {
+            sendWebSocketMessage(recipientClient.ws, {
+              type: 'conversations_update',
+              conversations: recipientConversations
+            });
+          }
+        }
+      }
+      
+      // Retornar mensagem criada ao cliente
       res.status(201).json(message);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1240,6 +1304,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mapa para rastrear status online dos usuários
   const onlineStatus = new Map();
+  
+  // Função utilitária para enviar mensagens via WebSocket com melhor confiabilidade
+  const sendWebSocketMessage = (ws, message) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        // Adicionar timestamp para evitar duplicação
+        if (!message.timestamp) {
+          message.timestamp = new Date().toISOString();
+        }
+        
+        ws.send(JSON.stringify(message));
+        return true;
+      } catch (wsError) {
+        console.error(`Erro ao enviar mensagem WebSocket: ${wsError.message}`);
+        return false;
+      }
+    }
+    return false;
+  };
+  
+  // Função para distribuir mensagens do chat em tempo real
+  const distributeRealTimeMessage = (message, options = {}) => {
+    const { 
+      recipientId, 
+      senderId, 
+      conversationId, 
+      skipSender = false,
+      notifyAdmins = true,
+      senderName
+    } = options;
+    
+    let recipientCount = 0;
+    let adminCount = 0;
+    
+    try {
+      // 1. Enviar para o destinatário específico
+      if (recipientId) {
+        const recipientClient = clients.get(Number(recipientId));
+        if (recipientClient && recipientClient.ws && recipientClient.ws.readyState === WebSocket.OPEN) {
+          sendWebSocketMessage(recipientClient.ws, {
+            ...message,
+            activeConversationId: conversationId
+          });
+          recipientCount++;
+        }
+      }
+      
+      // 2. Enviar para o remetente (caso não seja para pular)
+      if (senderId && !skipSender) {
+        const senderClient = clients.get(Number(senderId));
+        if (senderClient && senderClient.ws && senderClient.ws.readyState === WebSocket.OPEN) {
+          sendWebSocketMessage(senderClient.ws, {
+            ...message,
+            activeConversationId: conversationId,
+            // Marcar como mensagem própria para interface
+            isSelfMessage: true
+          });
+          recipientCount++;
+        }
+      }
+      
+      // 3. Notificar todos os administradores
+      if (notifyAdmins) {
+        adminClients.forEach((adminClient) => {
+          if (adminClient.ws && adminClient.ws.readyState === WebSocket.OPEN) {
+            sendWebSocketMessage(adminClient.ws, {
+              ...message,
+              senderName: senderName || 'Usuário',
+              // Admin pode estar vendo outra conversa
+              activeConversationId: null
+            });
+            adminCount++;
+          }
+        });
+      }
+      
+      if (recipientCount > 0 || adminCount > 0) {
+        console.log(`Mensagem distribuída em tempo real: ${message.type} | Enviada para ${recipientCount} destinatários e ${adminCount} administradores`);
+      }
+      return true;
+    } catch (error) {
+      console.error('Erro ao distribuir mensagem em tempo real:', error);
+      return false;
+    }
+  };
   
   // Função auxiliar para notificar outros clientes sobre status online
   const broadcastUserStatus = (userId, isOnline) => {
@@ -2018,18 +2167,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Emitir via WebSocket para o destinatário
         const conversation = await storage.getChatConversation(messageData.conversationId);
-        if (conversation && conversation.participantId) {
-          const recipientId = conversation.participantId;
+        // Obter dados do destinatário e enviar mensagem em tempo real
+        let recipientId = null;
+        
+        // Obter destinatário através do conversation.participantId ou dos participantes da conversa
+        if (conversation) {
+          if (conversation.participantId) {
+            recipientId = conversation.participantId;
+          } else if (conversation.participantIds && conversation.participantIds.length > 0) {
+            // Encontrar o participante que não é o administrador atual
+            recipientId = conversation.participantIds.find(id => id !== req.user.id);
+          }
           
-          // Enviar via WebSocket para o cliente específico
-          for (const client of clients) {
-            if (client.userId === recipientId && client.ws.readyState === WebSocket.OPEN) {
-              client.ws.send(JSON.stringify({
-                type: 'chat_message',
-                message,
-                senderName: 'Administrador',
-                conversationId: messageData.conversationId
-              }));
+          // Obter informações do administrador para a notificação
+          const admin = req.user;
+          const adminName = admin.name || admin.username || 'Administrador';
+          
+          // Distribuir mensagem em tempo real usando nossa função otimizada
+          distributeRealTimeMessage(
+            {
+              type: 'new_message_received',
+              message,
+              senderId: req.user.id,
+            },
+            {
+              recipientId,
+              senderId: req.user.id,
+              conversationId: messageData.conversationId,
+              senderName: adminName,
+              skipSender: false, // Enviar ao remetente também para confirmar envio
+              notifyAdmins: true // Notificar outros administradores
+            }
+          );
+          
+          // Atualizar a lista de conversas para o destinatário
+          if (recipientId) {
+            const recipientConversations = await storage.getChatConversations(recipientId);
+            const recipientClient = clients.get(Number(recipientId));
+            if (recipientClient && recipientClient.ws && recipientClient.ws.readyState === WebSocket.OPEN) {
+              sendWebSocketMessage(recipientClient.ws, {
+                type: 'conversations_update',
+                conversations: recipientConversations
+              });
             }
           }
         }
