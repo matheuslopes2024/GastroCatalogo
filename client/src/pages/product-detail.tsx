@@ -482,14 +482,12 @@ export default function ProductDetailPage() {
                 <CardContent className="p-0">
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                     {/* Coluna da imagem */}
-                    <div className="bg-white p-4 flex items-center justify-center md:border-r">
-                      <Link href={`/produtos/${option.slug}`}>
-                        <img 
-                          src={option.imageUrl || "https://via.placeholder.com/150"}
-                          alt={option.name}
-                          className="w-24 h-24 object-contain mx-auto"
-                        />
-                      </Link>
+                    <div className="bg-white p-4 flex items-center justify-center md:border-r cursor-pointer" onClick={() => navigate(`/produtos/${option.slug}`)}>
+                      <img 
+                        src={option.imageUrl || option.images?.[0]?.imageUrl || "/assets/produto-sem-imagem.png"}
+                        alt={option.name}
+                        className="w-24 h-24 object-contain mx-auto"
+                      />
                     </div>
                     
                     {/* Coluna de informações */}
@@ -546,7 +544,9 @@ export default function ProductDetailPage() {
                     <div className="p-4 flex flex-col justify-center items-center gap-2">
                       <Button 
                         className="w-full"
-                        onClick={() => handleAddToCart()}
+                        onClick={() => {
+                          navigate(`/produtos/${option.slug}`);
+                        }}
                       >
                         <ShoppingCart size={14} className="mr-1" />
                         Comprar

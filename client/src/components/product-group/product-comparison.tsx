@@ -32,7 +32,8 @@ import {
   Percent,
   ChevronDown,
   ChevronUp,
-  Share2
+  Share2,
+  Building
 } from "lucide-react";
 import { 
   Table,
@@ -146,15 +147,18 @@ export default function ProductComparison() {
 
   // Buscar o grupo de produtos e seus itens
   const { data: productGroup, isLoading, error } = useQuery({
-    queryKey: ["/api/product-groups", slug],
+    queryKey: ["/api/product-groups", slug || "1"], // Caso o slug não seja fornecido, usamos o ID 1 como padrão
     queryFn: async () => {
-      const res = await fetch(`/api/product-groups/${slug}`);
+      // Se não houver slug, buscar o primeiro grupo de produtos
+      const url = slug ? `/api/product-groups/${slug}` : `/api/product-groups/1`;
+      
+      const res = await fetch(url);
       if (!res.ok) {
         throw new Error("Falha ao carregar grupo de produtos");
       }
       return res.json() as Promise<ProductGroup>;
     },
-    enabled: !!slug
+    enabled: true // Agora sempre habilitado para mostrar pelo menos o primeiro grupo
   });
 
   // Ordenar os itens com base nos critérios selecionados
