@@ -1,0 +1,132 @@
+ncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+initial.C2_9bW8S.js:1016 Uncaught (in promise) Error: Access to storage is not allowed from this context.Understand this error
+client:536 WebSocket connection to 'wss://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/?token=Fjug_p2xrfVE' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531Understand this error
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=Fjug_p2xrfVE' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+main.tsx:11 [Inicialização] Storage patch carregado - corrigindo erros de Storage API
+
+                
+          
+          
+          
+         Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.Understand this warning
+chat-widget.tsx:1140 ChatWidget renderizado com conversa ativa: nenhuma
+use-websocket.tsx:279 [WS] Efeito do usuário executado: sem usuário
+chunk-RPCDYKBN.js?v=f9bbb7cb:14032 The above error occurred in the <Context.Provider> component:
+
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=f9bbb7cb:379:17)
+    at MainRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx:34:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?v=QURT9eIU8GSPD39Mb4LZV:432:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f9bbb7cb:2805:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=f9bbb7cb:14032
+update.callback @ chunk-RPCDYKBN.js?v=f9bbb7cb:14052
+callCallback @ chunk-RPCDYKBN.js?v=f9bbb7cb:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=f9bbb7cb:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19353
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+chunk-RPCDYKBN.js?v=f9bbb7cb:14213 Uncaught Error: A component suspended while responding to synchronous input. This will cause the UI to be replaced with a loading indicator. To fix, updates that suspend should be wrapped with startTransition.
+    at throwException (chunk-RPCDYKBN.js?v=f9bbb7cb:14213:43)
+    at handleError (chunk-RPCDYKBN.js?v=f9bbb7cb:19034:15)
+    at renderRootSync (chunk-RPCDYKBN.js?v=f9bbb7cb:19119:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=f9bbb7cb:18736:28)
+    at performSyncWorkOnRoot (chunk-RPCDYKBN.js?v=f9bbb7cb:18879:28)
+    at flushSyncCallbacks (chunk-RPCDYKBN.js?v=f9bbb7cb:9119:30)
+    at chunk-RPCDYKBN.js?v=f9bbb7cb:18627:21
+throwException @ chunk-RPCDYKBN.js?v=f9bbb7cb:14213
+handleError @ chunk-RPCDYKBN.js?v=f9bbb7cb:19034
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19119
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=f9bbb7cb:18736
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18879
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
