@@ -339,6 +339,207 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Product Groups API (Comparação estilo Trivago)
+  app.get("/api/product-groups", async (req, res) => {
+    try {
+      const { categoryId, search, active, limit } = req.query;
+      
+      const options: any = {};
+      
+      if (categoryId) options.categoryId = parseInt(categoryId as string);
+      if (search) options.search = search as string;
+      if (active !== undefined) options.active = active === 'true';
+      if (limit) options.limit = parseInt(limit as string);
+      
+      const groups = await storage.getProductGroups(options);
+      res.json(groups);
+    } catch (error) {
+      console.error("Erro ao buscar grupos de produtos:", error);
+      res.status(500).json({ message: "Erro ao buscar grupos de produtos" });
+    }
+  });
+  
+  app.get("/api/product-groups/:idOrSlug", async (req, res) => {
+    try {
+      const idOrSlug = req.params.idOrSlug;
+      let group;
+      
+      // Verifica se é um ID (número) ou slug (string)
+      if (!isNaN(Number(idOrSlug))) {
+        group = await storage.getProductGroup(parseInt(idOrSlug));
+      } else {
+        group = await storage.getProductGroupBySlug(idOrSlug);
+      }
+      
+      if (!group) {
+        return res.status(404).json({ message: "Grupo de produtos não encontrado" });
+      }
+      
+      // Buscar os itens do grupo (produtos de diferentes fornecedores)
+      let groupItems = await storage.getProductGroupItems(group.id, { includeProducts: true });
+      
+      // Buscar produtos detalhados para cada item do grupo
+      const productIds = groupItems.map(item => item.productId);
+      const products = await Promise.all(
+        productIds.map(id => storage.getProduct(id))
+      );
+      
+      // Mapear produtos por ID para fácil acesso
+      const productsMap = new Map();
+      products.forEach(product => {
+        if (product) {
+          productsMap.set(product.id, product);
+        }
+      });
+      
+      // Adicionar informações detalhadas do produto em cada item
+      groupItems = groupItems.map(item => ({
+        ...item,
+        product: productsMap.get(item.productId) || null
+      }));
+      
+      // Ordenar os itens por preço (do menor para o maior)
+      groupItems.sort((a, b) => {
+        const priceA = parseFloat((a.product?.price || 0).toString());
+        const priceB = parseFloat((b.product?.price || 0).toString());
+        return priceA - priceB;
+      });
+      
+      // Destacar automaticamente o item com menor preço se nenhum estiver marcado
+      if (groupItems.length > 0 && !groupItems.some(item => item.isHighlighted)) {
+        groupItems[0].isHighlighted = true;
+        
+        // Atualizar no banco de dados
+        await storage.updateProductGroupItem(groupItems[0].id, { 
+          isHighlighted: true 
+        });
+      }
+      
+      // Calcular diferenças de preço em relação ao item destacado
+      const highlightedItem = groupItems.find(item => item.isHighlighted);
+      if (highlightedItem && highlightedItem.product) {
+        const basePrice = parseFloat(highlightedItem.product.price.toString());
+        
+        groupItems = groupItems.map(item => {
+          if (item.id !== highlightedItem.id && item.product) {
+            const itemPrice = parseFloat(item.product.price.toString());
+            const difference = itemPrice - basePrice;
+            const percentageDiff = (difference / basePrice) * 100;
+            
+            return {
+              ...item,
+              priceDifference: difference.toFixed(2),
+              percentageDifference: percentageDiff.toFixed(1) + '%',
+              isMoreExpensive: difference > 0
+            };
+          }
+          return item;
+        });
+      }
+      
+      // Buscar fornecedores
+      const supplierIds = [...new Set(groupItems.map(item => item.supplierId))];
+      const suppliers = await Promise.all(
+        supplierIds.map(id => storage.getUser(id))
+      );
+      
+      // Mapear fornecedores por ID
+      const supplierMap = new Map();
+      suppliers.forEach(supplier => {
+        if (supplier) {
+          // Remove informações sensíveis
+          const { password, ...safeSupplier } = supplier;
+          supplierMap.set(supplier.id, safeSupplier);
+        }
+      });
+      
+      // Adicionar informações do fornecedor a cada item
+      groupItems = groupItems.map(item => ({
+        ...item,
+        supplier: supplierMap.get(item.supplierId) || null
+      }));
+      
+      // Adicionar os itens ao resultado
+      const result = {
+        ...group,
+        items: groupItems
+      };
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao buscar grupo de produtos:", error);
+      res.status(500).json({ message: "Erro ao buscar grupo de produtos" });
+    }
+  });
+  
+  app.get("/api/product-groups/:id/items", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const group = await storage.getProductGroup(id);
+      
+      if (!group) {
+        return res.status(404).json({ message: "Grupo de produtos não encontrado" });
+      }
+      
+      // Buscar os itens do grupo (produtos de diferentes fornecedores)
+      let groupItems = await storage.getProductGroupItems(group.id, { includeProducts: true });
+      
+      // Buscar produtos detalhados para cada item do grupo
+      const productIds = groupItems.map(item => item.productId);
+      const products = await Promise.all(
+        productIds.map(id => storage.getProduct(id))
+      );
+      
+      // Mapear produtos por ID para fácil acesso
+      const productsMap = new Map();
+      products.forEach(product => {
+        if (product) {
+          productsMap.set(product.id, product);
+        }
+      });
+      
+      // Adicionar informações detalhadas do produto em cada item
+      groupItems = groupItems.map(item => ({
+        ...item,
+        product: productsMap.get(item.productId) || null
+      }));
+      
+      // Ordenar os itens por preço (do menor para o maior)
+      groupItems.sort((a, b) => {
+        const priceA = parseFloat((a.product?.price || 0).toString());
+        const priceB = parseFloat((b.product?.price || 0).toString());
+        return priceA - priceB;
+      });
+      
+      // Buscar fornecedores
+      const supplierIds = [...new Set(groupItems.map(item => item.supplierId))];
+      const suppliers = await Promise.all(
+        supplierIds.map(id => storage.getUser(id))
+      );
+      
+      // Mapear fornecedores por ID
+      const supplierMap = new Map();
+      suppliers.forEach(supplier => {
+        if (supplier) {
+          // Remove informações sensíveis
+          const { password, ...safeSupplier } = supplier;
+          supplierMap.set(supplier.id, safeSupplier);
+        }
+      });
+      
+      // Adicionar informações do fornecedor a cada item
+      groupItems = groupItems.map(item => ({
+        ...item,
+        supplier: supplierMap.get(item.supplierId) || null
+      }));
+      
+      res.json(groupItems);
+    } catch (error) {
+      console.error("Erro ao buscar itens do grupo de produtos:", error);
+      res.status(500).json({ message: "Erro ao buscar itens do grupo de produtos" });
+    }
+  });
+  
   // Sales API
   app.get("/api/sales", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
