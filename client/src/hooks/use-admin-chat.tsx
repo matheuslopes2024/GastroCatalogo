@@ -329,6 +329,12 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
                   }
                   
                   console.log('[AdminChat] Adicionando nova mensagem ao cache local');
+                  
+                  // Verificar se a mensagem tem uma data válida, caso contrário criar uma
+                  if (!message.message.createdAt) {
+                    message.message.createdAt = new Date();
+                  }
+                  
                   // Adicionar a nova mensagem e garantir que o array esteja ordenado por data
                   const newMessages = [...old, message.message].sort((a, b) => {
                     const dateA = new Date(a.createdAt);
@@ -345,6 +351,17 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
                       detail: { conversationId: activeConversation.id, count: newMessages.length }
                     }));
                   }
+                  
+                  // Forçar atualização da interface
+                  setTimeout(() => {
+                    if (messageUpdateTimerRef.current) {
+                      clearTimeout(messageUpdateTimerRef.current);
+                    }
+                    
+                    messageUpdateTimerRef.current = setTimeout(() => {
+                      setLastMessageTime(new Date());
+                    }, 100);
+                  }, 0);
                   
                   return newMessages;
                 }
