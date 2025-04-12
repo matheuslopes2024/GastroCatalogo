@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/common/header";
@@ -55,11 +55,42 @@ import {
   TrendingUp,
   Filter,
   RefreshCcw,
+  Edit,
+  Save,
+  X,
+  Plus,
+  AlertTriangle,
+  CheckCircle2,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 import SupplierSidebar from "@/components/supplier/supplier-sidebar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { queryClient } from "@/lib/queryClient";
+import { Switch } from "@/components/ui/switch";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 // Tipos relacionados às comissões
 interface Category {
@@ -161,6 +192,27 @@ function CommissionTypeIndicator({ type }: { type: "category" | "supplier" | "sp
   );
 }
 
+// Esquema para validação do formulário de comissão específica por produto
+const productCommissionFormSchema = z.object({
+  productId: z.number({
+    required_error: "Produto é obrigatório",
+  }),
+  rate: z.string().min(1, "Taxa é obrigatória").regex(/^\d+(\.\d{1,2})?$/, "Formato inválido, use apenas números (ex: 2.5)"),
+  active: z.boolean().default(true),
+});
+
+type ProductCommissionFormValues = z.infer<typeof productCommissionFormSchema>;
+
+// Interface para comissão específica por produto
+interface ProductCommissionSetting {
+  id: number;
+  productId: number;
+  supplierId: number;
+  rate: string;
+  active: boolean;
+  createdAt: string;
+}
+
 // Componente principal para a página de comissões do fornecedor
 export default function SupplierCommissions() {
   const { user } = useAuth();
@@ -169,6 +221,8 @@ export default function SupplierCommissions() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("rate_desc");
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Buscar as configurações de comissão aplicáveis a este fornecedor
   const { data: commissionSettings, isLoading: isLoadingCommissions } = useQuery({
