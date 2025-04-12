@@ -703,7 +703,7 @@ export default function ProductDetailPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full border-primary/50 text-primary hover:bg-primary/5 text-xs flex items-center justify-center"
+                              className="w-full border-primary/50 text-primary hover:bg-primary/5 text-xs flex items-center justify-center relative z-10"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const targetUrl = (product.id && option.supplierId) 
