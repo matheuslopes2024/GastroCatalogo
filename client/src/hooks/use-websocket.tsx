@@ -124,15 +124,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           const ignoreLogs = ['heartbeat', 'ping', 'pong', 'admin_chat_register', 'chat_register', 'admin_request_conversations'];
           const isSystemMessage = ignoreLogs.includes(message.type);
           
-          if (!isSystemMessage) {
-            console.log("Mensagem WebSocket recebida:", message);
-          }
-          
-          // Criar um ID único para a mensagem para evitar duplicação
+          // Criar ID único para rastreamento de mensagens
           const messageId = `${message.type}_${message.timestamp || Date.now()}`;
           
-          // Verificar se esta mensagem já foi processada recentemente
+          // Mensagens importantes (não-sistema) recebem log detalhado
+          if (!isSystemMessage) {
+            console.log(`[WS] Mensagem recebida (${messageId}):`, message.type, 
+              message.conversationId ? `conversa: ${message.conversationId}` : '',
+              message.message ? `conteúdo: ${typeof message.message === 'string' ? message.message.substring(0, 30) : 'objeto'}` : ''
+            );
+          }
+          
+          // Verificar se esta mensagem já foi processada recentemente (prevenção duplicação)
           if (processedMessages.has(messageId)) {
+            if (!isSystemMessage) {
+              console.warn(`[WS] Ignorando mensagem duplicada: ${messageId}`);
+            }
             return;
           }
           
@@ -143,15 +150,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           if (processedMessages.size > 1000) {
             // Converter para array, remover primeiras 500 entradas e reconverter para Set
             const messagesArray = Array.from(processedMessages);
-            const newCache = new Set(messagesArray.slice(500));
             processedMessages.clear();
             messagesArray.slice(500).forEach(id => processedMessages.add(id));
           }
           
-          // Apenas logar mensagens importantes
-          if (!isSystemMessage) {
-            console.log("Processando mensagem WebSocket:", message);
-          }
+          // Atualizar estado com a mensagem recebida de forma imediata
           setLastMessage(message);
           
           // Executar handlers específicos para esta mensagem
@@ -222,14 +225,37 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  // Função para enviar mensagens
+  // Função aprimorada para enviar mensagens com melhor feedback
   const sendMessage = (message: WebSocketMessage) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message));
+      // Log para depuração de mensagens importantes
+      if (!['ping', 'heartbeat', 'pong'].includes(message.type)) {
+        console.log(`[WS] Enviando mensagem: ${message.type}`, message);
+      }
+      
+      // Enviar a mensagem com tratamento de erro robusto
+      try {
+        ws.current.send(JSON.stringify(message));
+        return true;
+      } catch (sendError) {
+        console.error(`[WS] Erro ao enviar mensagem ${message.type}:`, sendError);
+        setConnectionError(`Erro ao enviar: ${sendError}`);
+        return false;
+      }
     } else {
-      setConnectionError("WebSocket não está conectado");
-      // Tentar reconectar
-      connectWebSocket();
+      // Informar sobre o estado da conexão para depuração
+      const state = ws.current ? ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.current.readyState] : 'NULL';
+      console.warn(`[WS] Não foi possível enviar mensagem - WebSocket em estado: ${state}`);
+      
+      setConnectionError(`WebSocket não está conectado (estado: ${state})`);
+      
+      // Tentar reconectar se a conexão estiver fechada
+      if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+        console.log("[WS] Tentando reconectar automaticamente...");
+        connectWebSocket();
+      }
+      
+      return false;
     }
   };
   

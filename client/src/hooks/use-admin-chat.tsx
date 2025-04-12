@@ -268,54 +268,124 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        // Nova mensagem recebida
+        // Nova mensagem recebida via WebSocket (em tempo real)
         else if (message.type === 'chat_message' && message.message) {
-          // Registramos a nova mensagem
-          console.log('[AdminChat] Nova mensagem recebida:', message.message.conversationId);
+          // Registramos a nova mensagem com informações detalhadas para debug
+          console.log('[AdminChat] Nova mensagem recebida via WebSocket:', 
+            message.message.id, 
+            'para conversa:', message.message.conversationId,
+            'conteúdo:', message.message.text?.substring(0, 30)
+          );
           
-          // Se esta mensagem pertence à conversa ativa, adicioná-la
+          // 1. Atualizar a conversa ativa imediatamente se a mensagem pertence a ela
           if (activeConversation && message.message.conversationId === activeConversation.id) {
-            // Atualizar mensagens no cache do React Query
+            console.log('[AdminChat] Adicionando mensagem à conversa ativa:', activeConversation.id);
+            
+            // Atualizar mensagens no cache do React Query imediatamente
             queryClient.setQueryData(
               ['/api/admin/chat/messages', activeConversation.id, messagesLimit],
               (old: ChatMessage[] = []) => {
                 // Verificar se a mensagem já existe no array para evitar duplicação
-                const messageExists = old.some(m => 
-                  (typeof m.id === 'number' && m.id === message.message.id) ||
-                  (m.senderId === message.message.senderId && 
-                   m.createdAt === message.message.createdAt && 
-                   m.text === message.message.text)
-                );
+                // usando uma verificação mais abrangente
+                const messageExists = old.some(m => {
+                  // Verifica por ID se ambos forem números
+                  if (typeof m.id === 'number' && typeof message.message.id === 'number') {
+                    return m.id === message.message.id;
+                  }
+                  
+                  // Verificação de conteúdo para evitar duplicações
+                  return m.senderId === message.message.senderId && 
+                         m.text === message.message.text &&
+                         (
+                           // Verifica pelas datas se forem comparáveis
+                           (m.createdAt instanceof Date && message.message.createdAt instanceof Date && 
+                            m.createdAt.getTime() === message.message.createdAt.getTime()) ||
+                           // Ou compara as strings das datas
+                           String(m.createdAt) === String(message.message.createdAt)
+                         );
+                });
                 
                 if (messageExists) {
+                  console.log('[AdminChat] Mensagem já existe no cache, ignorando duplicação');
                   return old;
                 }
                 
-                return [...old, message.message];
+                console.log('[AdminChat] Adicionando nova mensagem ao cache local');
+                // Adicionar a nova mensagem e garantir que o array esteja ordenado por data
+                const newMessages = [...old, message.message].sort((a, b) => {
+                  const dateA = new Date(a.createdAt);
+                  const dateB = new Date(b.createdAt);
+                  return dateA.getTime() - dateB.getTime();
+                });
+                
+                return newMessages;
               }
             );
             
-            // Marcar como lida se for um admin visualizando
-            if (message.message.id && message.message.senderId !== user.id) {
-              apiRequest('POST', '/api/admin/chat/mark-read', { 
-                messageIds: [message.message.id] 
-              }).catch(err => console.error('[AdminChat] Erro ao marcar mensagem como lida:', err));
+            // Reproduzir som de notificação se a mensagem não for do usuário atual
+            if (message.message.senderId !== user.id) {
+              // Opcional: aqui poderia reproduzir um som de notificação
+              // const audio = new Audio('/notification.mp3');
+              // audio.play().catch(e => console.log('Erro ao reproduzir som:', e));
+              
+              // Marcar como lida automaticamente, já que o admin está visualizando a conversa
+              if (message.message.id) {
+                console.log('[AdminChat] Marcando mensagem como lida:', message.message.id);
+                apiRequest('POST', '/api/admin/chat/mark-read', { 
+                  messageIds: [message.message.id] 
+                }).catch(err => console.error('[AdminChat] Erro ao marcar mensagem como lida:', err));
+              }
             }
           } 
-          // Se não é a conversa ativa mas é uma conversa existente, atualizar a lista
+          // 2. Se não é a conversa ativa, notificar e atualizar a lista de conversas
           else {
-            // Notificação para mensagens não visualizadas
+            console.log('[AdminChat] Mensagem para conversa diferente da ativa');
+            
+            // Notificação visual para mensagens de outros usuários
             if (message.message.senderId !== user.id) {
+              console.log('[AdminChat] Exibindo notificação de nova mensagem');
               toast({
                 title: 'Nova mensagem',
                 description: `De: ${message.senderName || 'Usuário'} - ${
                   message.message.text?.substring(0, 50) || 'Nova mensagem'
                 }${message.message.text?.length > 50 ? '...' : ''}`,
+                duration: 5000, // Duração mais longa para garantir que o usuário veja
               });
             }
             
-            // Atualizar lista de conversas para refletir novas mensagens
+            // Atualizar lista de conversas imediatamente para mostrar a nova mensagem
+            console.log('[AdminChat] Atualizando lista de conversas para refletir nova mensagem');
             refreshConversations();
+            
+            // Forçar atualização da conversa específica se for conhecida
+            if (message.message.conversationId) {
+              const conversation = conversations.find(c => c.id === message.message.conversationId);
+              if (conversation) {
+                console.log('[AdminChat] Atualizando conversa específica:', conversation.id);
+                // Atualizar a conversa com a nova última mensagem
+                const updatedConversation = {
+                  ...conversation,
+                  lastMessageText: message.message.text,
+                  lastMessageDate: message.message.createdAt,
+                  unreadCount: message.message.senderId !== user.id 
+                    ? (conversation.unreadCount || 0) + 1 
+                    : conversation.unreadCount
+                };
+                
+                // Atualizar a lista de conversas mantendo a ordem
+                setConversations(prev => {
+                  const updated = prev.map(c => 
+                    c.id === updatedConversation.id ? updatedConversation : c
+                  );
+                  // Reordenar para que a conversa atualizada fique no topo
+                  return updated.sort((a, b) => {
+                    const dateA = new Date(a.lastActivityAt || a.createdAt);
+                    const dateB = new Date(b.lastActivityAt || b.createdAt);
+                    return dateB.getTime() - dateA.getTime();
+                  });
+                });
+              }
+            }
           }
         }
         
