@@ -131,6 +131,19 @@ export default function ProductDetailPage() {
     enabled: !!product?.categoryId
   });
 
+  // Buscar o mesmo produto de diferentes fornecedores
+  const { data: supplierOptions, isLoading: loadingSuppliers } = useQuery({
+    queryKey: ["/api/products/suppliers", slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${slug}/suppliers`);
+      if (!res.ok) {
+        throw new Error("Falha ao carregar opções de fornecedores");
+      }
+      return res.json() as Promise<Product[]>;
+    },
+    enabled: !!slug && !!product
+  });
+
   // Gerenciar a quantidade
   const incrementQuantity = () => {
     if (quantity < (product?.stock || 10)) {
@@ -451,6 +464,110 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+      
+      {/* Opções de fornecedores */}
+      {supplierOptions && supplierOptions.length > 1 && (
+        <div className="mb-10">
+          <div className="border-b pb-4 mb-6">
+            <h2 className="text-2xl font-bold">Opções de fornecedores</h2>
+            <p className="text-muted-foreground">
+              Confira o mesmo produto disponível de diferentes fornecedores
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4 mb-4">
+            {supplierOptions.map((option, index) => (
+              <Card key={option.id} className={`overflow-hidden transition-all border-2 ${option.isBestPrice ? 'border-primary' : 'hover:border-primary/50'}`}>
+                <CardContent className="p-0">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                    {/* Coluna da imagem */}
+                    <div className="bg-white p-4 flex items-center justify-center md:border-r">
+                      <Link to={`/produtos/${option.slug}`}>
+                        <img 
+                          src={option.imageUrl || "https://via.placeholder.com/150"}
+                          alt={option.name}
+                          className="w-24 h-24 object-contain mx-auto"
+                        />
+                      </Link>
+                    </div>
+                    
+                    {/* Coluna de informações */}
+                    <div className="p-4 md:col-span-2">
+                      <div className="flex flex-col">
+                        <Link to={`/produtos/${option.slug}`} className="font-semibold hover:text-primary transition-colors">
+                          {option.name}
+                        </Link>
+                        
+                        <div className="flex items-center mt-1 mb-2">
+                          <div className="flex items-center">
+                            <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                            <span className="ml-1 text-xs">{option.rating} ({option.ratingsCount})</span>
+                          </div>
+                          
+                          {option.isBestPrice && (
+                            <Badge className="ml-2 bg-green-600 hover:bg-green-700 text-white text-xs">
+                              Melhor preço
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center text-sm">
+                          <Building size={14} className="mr-1 text-gray-500" />
+                          <span className="truncate">{option.supplier?.name}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Coluna de preço e entrega */}
+                    <div className="p-4 bg-gray-50 flex flex-col">
+                      <div className="flex items-baseline">
+                        {option.originalPrice && parseFloat(option.originalPrice) > parseFloat(option.price) && (
+                          <span className="text-muted-foreground line-through text-xs mr-2">
+                            {formatCurrency(option.originalPrice)}
+                          </span>
+                        )}
+                        <span className="text-xl font-bold text-primary">
+                          {formatCurrency(option.price)}
+                        </span>
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Em até 12x no cartão
+                      </div>
+                      
+                      <div className="flex items-center mt-2 text-xs">
+                        <Truck size={14} className="mr-1 text-primary" />
+                        <span>Entrega em {option.deliveryTime || '3-5 dias úteis'}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Coluna de ação */}
+                    <div className="p-4 flex flex-col justify-center items-center gap-2">
+                      <Button 
+                        className="w-full"
+                        onClick={() => handleAddToCart()}
+                      >
+                        <ShoppingCart size={14} className="mr-1" />
+                        Comprar
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        asChild
+                      >
+                        <Link to={`/produtos/${option.slug}`}>
+                          Ver detalhes
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Abas de informações adicionais */}
       <Tabs defaultValue="details" className="mb-10">
