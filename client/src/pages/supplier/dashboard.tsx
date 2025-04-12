@@ -162,7 +162,8 @@ export default function SupplierDashboard() {
         totalRevenue: 0,
         totalCommission: 0,
         netRevenue: 0,
-        avgCommissionRate: "0.00"
+        avgCommissionRate: "0.00",
+        topProducts: []
       };
     }
     
@@ -178,24 +179,18 @@ export default function SupplierDashboard() {
       totalSales: totalRevenue,
       totalCommission,
       netRevenue,
-      avgCommissionRate
+      avgCommissionRate,
+      topProducts: dashboardData.topProducts?.map(product => ({
+        productId: product.productId,
+        product: { id: product.productId, name: product.name },
+        imageUrl: product.imageUrl,
+        totalValue: product.totalRevenue,
+        count: product.totalSales
+      })) || []
     };
   }, [dashboardData, isLoadingDashboard]);
   
-  // Extrair produtos mais vendidos
-  const topProducts = useMemo(() => {
-    if (isLoadingDashboard || !dashboardData || !dashboardData.topProducts) {
-      return [];
-    }
-    
-    return dashboardData.topProducts.map(product => ({
-      productId: product.productId,
-      name: product.name,
-      imageUrl: product.imageUrl,
-      totalValue: product.totalRevenue,
-      count: product.totalSales
-    }));
-  }, [dashboardData, isLoadingDashboard]);
+  // Este useMemo foi substituído pelo topProducts dentro do dashboardSummary
   
   // Extrair vendas recentes
   const recentSales = useMemo(() => {
@@ -336,10 +331,10 @@ export default function SupplierDashboard() {
                       <div>
                         <p className="text-sm font-medium text-gray-500">Comissão</p>
                         <h3 className="text-2xl font-bold">
-                          {isLoadingSales ? <Loading /> : formatCurrency(totalCommission)}
+                          {isLoadingDashboard ? <Loading /> : formatCurrency(dashboardSummary.totalCommission)}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">
-                          Taxa média: {avgCommissionRate}%
+                          Taxa média: {dashboardSummary.avgCommissionRate}%
                         </p>
                       </div>
                       <div className="p-2 bg-yellow-100 rounded-full">
@@ -535,9 +530,9 @@ export default function SupplierDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {isLoadingSales ? (
+                    {isLoadingDashboard ? (
                       <Loading />
-                    ) : !topProducts || topProducts.length === 0 ? (
+                    ) : !dashboardSummary.topProducts || dashboardSummary.topProducts.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-500 mb-4">
                           Ainda não há dados de vendas para os produtos.
@@ -545,7 +540,7 @@ export default function SupplierDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {topProducts.map((item, index) => (
+                        {dashboardSummary.topProducts.map((item, index) => (
                           <div key={item?.product?.id || index} className="flex items-center space-x-4">
                             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
                               #{index + 1}
@@ -560,7 +555,7 @@ export default function SupplierDashboard() {
                             </div>
                             <div className="text-right">
                               <div className="text-sm font-semibold text-green-600">
-                                +{(item?.totalValue / totalSales * 100 || 0).toFixed(1)}%
+                                +{(item?.totalValue / dashboardSummary.totalSales * 100 || 0).toFixed(1)}%
                               </div>
                               <div className="text-xs text-gray-500">
                                 do total
