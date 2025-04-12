@@ -23,8 +23,9 @@ function AdminConversationItem({
   isActive: boolean; 
   onClick: () => void; 
 }) {
-  const { usersOnline } = useAdminChat();
+  const { usersOnline, deleteConversation } = useAdminChat();
   const isOnline = conversation.participantId ? usersOnline.has(conversation.participantId) : false;
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Formatação da data da última mensagem
   const formattedLastMessageTime = (() => {
@@ -62,63 +63,120 @@ function AdminConversationItem({
       ? <Building2 className="h-3 w-3" />
       : <Users className="h-3 w-3" />;
 
+  // Handler para excluir uma conversa
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Impedir que o clique propague para o botão de selecionar conversa
+    
+    // Confirmar exclusão
+    if (!window.confirm(`Tem certeza que deseja excluir a conversa com ${conversation.participantName || 'este usuário'}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await deleteConversation(conversation.id);
+    } catch (error) {
+      console.error("Erro ao excluir conversa:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <button
-      className={cn(
-        'w-full flex items-start p-3 gap-3 transition-colors hover:bg-muted/50 relative',
-        isActive && 'bg-primary/5',
-        conversation.unreadCount && conversation.unreadCount > 0 && 'bg-primary/5 hover:bg-primary/10'
-      )}
-      onClick={onClick}
-    >
-      <div className="relative">
-        <Avatar className="h-10 w-10">
-          <AvatarFallback className={cn(
-            conversation.participantRole === UserRole.SUPPLIER 
-              ? 'bg-orange-100 text-orange-800' 
-              : 'bg-primary/10 text-primary'
-          )}>
-            {conversation.participantName?.substring(0, 2).toUpperCase() || 'U'}
-          </AvatarFallback>
-        </Avatar>
-        {isOnline && (
-          <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
-        )}
-      </div>
-      
-      <div className="flex-1 flex flex-col items-start overflow-hidden">
-        <div className="flex justify-between w-full mb-1">
-          <span className="font-medium truncate">
-            {conversation.participantName || 'Usuário'}
-          </span>
-          <span className="text-xs text-muted-foreground whitespace-nowrap pl-2">
-            {formattedLastMessageTime}
-          </span>
+    <div className={cn(
+      'w-full flex items-start p-3 gap-3 transition-colors hover:bg-muted/50 relative group',
+      isActive && 'bg-primary/5',
+      conversation.unreadCount && conversation.unreadCount > 0 && 'bg-primary/5 hover:bg-primary/10'
+    )}>
+      <button
+        className="flex items-start gap-3 flex-1 text-left"
+        onClick={onClick}
+        disabled={isDeleting}
+      >
+        <div className="relative">
+          <Avatar className="h-10 w-10">
+            <AvatarFallback className={cn(
+              conversation.participantRole === UserRole.SUPPLIER 
+                ? 'bg-orange-100 text-orange-800' 
+                : 'bg-primary/10 text-primary'
+            )}>
+              {conversation.participantName?.substring(0, 2).toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          {isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
+          )}
         </div>
         
-        <div className="flex items-center gap-1 mb-1">
-          <div className={cn(
-            "flex items-center py-0.5 px-1.5 rounded-full text-[10px] font-medium",
-            conversation.participantRole === UserRole.SUPPLIER 
-              ? "bg-orange-100 text-orange-800" 
-              : "bg-primary/10 text-primary"
-          )}>
-            {roleIcon}
-            <span className="ml-1">{roleLabel}</span>
+        <div className="flex-1 flex flex-col items-start overflow-hidden">
+          <div className="flex justify-between w-full mb-1">
+            <span className="font-medium truncate">
+              {conversation.participantName || 'Usuário'}
+            </span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap pl-2">
+              {formattedLastMessageTime}
+            </span>
           </div>
+          
+          <div className="flex items-center gap-1 mb-1">
+            <div className={cn(
+              "flex items-center py-0.5 px-1.5 rounded-full text-[10px] font-medium",
+              conversation.participantRole === UserRole.SUPPLIER 
+                ? "bg-orange-100 text-orange-800" 
+                : "bg-primary/10 text-primary"
+            )}>
+              {roleIcon}
+              <span className="ml-1">{roleLabel}</span>
+            </div>
+          </div>
+          
+          <p className="text-sm text-muted-foreground truncate w-full text-left">
+            {conversation.lastMessageText || 'Nenhuma mensagem'}
+          </p>
         </div>
         
-        <p className="text-sm text-muted-foreground truncate w-full text-left">
-          {conversation.lastMessageText || 'Nenhuma mensagem'}
-        </p>
-      </div>
+        {conversation.unreadCount && conversation.unreadCount > 0 && (
+          <Badge variant="default" className="ml-auto mt-1">
+            {conversation.unreadCount}
+          </Badge>
+        )}
+      </button>
       
-      {conversation.unreadCount && conversation.unreadCount > 0 && (
-        <Badge variant="default" className="ml-auto mt-1">
-          {conversation.unreadCount}
-        </Badge>
-      )}
-    </button>
+      {/* Botão de excluir conversa - visível apenas no hover */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          "px-2 h-8 shrink-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity",
+          isDeleting && "opacity-100"
+        )}
+        onClick={handleDelete}
+        disabled={isDeleting}
+      >
+        {isDeleting ? (
+          <div className="h-4 w-4 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="16" 
+            height="16" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        )}
+        <span className="sr-only">Excluir conversa</span>
+      </Button>
+    </div>
   );
 }
 

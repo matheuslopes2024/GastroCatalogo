@@ -914,38 +914,79 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
     setIsLoadingConversations(true);
     
     try {
-      // Enviar requisição para excluir a conversa no servidor
-      const response = await apiRequest("DELETE", `/api/admin/chat/conversation/${conversationId}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Erro desconhecido" }));
-        throw new Error(errorData.message || "Falha ao excluir conversa");
+      // Verificar se o WebSocket está conectado
+      if (!connected) {
+        throw new Error("WebSocket não está conectado. Por favor, recarregue a página e tente novamente.");
       }
       
-      // Se a conversa excluída era a conversa ativa, limpar a seleção
-      if (activeConversation && activeConversation.id === conversationId) {
-        setActiveConversation(null);
-      }
-      
-      // Atualizar a lista de conversas localmente removendo a conversa excluída
-      setConversations(prev => prev.filter(c => c.id !== conversationId));
-      
-      // Informar sucesso ao usuário
-      toast({
-        title: "Conversa excluída",
-        description: "A conversa foi excluída com sucesso",
+      // Criar uma Promise que será resolvida quando recebermos a confirmação do servidor
+      return new Promise((resolve, reject) => {
+        // ID único para o handler desta operação específica
+        const handlerId = `delete_conversation_${conversationId}_${Date.now()}`;
+        
+        // Configurar um handler para a resposta
+        const messageHandler = (message: WebSocketMessage) => {
+          // Se recebemos confirmação de exclusão da conversa
+          if (message.type === 'admin_conversation_deleted' && message.conversationId === conversationId) {
+            // Remover o handler após receber a resposta
+            removeMessageHandler(handlerId);
+            
+            // Se a conversa excluída era a conversa ativa, limpar a seleção
+            if (activeConversation && activeConversation.id === conversationId) {
+              setActiveConversation(null);
+            }
+            
+            // Atualizar a lista de conversas localmente removendo a conversa excluída
+            setConversations(prev => prev.filter(c => c.id !== conversationId));
+            
+            // Informar sucesso ao usuário
+            toast({
+              title: "Conversa excluída",
+              description: "A conversa foi excluída com sucesso",
+            });
+            
+            // Atualizar o cache do React Query para refletir a mudança
+            queryClient.invalidateQueries({queryKey: ['/api/admin/chat/conversations']});
+            
+            // Verificar se é necessário atualizar outras conversas
+            console.log('[AdminChat] Forçando atualização após exclusão');
+            refreshConversations();
+            
+            setIsLoadingConversations(false);
+            resolve(true);
+          }
+          // Se recebemos um erro
+          else if (message.type === 'error' && message.timestamp) {
+            // Remover o handler após receber o erro
+            removeMessageHandler(handlerId);
+            setIsLoadingConversations(false);
+            reject(new Error(message.message || "Erro ao excluir conversa"));
+          }
+        };
+        
+        // Adicionar o handler temporário
+        addMessageHandler(handlerId, messageHandler);
+        
+        // Enviar a mensagem para excluir a conversa
+        sendWebSocketMessage({
+          type: 'admin_delete_conversation',
+          conversationId: conversationId,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Configurar um timeout para evitar que a promessa fique pendente para sempre
+        const timeoutId = setTimeout(() => {
+          removeMessageHandler(handlerId);
+          setIsLoadingConversations(false);
+          reject(new Error("Tempo limite excedido ao tentar excluir a conversa"));
+        }, 10000); // 10 segundos de timeout
+        
+        // Armazenar o timeout no ref para possível limpeza
+        requestTimeoutsRef.current['delete_conversation'] = timeoutId;
       });
-      
-      // Atualizar o cache do React Query para refletir a mudança
-      queryClient.invalidateQueries(['/api/admin/chat/conversations']);
-      
-      // Verificar se é necessário atualizar outras conversas
-      console.log('[AdminChat] Forçando atualização após exclusão');
-      refreshConversations();
-      
-      return Promise.resolve();
     } catch (error: any) {
       console.error("[AdminChat] Erro ao excluir conversa:", error);
+      setIsLoadingConversations(false);
       
       toast({
         title: "Erro ao excluir conversa",
@@ -956,7 +997,7 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
       setIsLoadingConversations(false);
       return Promise.reject(error);
     }
-  }, [user, activeConversation, toast, queryClient, refreshConversations]);
+  }, [user, activeConversation, toast, queryClient, refreshConversations, connected, sendWebSocketMessage, addMessageHandler, removeMessageHandler]);
   
   // Disponibilizar o contexto completo do chat administrativo
   const chatContextValue: AdminChatContextType = {
