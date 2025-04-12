@@ -111,6 +111,11 @@ function MainRoutes() {
           component={SupplierSales} 
           allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
         />
+        <ProtectedRoute 
+          path="/fornecedor/chat" 
+          component={lazy(() => import("@/pages/supplier/chat"))} 
+          allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+        />
         
         {/* Fallback to 404 */}
         <Route component={NotFound} />
