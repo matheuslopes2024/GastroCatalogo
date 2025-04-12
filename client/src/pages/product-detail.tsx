@@ -56,7 +56,10 @@ import {
   ArrowLeft,
   Clock,
   Calendar,
-  DollarSign
+  DollarSign,
+  CheckCircle,
+  Crown,
+  ShieldCheck
 } from "lucide-react";
 
 // Tipos
@@ -70,6 +73,9 @@ interface Supplier {
   address?: string;
   rating?: string;
   activeYears?: number;
+  imageUrl?: string | null;
+  ratingsCount?: number;
+  isPremium?: boolean;
 }
 
 interface Product {
@@ -545,17 +551,34 @@ export default function ProductDetailPage() {
                         </div>
                         
                         <div className="flex flex-col gap-1">
-                          <div className="flex items-center text-sm">
-                            <Building size={14} className="mr-1 text-gray-500" />
-                            <span className="truncate">{option.supplier?.name || "Fornecedor Verificado"}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center text-sm">
+                              <Building size={14} className="mr-1 text-gray-500" />
+                              <span className="truncate">{option.supplier?.name || "Fornecedor Verificado"}</span>
+                            </div>
+                            
+                            {/* Selo Premium para fornecedores especiais */}
+                            {(option.supplier?.isPremium || option.isBestPrice) && (
+                              <Badge variant="outline" className="h-5 text-[10px] bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                                <Crown size={10} className="text-amber-500" /> Premium
+                              </Badge>
+                            )}
                           </div>
                           
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Calendar size={14} className="mr-1" />
-                            <span>{option.supplier?.activeYears || 3} anos no mercado</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center text-xs text-gray-500">
+                              <Calendar size={14} className="mr-1" />
+                              <span>{option.supplier?.activeYears || 3} anos no mercado</span>
+                            </div>
+                            
+                            <div className="flex items-center text-xs">
+                              <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                                <ShieldCheck size={10} className="text-blue-500" /> Verificado
+                              </Badge>
+                            </div>
                           </div>
                           
-                          <div className="flex items-center text-xs text-gray-500">
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
                             <DollarSign size={14} className="mr-1" />
                             <span>
                               {option.isBestPrice 
