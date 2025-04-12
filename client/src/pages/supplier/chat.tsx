@@ -556,7 +556,7 @@ export default function SupplierChat() {
                   ) : (
                     <div className="pb-2">
                       {messages.map((message) => (
-                        <ChatMessage 
+                        <MessageItem 
                           key={message.id} 
                           message={message}
                           currentUserId={user?.id || 0}
