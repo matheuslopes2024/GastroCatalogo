@@ -88,10 +88,10 @@ function AdminConversationItem({
       isActive && 'bg-primary/5',
       conversation.unreadCount && conversation.unreadCount > 0 && 'bg-primary/5 hover:bg-primary/10'
     )}>
-      <button
-        className="flex items-start gap-3 flex-1 text-left"
+      {/* Área clicável principal */}
+      <div 
+        className="flex items-start gap-3 flex-1 text-left cursor-pointer"
         onClick={onClick}
-        disabled={isDeleting}
       >
         <div className="relative">
           <Avatar className="h-10 w-10">
@@ -140,14 +140,13 @@ function AdminConversationItem({
             {conversation.unreadCount}
           </Badge>
         )}
-      </button>
+      </div>
       
-      {/* Botão de excluir conversa - visível apenas no hover */}
-      <Button
-        variant="ghost"
-        size="sm"
+      {/* Botão de excluir conversa - separado da área clicável principal */}
+      <button
+        type="button"
         className={cn(
-          "px-2 h-8 shrink-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity",
+          "px-2 h-8 shrink-0 text-destructive bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity",
           isDeleting && "opacity-100"
         )}
         onClick={handleDelete}
@@ -175,7 +174,7 @@ function AdminConversationItem({
           </svg>
         )}
         <span className="sr-only">Excluir conversa</span>
-      </Button>
+      </button>
     </div>
   );
 }
