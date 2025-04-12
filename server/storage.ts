@@ -69,7 +69,8 @@ export interface IStorage {
   // Sale methods
   getSale(id: number): Promise<Sale | undefined>;
   createSale(sale: InsertSale): Promise<Sale>;
-  getSales(options?: { supplierId?: number; buyerId?: number }): Promise<Sale[]>;
+  getSales(options?: { supplierId?: number; buyerId?: number; productId?: number }): Promise<Sale[]>;
+  getProductSales(productId: number): Promise<Sale[]>;
   
   // Commission Settings methods
   getCommissionSetting(id: number): Promise<CommissionSetting | undefined>;
@@ -479,7 +480,7 @@ export class MemStorage implements IStorage {
     return sale;
   }
   
-  async getSales(options?: { supplierId?: number; buyerId?: number }): Promise<Sale[]> {
+  async getSales(options?: { supplierId?: number; buyerId?: number; productId?: number }): Promise<Sale[]> {
     let sales = Array.from(this.sales.values());
     
     if (options) {
@@ -490,9 +491,17 @@ export class MemStorage implements IStorage {
       if (options.buyerId !== undefined) {
         sales = sales.filter(sale => sale.buyerId === options.buyerId);
       }
+      
+      if (options.productId !== undefined) {
+        sales = sales.filter(sale => sale.productId === options.productId);
+      }
     }
     
     return sales;
+  }
+  
+  async getProductSales(productId: number): Promise<Sale[]> {
+    return this.getSales({ productId });
   }
   
   // Commission Settings methods
@@ -1502,7 +1511,7 @@ export class DatabaseStorage implements IStorage {
     return sale;
   }
   
-  async getSales(options?: { supplierId?: number; buyerId?: number }): Promise<Sale[]> {
+  async getSales(options?: { supplierId?: number; buyerId?: number; productId?: number }): Promise<Sale[]> {
     let query = db.select().from(sales);
     
     if (options) {
@@ -1516,12 +1525,20 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(sales.buyerId, options.buyerId));
       }
       
+      if (options.productId !== undefined) {
+        conditions.push(eq(sales.productId, options.productId));
+      }
+      
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
     }
     
     return query;
+  }
+  
+  async getProductSales(productId: number): Promise<Sale[]> {
+    return this.getSales({ productId });
   }
   
   // Product Image methods
