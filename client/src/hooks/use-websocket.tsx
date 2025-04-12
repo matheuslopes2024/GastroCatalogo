@@ -60,16 +60,19 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       
       // Garantir que temos um host para conexão
-      const host = window.location.host || window.location.hostname;
-      if (!host) {
+      // Para replit, usamos o host da janela atual
+      const currentHost = window.location.host;
+      
+      // Verificar que temos um host válido
+      if (!currentHost) {
         console.error("[WS] Erro: Não foi possível determinar o host para WebSocket");
-        setConnectionError("Erro ao obter host");
+        setConnectionError("Erro ao obter host para WebSocket");
         return;
       }
       
       // Criar URL com um token para evitar problemas de cache
       const token = `t${Math.random().toString(36).substring(2, 15)}`;
-      const wsUrl = `${protocol}//${host}/ws?token=${token}`;
+      const wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
       console.log(`[WS] Tentando conectar ao WebSocket: ${wsUrl}`);
       
       // Fechar conexão existente se houver
