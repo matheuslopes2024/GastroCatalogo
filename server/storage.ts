@@ -48,6 +48,7 @@ export interface IStorage {
   // Product methods
   getProduct(id: number): Promise<Product | undefined>;
   getProductBySlug(slug: string): Promise<Product | undefined>;
+  getProductBySupplier(baseProductId: number, supplierId: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined>;
   getProducts(options?: { 
@@ -379,6 +380,20 @@ export class MemStorage implements IStorage {
   async getProductBySlug(slug: string): Promise<Product | undefined> {
     return Array.from(this.products.values()).find(
       (product) => product.slug === slug
+    );
+  }
+  
+  async getProductBySupplier(baseProductId: number, supplierId: number): Promise<Product | undefined> {
+    // Verificar se existe o mesmo produto, mas com um fornecedor diferente
+    return Array.from(this.products.values()).find(
+      (product) => product.supplierId === supplierId && (
+        // Se é um produto semelhante (mesmo nome, diferente supplierId)
+        // Ou se é o próprio produto exato
+        (baseProductId === product.id) || (
+          this.products.get(baseProductId)?.name === product.name &&
+          this.products.get(baseProductId)?.categoryId === product.categoryId
+        )
+      )
     );
   }
   
@@ -1394,6 +1409,38 @@ export class DatabaseStorage implements IStorage {
   async getProductBySlug(slug: string): Promise<Product | undefined> {
     const [product] = await db.select().from(products).where(eq(products.slug, slug));
     return product;
+  }
+  
+  async getProductBySupplier(baseProductId: number, supplierId: number): Promise<Product | undefined> {
+    // Primeiro, obtenha o produto base para ter informações como nome e categoria
+    const baseProduct = await this.getProduct(baseProductId);
+    if (!baseProduct) return undefined;
+    
+    // Verificar se o próprio fornecedor tem esse produto (caso seja o mesmo produto)
+    if (baseProduct.supplierId === supplierId) {
+      return baseProduct;
+    }
+    
+    // Buscar produto similar do fornecedor especificado
+    // 1. Primeiro verificamos se há um produto com o mesmo nome e do mesmo fornecedor
+    const query = db.select()
+      .from(products)
+      .where(
+        and(
+          eq(products.supplierId, supplierId),
+          eq(products.categoryId, baseProduct.categoryId),
+          or(
+            // Tente encontrar um produto com o mesmo nome exato
+            eq(products.name, baseProduct.name),
+            // Ou um produto cujo nome contenha o nome base (com uma tolerância para variações)
+            like(products.name, `%${baseProduct.name}%`)
+          )
+        )
+      )
+      .limit(1);
+    
+    const [similarProduct] = await query;
+    return similarProduct;
   }
   
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
