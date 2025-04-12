@@ -97,8 +97,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         try {
           const message = JSON.parse(event.data);
           
-          // Ignorar heartbeats e pings nos logs para reduzir ruído no console
-          if (message.type !== 'heartbeat' && message.type !== 'ping' && message.type !== 'pong') {
+          // Ignorar a maior parte das mensagens de sistema nos logs para reduzir ruído
+          const ignoreLogs = ['heartbeat', 'ping', 'pong', 'admin_chat_register', 'chat_register', 'admin_request_conversations'];
+          const isSystemMessage = ignoreLogs.includes(message.type);
+          
+          if (!isSystemMessage) {
             console.log("Mensagem WebSocket recebida:", message);
           }
           
@@ -122,7 +125,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             messagesArray.slice(500).forEach(id => processedMessages.add(id));
           }
           
-          console.log("Processando mensagem WebSocket:", message);
+          // Apenas logar mensagens importantes
+          if (!isSystemMessage) {
+            console.log("Processando mensagem WebSocket:", message);
+          }
           setLastMessage(message);
           
           // Executar handlers específicos para esta mensagem
