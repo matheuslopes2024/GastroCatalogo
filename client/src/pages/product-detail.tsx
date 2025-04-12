@@ -478,28 +478,54 @@ export default function ProductDetailPage() {
           
           <div className="grid grid-cols-1 gap-4 mb-4">
             {supplierOptions.map((option, index) => (
-              <Card key={option.id} className={`overflow-hidden transition-all border-2 ${option.isBestPrice ? 'border-primary' : 'hover:border-primary/50'}`}>
+              <Card 
+                key={option.id} 
+                className={`overflow-hidden transition-all border-2 ${option.isBestPrice ? 'border-primary' : 'hover:border-primary/50'} cursor-pointer group`}
+              >
                 <CardContent className="p-0">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                  <div 
+                    className="grid grid-cols-1 md:grid-cols-5 gap-2 relative hover:bg-gray-50/50 transition-colors"
+                    onClick={() => navigate(`/produtos/${option.slug}`)}
+                  >
+                    {/* Faixa "Melhor Preço" no canto superior esquerdo, se aplicável */}
+                    {option.isBestPrice && (
+                      <div className="absolute top-0 left-0 bg-green-600 text-white text-xs py-1 px-3 rounded-br-md">
+                        MELHOR PREÇO
+                      </div>
+                    )}
+                    
                     {/* Coluna da imagem */}
-                    <div className="bg-white p-4 flex items-center justify-center md:border-r cursor-pointer" onClick={() => navigate(`/produtos/${option.slug}`)}>
-                      <img 
-                        src={option.imageUrl || option.images?.[0]?.imageUrl || "/assets/produto-sem-imagem.png"}
-                        alt={option.name}
-                        className="w-24 h-24 object-contain mx-auto"
-                      />
+                    <div className="bg-white p-4 flex items-center justify-center md:border-r">
+                      <div className="relative group-hover:scale-105 transition-transform duration-300">
+                        <img 
+                          src={option.imageUrl || option.images?.[0]?.imageUrl || "/assets/produto-sem-imagem.png"}
+                          alt={option.name}
+                          className="w-24 h-24 object-contain mx-auto"
+                        />
+                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-300 flex items-center justify-center">
+                          <Maximize2 size={20} className="text-primary" />
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Coluna de informações */}
                     <div className="p-4 md:col-span-2">
                       <div className="flex flex-col">
-                        <Link href={`/produtos/${option.slug}`} className="font-semibold hover:text-primary transition-colors">
+                        <h3 className="font-semibold group-hover:text-primary transition-colors">
                           {option.name}
-                        </Link>
+                        </h3>
                         
                         <div className="flex items-center mt-1 mb-2">
                           <div className="flex items-center">
-                            <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star 
+                                key={star} 
+                                size={14} 
+                                className={`${parseFloat(option.rating || "0") >= star 
+                                  ? "text-yellow-500 fill-yellow-500" 
+                                  : "text-gray-300"}`}
+                              />
+                            ))}
                             <span className="ml-1 text-xs">{option.rating} ({option.ratingsCount})</span>
                           </div>
                           
@@ -512,7 +538,17 @@ export default function ProductDetailPage() {
                         
                         <div className="flex items-center text-sm">
                           <Building size={14} className="mr-1 text-gray-500" />
-                          <span className="truncate">{option.supplier?.name}</span>
+                          <span className="truncate">{option.supplier?.name || "Fornecedor Verificado"}</span>
+                        </div>
+                        
+                        {/* Recursos/características do produto destacados */}
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                          {option.features?.slice(0, 4).map((feature, idx) => (
+                            <div key={idx} className="flex items-start text-xs">
+                              <Check size={12} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-gray-600 truncate">{feature}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -528,6 +564,13 @@ export default function ProductDetailPage() {
                         <span className="text-xl font-bold text-primary">
                           {formatCurrency(option.price)}
                         </span>
+                        
+                        {/* Exibir desconto quando possível */}
+                        {option.discount && option.discount > 0 && (
+                          <Badge variant="outline" className="ml-2 text-xs bg-red-50 text-red-600 border-red-200">
+                            {option.discount}% OFF
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="text-xs text-muted-foreground mt-1">
@@ -538,14 +581,34 @@ export default function ProductDetailPage() {
                         <Truck size={14} className="mr-1 text-primary" />
                         <span>Entrega em {option.deliveryTime || '3-5 dias úteis'}</span>
                       </div>
+
+                      {/* Outras informações */}
+                      <div className="flex items-center mt-1 text-xs">
+                        <Shield size={14} className="mr-1 text-primary" />
+                        <span>Garantia de {option.warranty || '12 meses'}</span>
+                      </div>
+                      
+                      {/* Exibir quando é produto com estoque disponível */}
+                      {option.stock !== undefined && option.stock > 0 && (
+                        <div className="flex items-center mt-1 text-xs text-green-600">
+                          <Check size={14} className="mr-1" />
+                          <span>Em estoque: {option.stock} unidades</span>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Coluna de ação */}
-                    <div className="p-4 flex flex-col justify-center items-center gap-2">
+                    <div className="p-4 flex flex-col justify-center items-center gap-2 relative">
                       <Button 
-                        className="w-full"
-                        onClick={() => {
+                        className="w-full group-hover:bg-primary/90"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Evita navegação duplicada
                           navigate(`/produtos/${option.slug}`);
+                          toast({
+                            title: "Prosseguindo para compra",
+                            description: `Você selecionou: ${option.name}`,
+                            duration: 3000,
+                          });
                         }}
                       >
                         <ShoppingCart size={14} className="mr-1" />
@@ -554,18 +617,51 @@ export default function ProductDetailPage() {
                       
                       <Button 
                         variant="outline" 
-                        className="w-full"
-                        asChild
+                        className="w-full group-hover:bg-gray-50 group-hover:border-primary"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Evita navegação duplicada
+                          navigate(`/produtos/${option.slug}`);
+                        }}
                       >
-                        <Link href={`/produtos/${option.slug}`}>
-                          Ver detalhes
-                        </Link>
+                        <ExternalLink size={14} className="mr-1" />
+                        Ver detalhes
                       </Button>
+                      
+                      {/* Adicionar tooltips indicando interatividade */}
+                      <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="p-1 bg-primary/10 rounded-full">
+                                <Info size={14} className="text-primary" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Clique em qualquer lugar do card para ver detalhes do produto</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+          
+          {/* Informações adicionais sobre a comparação */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="flex items-start">
+              <Info size={18} className="text-blue-500 mr-3 mt-1 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-blue-800 mb-1">Comparando {supplierOptions.length} fornecedores</h4>
+                <p className="text-sm text-blue-700">
+                  Este é o mesmo produto vendido por diferentes fornecedores. Você pode clicar em qualquer 
+                  opção para ver mais detalhes específicos de cada anúncio, incluindo especificações completas,
+                  condições de pagamento, informações de entrega e mais avaliações.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
