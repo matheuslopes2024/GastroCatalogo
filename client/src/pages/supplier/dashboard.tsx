@@ -70,12 +70,15 @@ function SupplierSidebar() {
 
 export default function SupplierDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { 
     openChat, 
     openChatWithAdmin,
     unreadCount,
     startConversationWithAdmin
   } = useChat();
+  const [timeframeFilter, setTimeframeFilter] = useState("month"); // "week", "month", "quarter", "year", "all"
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Fetch supplier products
   const { data: products, isLoading: isLoadingProducts } = useQuery({
@@ -88,28 +91,157 @@ export default function SupplierDashboard() {
     queryKey: ["/api/sales", { supplierId: user?.id }],
     enabled: !!user?.id,
   });
+
+  // Fetch supplier-specific commission settings
+  const { data: commissionSettings, isLoading: isLoadingCommissions } = useQuery({
+    queryKey: ["/api/commission-settings", { supplierId: user?.id }],
+    enabled: !!user?.id,
+  });
   
-  // Sample chart data - in a real implementation, this would be derived from the sales data
-  const salesData = [
-    { month: 'Jan', vendas: 4000, comissao: 240 },
-    { month: 'Fev', vendas: 3000, comissao: 180 },
-    { month: 'Mar', vendas: 5000, comissao: 300 },
-    { month: 'Abr', vendas: 2780, comissao: 167 },
-    { month: 'Mai', vendas: 1890, comissao: 113 },
-    { month: 'Jun', vendas: 2390, comissao: 143 },
-    { month: 'Jul', vendas: 3490, comissao: 209 },
-  ];
+  // Fetch categories to map category names
+  const { data: categories } = useQuery({
+    queryKey: ["/api/categories"],
+  });
+  
+  // Filter sales data based on selected timeframe
+  const filteredSales = useMemo(() => {
+    if (!sales || sales.length === 0) return [];
+    
+    const now = new Date();
+    let filterDate = new Date();
+    
+    switch (timeframeFilter) {
+      case "week":
+        filterDate.setDate(now.getDate() - 7);
+        break;
+      case "month":
+        filterDate.setMonth(now.getMonth() - 1);
+        break;
+      case "quarter":
+        filterDate.setMonth(now.getMonth() - 3);
+        break;
+      case "year":
+        filterDate.setFullYear(now.getFullYear() - 1);
+        break;
+      case "all":
+      default:
+        return sales;
+    }
+    
+    return sales.filter(sale => new Date(sale.createdAt) >= filterDate);
+  }, [sales, timeframeFilter]);
+  
+  // Generate chart data from actual sales data
+  const salesData = useMemo(() => {
+    if (!filteredSales || filteredSales.length === 0) {
+      // Se não houver dados de vendas, usar dados de exemplo para demonstração
+      return [
+        { month: 'Jan', vendas: 4000, comissao: 240 },
+        { month: 'Fev', vendas: 3000, comissao: 180 },
+        { month: 'Mar', vendas: 5000, comissao: 300 },
+        { month: 'Abr', vendas: 2780, comissao: 167 },
+        { month: 'Mai', vendas: 1890, comissao: 113 },
+        { month: 'Jun', vendas: 2390, comissao: 143 },
+        { month: 'Jul', vendas: 3490, comissao: 209 },
+      ];
+    }
+    
+    // Agrupar vendas por mês
+    const salesByMonth = filteredSales.reduce((acc, sale) => {
+      const date = new Date(sale.createdAt);
+      const monthYear = `${date.toLocaleString('pt-BR', { month: 'short' })}/${date.getFullYear()}`;
+      
+      if (!acc[monthYear]) {
+        acc[monthYear] = {
+          month: monthYear,
+          vendas: 0,
+          comissao: 0
+        };
+      }
+      
+      acc[monthYear].vendas += Number(sale.totalPrice);
+      acc[monthYear].comissao += Number(sale.commissionAmount);
+      
+      return acc;
+    }, {} as Record<string, { month: string, vendas: number, comissao: number }>);
+    
+    // Converter objeto para array e ordenar por data
+    return Object.values(salesByMonth).sort((a, b) => {
+      // Extrair mês e ano da string no formato "MMM/YYYY"
+      const [aMonth, aYear] = a.month.split('/');
+      const [bMonth, bYear] = b.month.split('/');
+      
+      // Comparar por ano primeiro
+      if (aYear !== bYear) return Number(aYear) - Number(bYear);
+      
+      // Depois comparar por mês
+      const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+      return months.indexOf(aMonth.toLowerCase()) - months.indexOf(bMonth.toLowerCase());
+    });
+  }, [filteredSales]);
   
   // Calculate earnings
-  const totalSales = sales?.reduce((acc, sale) => acc + Number(sale.totalPrice), 0) || 0;
-  const totalCommission = sales?.reduce((acc, sale) => acc + Number(sale.commissionAmount), 0) || 0;
+  const totalSales = filteredSales?.reduce((acc, sale) => acc + Number(sale.totalPrice), 0) || 0;
+  const totalCommission = filteredSales?.reduce((acc, sale) => acc + Number(sale.commissionAmount), 0) || 0;
   const netEarnings = totalSales - totalCommission;
+  
+  // Calculate average commission rate
+  const avgCommissionRate = totalSales > 0
+    ? (totalCommission / totalSales * 100).toFixed(2)
+    : "0.00";
+  
+  // Get total active products
+  const activeProducts = products?.filter(p => p.active).length || 0;
+  
+  // Calculate top performing products
+  const topProducts = useMemo(() => {
+    if (!filteredSales || !products) return [];
+    
+    // Agregar vendas por produto
+    const salesByProduct = filteredSales.reduce((acc, sale) => {
+      if (!acc[sale.productId]) {
+        acc[sale.productId] = {
+          productId: sale.productId,
+          totalSales: 0,
+          totalValue: 0,
+          count: 0
+        };
+      }
+      
+      acc[sale.productId].totalValue += Number(sale.totalPrice);
+      acc[sale.productId].count += Number(sale.quantity);
+      
+      return acc;
+    }, {} as Record<number, { productId: number, totalSales: number, totalValue: number, count: number }>);
+    
+    // Mapear IDs de produto para objetos de produto completos
+    return Object.values(salesByProduct)
+      .map(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) return null;
+        
+        return {
+          ...item,
+          product,
+          name: product.name,
+          imageUrl: product.imageUrl
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.totalValue - a!.totalValue)
+      .slice(0, 5);
+  }, [filteredSales, products]);
   
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
+  };
+  
+  // Função para formatar percentuais
+  const formatPercent = (value: number) => {
+    return `${value.toFixed(2)}%`;
   };
 
   return (
