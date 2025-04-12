@@ -192,6 +192,24 @@ export default function SupplierDashboard() {
   
   // Este useMemo foi substituído pelo topProducts dentro do dashboardSummary
   
+  // Extrair desempenho de produtos para visualização na tabela
+  const productPerformance = useMemo(() => {
+    if (isLoadingDashboard || !dashboardData || !dashboardData.topProducts) {
+      return [];
+    }
+    
+    return dashboardData.topProducts.map(product => ({
+      productId: product.productId,
+      product: { 
+        id: product.productId, 
+        name: product.name 
+      },
+      imageUrl: product.imageUrl,
+      totalValue: product.totalRevenue,
+      count: product.totalSales
+    }));
+  }, [dashboardData, isLoadingDashboard]);
+  
   // Extrair vendas recentes
   const recentSales = useMemo(() => {
     if (isLoadingDashboard || !dashboardData || !dashboardData.recentSales) {
