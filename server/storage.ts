@@ -235,6 +235,7 @@ export class MemStorage implements IStorage {
   currentProductSearchId: number;
   currentProductComparisonId: number;
   currentProductComparisonDetailId: number;
+  currentProductCommissionSettingId: number;
   
   sessionStore: any;
 
@@ -275,6 +276,7 @@ export class MemStorage implements IStorage {
     this.currentProductSearchId = 1;
     this.currentProductComparisonId = 1;
     this.currentProductComparisonDetailId = 1;
+    this.currentProductCommissionSettingId = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
