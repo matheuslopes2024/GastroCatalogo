@@ -107,12 +107,15 @@ export function AdminChatDashboard() {
     setIsRefreshing(true);
     
     try {
-      refreshConversations();
-      
-      toast({
-        title: "Atualizando conversas",
-        description: "Buscando novas mensagens e conversas...",
-      });
+      // Usar um setTimeout para garantir que a atualização ocorra após a renderização
+      setTimeout(() => {
+        refreshConversations();
+        
+        toast({
+          title: "Atualizando conversas",
+          description: "Buscando novas mensagens e conversas...",
+        });
+      }, 100);
       
       // Desativar o estado de atualização após um delay
       setTimeout(() => {

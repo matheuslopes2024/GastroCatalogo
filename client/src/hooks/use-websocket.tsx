@@ -58,15 +58,34 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     try {
       // Construir a URL do WebSocket
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
+      // Garantir que temos um host para conexão
+      const host = window.location.host || window.location.hostname;
+      if (!host) {
+        console.error("[WS] Erro: Não foi possível determinar o host para WebSocket");
+        setConnectionError("Erro ao obter host");
+        return;
+      }
+      
+      // Criar URL com um token para evitar problemas de cache
+      const token = `t${Math.random().toString(36).substring(2, 15)}`;
+      const wsUrl = `${protocol}//${host}/ws?token=${token}`;
+      console.log(`[WS] Tentando conectar ao WebSocket: ${wsUrl}`);
       
       // Fechar conexão existente se houver
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.close();
       }
       
-      // Criar nova conexão
-      ws.current = new WebSocket(wsUrl);
+      // Usar try/catch específico para criação de WebSocket
+      try {
+        // Criar nova conexão
+        ws.current = new WebSocket(wsUrl);
+      } catch (wsError) {
+        console.error("[WS] Erro ao criar objeto WebSocket:", wsError);
+        setConnectionError(`Erro ao criar WebSocket: ${wsError}`);
+        return;
+      }
       
       // Configurar manipuladores de eventos
       ws.current.onopen = () => {

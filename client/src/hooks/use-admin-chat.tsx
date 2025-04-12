@@ -23,8 +23,11 @@ import { ptBR } from 'date-fns/locale';
 
 // Cache para controle de requisições
 const DEBOUNCE_INTERVAL = 5000; // Aumentamos para 5s para garantir intervalos adequados
-const CONVERSATION_CACHE_KEY = 'admin-chat-conversations-cache';
-const PROCESSED_MESSAGES_CACHE = 'admin-chat-processed-messages';
+// Usamos variáveis de memória em vez de localStorage para evitar problemas de "Access to storage is not allowed from this context"
+const memoryCache: Record<string, any> = {};
+// Funções auxiliares para acessar o cache de memória de maneira segura
+const getMemoryCache = (key: string) => memoryCache[key];
+const setMemoryCache = (key: string, value: any) => { memoryCache[key] = value; };
 
 // Interface do contexto
 type AdminChatContextType = {
