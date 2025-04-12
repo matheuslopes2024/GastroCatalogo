@@ -121,6 +121,16 @@ export const commissionSettings = pgTable("commission_settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Configurações de comissão por produto específico
+export const productCommissionSettings = pgTable("product_commission_settings", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  supplierId: integer("supplier_id").notNull(), // Redundante com o produto, mas facilita consultas
+  rate: decimal("rate", { precision: 5, scale: 2 }).notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
