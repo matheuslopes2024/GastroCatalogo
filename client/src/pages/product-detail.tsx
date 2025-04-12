@@ -719,8 +719,8 @@ export default function ProductDetailPage() {
                           
                           // Se tivermos o ID do fornecedor, usamos a nova rota de fornecedor específico
                           if (option.supplierId && product.id) {
-                            // Abre em uma nova guia para testar a nova rota
-                            window.open(`/api/products/${product.id}/supplier/${option.supplierId}`, '_blank');
+                            // Navega para a página de detalhes do produto fornecido por um fornecedor específico
+                            navigate(`/produtos/${product.id}/fornecedor/${option.supplierId}`);
                           } else {
                             // Fallback para a navegação anterior
                             navigate(`/produtos/${option.slug}`);

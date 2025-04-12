@@ -58,6 +58,7 @@ function MainRoutes() {
         <Route path="/busca" component={SearchResults} />
         <Route path="/produto/:slug" component={ProductDetails} />
         <Route path="/produtos/:slug" component={ProductDetail} />
+        <Route path="/produtos/:productId/fornecedor/:supplierId" component={() => import("@/pages/supplier-product-detail").then(module => module.default)} />
         <Route path="/comparar/:slug" component={ProductComparisonPage} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/carrinho" component={CartPage} />
