@@ -253,7 +253,12 @@ export function AdminChatConversationsList() {
           ? `Nenhuma conversa encontrada para "${searchTerm}"`
           : 'Você ainda não possui conversas. Inicie uma nova conversa com um usuário ou fornecedor.'}
       </p>
-      <Button>Iniciar conversa</Button>
+      <button 
+        type="button"
+        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+      >
+        Iniciar conversa
+      </button>
     </div>
   );
 
