@@ -613,6 +613,7 @@ export function useChat() {
       activeConversation: null,
       activeConversationId: undefined,
       setActiveConversation: () => {},
+      selectConversation: () => {},
       conversations: [],
       messages: [],
       isLoadingConversations: false,

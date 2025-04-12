@@ -67,21 +67,25 @@ function SupplierSidebar() {
   );
 }
 
-interface Message {
+// Usando a interface ChatMessage do hook para compatibilidade
+import { ChatMessage } from "@/hooks/use-chat";
+
+// Interface local para exibição de mensagens
+interface Message extends Partial<ChatMessage> {
   id: number;
-  text: string;
+  text?: string;        // Para manter compatibilidade com o código existente
+  message?: string;     // Do ChatMessage
+  content?: string;     // Do ChatMessage
   senderId: number;
   receiverId: number;
   isRead: boolean;
-  createdAt: string;
+  createdAt: string | Date;
   sender?: {
     id: number;
     name: string;
     username: string;
     role?: string;
   };
-  attachmentUrl?: string | null;
-  attachmentType?: string | null;
 }
 
 function formatMessageTime(createdAt: string) {
@@ -143,9 +147,9 @@ function ChatMessage({ message, currentUserId }: { message: Message; currentUser
           )}
           
           <div>
-            <p className="break-words">{message.text}</p>
+            <p className="break-words">{message.text || message.message || message.content}</p>
             <div className={`text-xs mt-1 ${isOutgoing ? 'text-white/70' : 'text-gray-500'} text-right`}>
-              {formatMessageTime(message.createdAt)}
+              {formatMessageTime(message.createdAt.toString())}
             </div>
           </div>
         </div>
@@ -216,9 +220,16 @@ export default function SupplierChat() {
   // Marcar mensagens como lidas quando abrir a conversa
   useEffect(() => {
     if (activeConversation && messages.length > 0) {
-      markMessagesAsRead(activeConversation.id);
+      // Obter IDs de mensagens não lidas que não foram enviadas pelo usuário atual
+      const unreadMessageIds = messages
+        .filter(msg => !msg.isRead && msg.senderId !== user?.id)
+        .map(msg => msg.id);
+      
+      if (unreadMessageIds.length > 0) {
+        markMessagesAsRead(unreadMessageIds);
+      }
     }
-  }, [activeConversation, messages, markMessagesAsRead]);
+  }, [activeConversation, messages, markMessagesAsRead, user?.id]);
   
   // Iniciar nova conversa com o admin
   const handleStartAdminConversation = async () => {
@@ -274,11 +285,14 @@ export default function SupplierChat() {
       }
       
       await sendMessage({
-        text: messageText,
+        message: messageText,
         conversationId: activeConversation.id,
-        attachmentData,
-        attachmentType,
-        attachmentSize: selectedFile?.size || null,
+        attachment: selectedFile ? {
+          data: attachmentData,
+          type: attachmentType,
+          name: selectedFile.name,
+          size: selectedFile.size
+        } : undefined
       });
       
       // Limpar campos após envio
