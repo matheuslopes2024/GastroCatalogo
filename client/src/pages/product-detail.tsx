@@ -530,6 +530,30 @@ export default function ProductDetailPage() {
           
           {/* Seção de Opções de Fornecedores - Layout Redesenhado */}
           <div className="grid grid-cols-1 gap-6 mb-6">
+            {/* Banner promocional no topo da seção com instruções claras para o usuário */}
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg mb-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <AlertCircle size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-800 text-lg mb-1">
+                    Como visualizar detalhes completos dos fornecedores
+                  </h3>
+                  <p className="text-blue-700 mb-2">
+                    Para cada opção de fornecedor abaixo, você encontrará o botão <strong>"Ver detalhes do fornecedor"</strong> com informações completas e específicas.
+                  </p>
+                  <div className="flex items-center p-2 bg-white rounded border border-blue-200">
+                    <Building size={18} className="text-blue-600 mr-2" />
+                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded border border-blue-200 font-medium">
+                      Ver detalhes do fornecedor
+                    </span>
+                    <span className="ml-3 text-sm text-gray-600">← Procure por este botão em cada opção</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             {/* Título da seção com mais destaque */}
             <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-3 rounded-lg">
               <div className="flex items-center gap-2">
@@ -973,6 +997,27 @@ export default function ProductDetailPage() {
                     <Clock size={16} className="mr-2 text-primary" />
                     <span>Tempo médio de resposta: 2 horas</span>
                   </div>
+
+                  {/* Botão Ver Detalhes do Fornecedor - Adicionado explicitamente aqui */}
+                  <div className="mt-4 pt-2 border-t border-gray-100">
+                    <Button 
+                      variant="secondary"
+                      className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium shadow-sm flex items-center justify-center"
+                      onClick={(e) => {
+                        if (product.id && product.supplierId) {
+                          navigate(`/produtos/${product.id}/fornecedor/${product.supplierId}`);
+                          toast({
+                            title: "Detalhes do fornecedor",
+                            description: `Visualizando detalhes de: ${product.supplier?.name || 'Fornecedor'}`,
+                            duration: 3000,
+                          });
+                        }
+                      }}
+                    >
+                      <Building size={16} className="mr-2" />
+                      Ver página completa do fornecedor
+                    </Button>
+                  </div>
                 </div>
               </div>
               
@@ -992,6 +1037,41 @@ export default function ProductDetailPage() {
                   <Button className="w-full" onClick={contactSupplier}>
                     Enviar Mensagem
                   </Button>
+
+                  {/* Botão De Ver Todos os Fornecedores */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <h4 className="text-sm font-medium mb-2">Ver outras opções:</h4>
+                    <Card className="overflow-hidden border-2 border-blue-100 bg-blue-50/50">
+                      <CardContent className="p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="p-2 bg-blue-100 rounded-full">
+                            <Store size={20} className="text-blue-600" />
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-blue-800 mb-1">
+                              Compare preços de outros fornecedores
+                            </h5>
+                            <p className="text-sm text-blue-600 mb-2">
+                              Este produto está disponível com {supplierOptions?.length || 0} fornecedores diferentes.
+                            </p>
+                            <Button 
+                              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={() => {
+                                // Role até a seção de comparação de fornecedores
+                                const suppliersSection = document.getElementById('suppliers-comparison-section');
+                                if (suppliersSection) {
+                                  suppliersSection.scrollIntoView({ behavior: 'smooth' });
+                                }
+                              }}
+                            >
+                              <ArrowsCompare size={16} className="mr-2" />
+                              Ver todos os fornecedores
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
                 
                 <div className="mt-4">
