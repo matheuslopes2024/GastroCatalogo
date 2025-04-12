@@ -2033,11 +2033,281 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (conditions.length > 0) {
+        if (conditions.length === 1) {
+          query = query.where(conditions[0]);
+        } else {
+          query = query.where(and(...conditions));
+        }
+      }
+    }
+    
+    return query.orderBy(commissionSettings.id);
+  }
+  
+  /**
+   * Retorna as configurações de comissão aplicáveis a um fornecedor específico,
+   * incluindo configurações globais, de categoria e específicas do fornecedor.
+   * As configurações são enriquecidas com informações de tipo e prioridade.
+   */
+  async getSupplierApplicableCommissionSettings(supplierId: number): Promise<(CommissionSetting & { type: string, priority: number })[]> {
+    // Buscar todas as configurações de comissão ativas
+    const allSettings = await this.getCommissionSettings({ active: true });
+    
+    // Buscar produtos do fornecedor para identificar suas categorias
+    const supplierProducts = await this.getProductsBySupplier(supplierId);
+    const supplierCategoryIds = new Set<number>();
+    
+    // Coletar categorias únicas dos produtos do fornecedor
+    supplierProducts.forEach(product => {
+      supplierCategoryIds.add(product.categoryId);
+      if (product.additionalCategories) {
+        product.additionalCategories.forEach(catId => {
+          if (catId) supplierCategoryIds.add(catId);
+        });
+      }
+    });
+    
+    // Filtrar e organizar as configurações aplicáveis
+    const applicableSettings = allSettings
+      .filter(setting => {
+        // Configurações específicas para este fornecedor + uma categoria
+        if (setting.supplierId === supplierId && setting.categoryId !== null) {
+          return supplierCategoryIds.has(setting.categoryId);
+        }
+        
+        // Configurações específicas para este fornecedor
+        if (setting.supplierId === supplierId && setting.categoryId === null) {
+          return true;
+        }
+        
+        // Configurações para categorias dos produtos deste fornecedor
+        if (setting.supplierId === null && setting.categoryId !== null) {
+          return supplierCategoryIds.has(setting.categoryId);
+        }
+        
+        // Configurações globais
+        if (setting.supplierId === null && setting.categoryId === null) {
+          return true;
+        }
+        
+        return false;
+      })
+      .map(setting => {
+        let type = 'global';
+        let priority = 4;
+        
+        if (setting.supplierId === supplierId && setting.categoryId !== null) {
+          type = 'specific';
+          priority = 1;
+        } else if (setting.supplierId === supplierId) {
+          type = 'supplier';
+          priority = 2;
+        } else if (setting.categoryId !== null) {
+          type = 'category';
+          priority = 3;
+        }
+        
+        return { ...setting, type, priority };
+      })
+      .sort((a, b) => a.priority - b.priority);
+    
+    return applicableSettings;
+  }
+  
+  /**
+   * Calcula e retorna a taxa de comissão aplicável a um produto específico
+   * com base nas configurações de comissão disponíveis.
+   */
+  async getProductCommissionRate(productId: number): Promise<{ 
+    rate: string, 
+    type: "specific" | "supplier" | "category" | "global", 
+    settingId: number 
+  }> {
+    // Buscar o produto
+    const product = await this.getProduct(productId);
+    if (!product) {
+      throw new Error("Produto não encontrado");
+    }
+    
+    // Buscar as configurações de comissão aplicáveis
+    const applicableSettings = await this.getSupplierApplicableCommissionSettings(product.supplierId);
+    
+    // Se não houver configurações, retornar uma taxa padrão
+    if (applicableSettings.length === 0) {
+      return { rate: "3.0", type: "global", settingId: 0 };
+    }
+    
+    // Função para verificar se a configuração se aplica a este produto específico
+    const isApplicable = (setting: CommissionSetting & { type: string, priority: number }) => {
+      if (setting.categoryId === null) {
+        return true; // Configuração global ou de fornecedor
+      }
+      
+      // Verificar se o produto está na categoria da configuração
+      if (product.categoryId === setting.categoryId) {
+        return true;
+      }
+      
+      // Verificar categorias adicionais
+      if (product.additionalCategories && product.additionalCategories.includes(setting.categoryId)) {
+        return true;
+      }
+      
+      return false;
+    };
+    
+    // Encontrar a primeira configuração aplicável seguindo a ordem de prioridade
+    for (const setting of applicableSettings) {
+      if (isApplicable(setting)) {
+        return {
+          rate: setting.rate,
+          type: setting.type as "specific" | "supplier" | "category" | "global",
+          settingId: setting.id
+        };
+      }
+    }
+    
+    // Se nenhuma configuração for aplicável (não deve acontecer devido à configuração global)
+    return {
+      rate: applicableSettings[0].rate,
+      type: applicableSettings[0].type as "specific" | "supplier" | "category" | "global",
+      settingId: applicableSettings[0].id
+    };
+  }
+  
+  /**
+   * Gera um resumo das comissões aplicáveis a um fornecedor específico,
+   * incluindo estatísticas de taxas médias, taxas mais comuns, etc.
+   */
+  async getSupplierCommissionSummary(supplierId: number): Promise<{
+    avgRate: string;
+    specificRatesCount: number;
+    totalCommission: number;
+    totalProducts: number;
+    categoriesCount: number;
+    mostCommonRate: string;
+    mostCommonRateCount: number;
+  }> {
+    // Buscar produtos do fornecedor
+    const products = await this.getProductsBySupplier(supplierId);
+    
+    // Se não houver produtos, retornar valores vazios
+    if (products.length === 0) {
+      return {
+        avgRate: "0.0",
+        specificRatesCount: 0,
+        totalCommission: 0,
+        totalProducts: 0,
+        categoriesCount: 0,
+        mostCommonRate: "0.0",
+        mostCommonRateCount: 0
+      };
+    }
+    
+    // Buscar vendas dos últimos 30 dias
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const sales = await this.getSales({
+      supplierId,
+      fromDate: thirtyDaysAgo
+    });
+    
+    // Calcular total de comissões dos últimos 30 dias
+    const totalCommission = sales.reduce((sum, sale) => 
+      sum + parseFloat(sale.commissionAmount), 0);
+    
+    // Coletar taxas de comissão para cada produto
+    const commissionRates: { rate: string, type: string }[] = [];
+    for (const product of products) {
+      const commission = await this.getProductCommissionRate(product.id);
+      commissionRates.push(commission);
+    }
+    
+    // Calcular taxa média
+    const avgRate = commissionRates.length > 0 
+      ? (commissionRates.reduce((sum, c) => sum + parseFloat(c.rate), 0) / commissionRates.length).toFixed(1) 
+      : "0.0";
+    
+    // Contar taxas específicas (não globais)
+    const specificRatesCount = commissionRates.filter(c => c.type !== "global").length;
+    
+    // Encontrar a taxa mais comum
+    const rateCounts: Record<string, number> = {};
+    commissionRates.forEach(c => {
+      rateCounts[c.rate] = (rateCounts[c.rate] || 0) + 1;
+    });
+    
+    let mostCommonRate = "0.0";
+    let mostCommonRateCount = 0;
+    
+    for (const [rate, count] of Object.entries(rateCounts)) {
+      if (count > mostCommonRateCount) {
+        mostCommonRate = rate;
+        mostCommonRateCount = count;
+      }
+    }
+    
+    // Contar categorias únicas
+    const uniqueCategories = new Set<number>();
+    products.forEach(product => {
+      uniqueCategories.add(product.categoryId);
+      if (product.additionalCategories) {
+        product.additionalCategories.forEach(catId => {
+          if (catId) uniqueCategories.add(catId);
+        });
+      }
+    });
+    
+    return {
+      avgRate,
+      specificRatesCount,
+      totalCommission,
+      totalProducts: products.length,
+      categoriesCount: uniqueCategories.size,
+      mostCommonRate,
+      mostCommonRateCount
+    };
+  }
+  
+  async getCommissionSettings(options?: { 
+    categoryId?: number; 
+    supplierId?: number; 
+    active?: boolean
+  }): Promise<CommissionSetting[]> {
+    let query = db.select().from(commissionSettings);
+    
+    if (options) {
+      const conditions = [];
+      
+      if (options.categoryId !== undefined) {
+        conditions.push(
+          or(
+            eq(commissionSettings.categoryId, options.categoryId),
+            isNull(commissionSettings.categoryId)
+          )
+        );
+      }
+      
+      if (options.supplierId !== undefined) {
+        conditions.push(
+          or(
+            eq(commissionSettings.supplierId, options.supplierId),
+            isNull(commissionSettings.supplierId)
+          )
+        );
+      }
+      
+      if (options.active !== undefined) {
+        conditions.push(eq(commissionSettings.active, options.active));
+      }
+      
+      if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
     }
     
-    return query;
+    return query.execute();
   }
 
   // --- Métodos para grupos de produtos (Product Groups) ---
