@@ -113,7 +113,7 @@ const roleBasedNavigation = {
   ],
 };
 
-export default function Header() {
+export function Header() {
   const { user, logoutMutation } = useAuth();
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);

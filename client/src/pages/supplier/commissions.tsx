@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/common/header";
-import Footer from "@/components/common/footer";
+import { Header } from "@/components/common/header";
+import { Footer } from "@/components/common/footer";
 import { 
   Card, 
   CardContent, 
