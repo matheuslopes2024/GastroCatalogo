@@ -23,6 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -98,6 +106,7 @@ export default function SupplierDashboard() {
   } = useChat();
   const [timeframeFilter, setTimeframeFilter] = useState("month"); // "week", "month", "quarter", "year", "all"
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   
   // Fetch supplier products
   const { data: products, isLoading: isLoadingProducts } = useQuery({
@@ -323,6 +332,9 @@ export default function SupplierDashboard() {
                         <h3 className="text-2xl font-bold">
                           {isLoadingProducts ? <Loading /> : products?.length || 0}
                         </h3>
+                        <p className="text-xs text-green-600 mt-1">
+                          {activeProducts} produtos ativos
+                        </p>
                       </div>
                       <div className="p-2 bg-primary/10 rounded-full">
                         <Package className="h-6 w-6 text-primary" />
@@ -339,6 +351,9 @@ export default function SupplierDashboard() {
                         <h3 className="text-2xl font-bold">
                           {isLoadingSales ? <Loading /> : sales?.length || 0}
                         </h3>
+                        <p className="text-xs text-green-600 mt-1">
+                          {filteredSales?.length || 0} no período selecionado
+                        </p>
                       </div>
                       <div className="p-2 bg-green-100 rounded-full">
                         <TrendingUp className="h-6 w-6 text-green-600" />
@@ -355,6 +370,9 @@ export default function SupplierDashboard() {
                         <h3 className="text-2xl font-bold">
                           {isLoadingSales ? <Loading /> : formatCurrency(totalSales)}
                         </h3>
+                        <p className="text-xs text-green-600 mt-1">
+                          {formatCurrency(netEarnings)} líquido
+                        </p>
                       </div>
                       <div className="p-2 bg-blue-100 rounded-full">
                         <DollarSign className="h-6 w-6 text-blue-600" />
@@ -371,6 +389,9 @@ export default function SupplierDashboard() {
                         <h3 className="text-2xl font-bold">
                           {isLoadingSales ? <Loading /> : formatCurrency(totalCommission)}
                         </h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Taxa média: {avgCommissionRate}%
+                        </p>
                       </div>
                       <div className="p-2 bg-yellow-100 rounded-full">
                         <Users className="h-6 w-6 text-yellow-600" />
@@ -497,62 +518,112 @@ export default function SupplierDashboard() {
                 </CardContent>
               </Card>
               
-              {/* Recent Products */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Produtos Recentes</CardTitle>
-                    <CardDescription>
-                      Seus produtos mais recentemente adicionados
-                    </CardDescription>
-                  </div>
-                  <Link href="/fornecedor/produtos">
-                    <Button className="flex items-center">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Novo Produto
-                    </Button>
-                  </Link>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingProducts ? (
-                    <Loading />
-                  ) : !products || products.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 mb-4">
-                        Você ainda não tem produtos cadastrados.
-                      </p>
-                      <Link href="/fornecedor/produtos">
-                        <Button>Adicionar meu primeiro produto</Button>
-                      </Link>
+              {/* Grid de Produtos e Top Performers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Recent Products */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Produtos Recentes</CardTitle>
+                      <CardDescription>
+                        Seus produtos mais recentemente adicionados
+                      </CardDescription>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {products.slice(0, 5).map((product) => (
-                        <div key={product.id} className="flex items-center justify-between py-2 border-b">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 mr-3 bg-gray-200 rounded overflow-hidden">
-                              <img
-                                src={product.imageUrl || "https://via.placeholder.com/40"}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                              />
+                    <Link href="/fornecedor/produtos">
+                      <Button className="flex items-center">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Novo Produto
+                      </Button>
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingProducts ? (
+                      <Loading />
+                    ) : !products || products.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 mb-4">
+                          Você ainda não tem produtos cadastrados.
+                        </p>
+                        <Link href="/fornecedor/produtos">
+                          <Button>Adicionar meu primeiro produto</Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {products.slice(0, 5).map((product) => (
+                          <div key={product.id} className="flex items-center justify-between py-2 border-b">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 mr-3 bg-gray-200 rounded overflow-hidden">
+                                <img
+                                  src={product.imageUrl || "https://via.placeholder.com/40"}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-sm text-gray-500">
+                                  {formatCurrency(Number(product.price))}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-gray-500">
-                                {formatCurrency(Number(product.price))}
-                              </p>
+                            <Link href={`/produto/${product.slug}`}>
+                              <Button variant="ghost" size="sm">Ver</Button>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* Top Performing Products */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Produtos Mais Vendidos</CardTitle>
+                    <CardDescription>
+                      Produtos com melhor desempenho no período selecionado
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingSales ? (
+                      <Loading />
+                    ) : !topProducts || topProducts.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 mb-4">
+                          Ainda não há dados de vendas para os produtos.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {topProducts.map((item, index) => (
+                          <div key={item?.product?.id || index} className="flex items-center space-x-4">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
+                              #{index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{item?.product?.name}</p>
+                              <div className="flex items-center text-sm text-gray-500">
+                                <span>{item?.count || 0} vendas</span>
+                                <span className="mx-2">•</span>
+                                <span>{formatCurrency(item?.totalValue || 0)}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold text-green-600">
+                                +{(item?.totalValue / totalSales * 100 || 0).toFixed(1)}%
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                do total
+                              </div>
                             </div>
                           </div>
-                          <Link href={`/produto/${product.slug}`}>
-                            <Button variant="ghost" size="sm">Ver</Button>
-                          </Link>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
               
               {/* Chat com Administração */}
               <Card>
@@ -654,6 +725,518 @@ export default function SupplierDashboard() {
       </main>
       
       <Footer />
+      
+      {/* Modal de Configurações */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurações do Fornecedor</DialogTitle>
+            <DialogDescription>
+              Ajuste as configurações da sua conta e preferências de exibição.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Notificações</h3>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="notif-sales" />
+                <label htmlFor="notif-sales" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Receber notificações de novas vendas
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="notif-messages" defaultChecked />
+                <label htmlFor="notif-messages" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Receber notificações de novas mensagens
+                </label>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Exibição do Dashboard</h3>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="dashboard-sales" defaultChecked />
+                <label htmlFor="dashboard-sales" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Mostrar gráfico de vendas
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="dashboard-commission" defaultChecked />
+                <label htmlFor="dashboard-commission" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Mostrar gráfico de comissões
+                </label>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Período padrão para relatórios</h3>
+              <Select defaultValue={timeframeFilter} onValueChange={setTimeframeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o período padrão" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Última semana</SelectItem>
+                  <SelectItem value="month">Último mês</SelectItem>
+                  <SelectItem value="quarter">Último trimestre</SelectItem>
+                  <SelectItem value="year">Último ano</SelectItem>
+                  <SelectItem value="all">Todo o período</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Informações da conta</h3>
+              <div className="rounded-md border p-4">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Fornecedor: {user?.username}</p>
+                  <p className="text-sm text-muted-foreground">Email: {user?.email}</p>
+                  <p className="text-sm text-muted-foreground">Empresa: {user?.companyName || "Não informado"}</p>
+                  <p className="text-sm text-muted-foreground">CNPJ: {user?.cnpj || "Não informado"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex items-center justify-between">
+            <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              toast({
+                title: "Configurações salvas",
+                description: "Suas preferências foram atualizadas com sucesso.",
+              });
+              setIsSettingsOpen(false);
+            }}>
+              Salvar alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal de Análise de Vendas Detalhada */}
+      <Dialog open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Análise Detalhada de Vendas</DialogTitle>
+            <DialogDescription>
+              Analise suas vendas e comissões no período selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Filtros e período */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-base font-medium mb-2">Período de análise</h3>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant={timeframeFilter === "week" ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => setTimeframeFilter("week")}
+                  >
+                    Semana
+                  </Button>
+                  <Button 
+                    variant={timeframeFilter === "month" ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => setTimeframeFilter("month")}
+                  >
+                    Mês
+                  </Button>
+                  <Button 
+                    variant={timeframeFilter === "quarter" ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => setTimeframeFilter("quarter")}
+                  >
+                    Trimestre
+                  </Button>
+                  <Button 
+                    variant={timeframeFilter === "year" ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => setTimeframeFilter("year")}
+                  >
+                    Ano
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="bg-primary/10 rounded-lg p-3 text-center">
+                  <p className="text-sm text-gray-600">Total de Vendas</p>
+                  <p className="text-xl font-bold">{filteredSales?.length || 0}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-sm text-gray-600">Faturamento</p>
+                  <p className="text-xl font-bold">{formatCurrency(totalSales)}</p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-3 text-center">
+                  <p className="text-sm text-gray-600">Líquido</p>
+                  <p className="text-xl font-bold">{formatCurrency(netEarnings)}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Gráfico de vendas */}
+            <div>
+              <h3 className="text-base font-medium mb-2">Evolução de vendas e comissões</h3>
+              <div className="h-[300px] bg-white rounded-lg p-4 border">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={salesData}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value) => formatCurrency(Number(value))} 
+                      labelFormatter={(label) => `Período: ${label}`}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="vendas"
+                      stackId="1"
+                      name="Vendas"
+                      stroke="#4f46e5"
+                      fill="#4f46e580"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="comissao"
+                      stackId="2"
+                      name="Comissão"
+                      stroke="#f59e0b"
+                      fill="#f59e0b80"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Lista de vendas recentes */}
+            <div>
+              <h3 className="text-base font-medium mb-2">Vendas recentes</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Produto
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Data
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Valor
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Comissão
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {isLoadingSales ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center">
+                          <Loading />
+                        </td>
+                      </tr>
+                    ) : !filteredSales || filteredSales.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                          Não há vendas no período selecionado.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredSales.slice(0, 10).map((sale) => {
+                        const product = products?.find(p => p.id === sale.productId);
+                        return (
+                          <tr key={sale.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
+                                  <img 
+                                    src={product?.imageUrl || "https://via.placeholder.com/40"} 
+                                    alt={product?.name || "Produto"}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {product?.name || `Produto #${sale.productId}`}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    Qtd: {sale.quantity || 1}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {new Date(sale.createdAt).toLocaleDateString('pt-BR')}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {new Date(sale.createdAt).toLocaleTimeString('pt-BR')}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold text-gray-900">
+                                {formatCurrency(Number(sale.totalPrice))}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {formatCurrency(Number(sale.commissionAmount))}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ({sale.commissionRate}%)
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                sale.status === "completed" 
+                                  ? "bg-green-100 text-green-800" 
+                                  : sale.status === "pending" 
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}>
+                                {sale.status === "completed" 
+                                  ? "Concluída" 
+                                  : sale.status === "pending" 
+                                  ? "Pendente"
+                                  : sale.status || "Processando"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* Análise por categoria */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-base font-medium mb-2">Vendas por categoria</h3>
+                <div className="bg-white rounded-lg p-4 border h-[300px]">
+                  {isLoadingSales || !categories ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loading />
+                    </div>
+                  ) : !filteredSales || filteredSales.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500">Não há dados suficientes para análise.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={Object.values(filteredSales.reduce((acc, sale) => {
+                          const product = products?.find(p => p.id === sale.productId);
+                          if (!product) return acc;
+                          
+                          const category = categories.find(c => c.id === product.categoryId);
+                          if (!category) return acc;
+                          
+                          const categoryName = category.name;
+                          
+                          if (!acc[categoryName]) {
+                            acc[categoryName] = {
+                              name: categoryName,
+                              value: 0,
+                              count: 0
+                            };
+                          }
+                          
+                          acc[categoryName].value += Number(sale.totalPrice);
+                          acc[categoryName].count += 1;
+                          
+                          return acc;
+                        }, {} as Record<string, { name: string, value: number, count: number }>))}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value) => formatCurrency(Number(value))} 
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          name="Valor"
+                          stroke="#4f46e5"
+                          fill="#4f46e580"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-base font-medium mb-2">Desempenho de produtos</h3>
+                <div className="bg-white rounded-lg p-4 border h-[300px] overflow-y-auto">
+                  {isLoadingSales ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loading />
+                    </div>
+                  ) : !topProducts || topProducts.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500">Não há dados suficientes para análise.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {topProducts.map((item, index) => (
+                        <div key={item?.product?.id || index} className="flex items-center space-x-4">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
+                            #{index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{item?.product?.name}</p>
+                            <div className="flex items-center text-sm text-gray-500">
+                              <span>{item?.count || 0} vendas</span>
+                              <span className="mx-2">•</span>
+                              <span>{formatCurrency(item?.totalValue || 0)}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-green-600">
+                              +{(item?.totalValue / totalSales * 100 || 0).toFixed(1)}%
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              do total
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setIsAnalyticsOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal de Configurações do Fornecedor */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurações do Fornecedor</DialogTitle>
+            <DialogDescription>
+              Ajuste as configurações da sua conta e preferências de exibição.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Notificações</h3>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="notif-sales" />
+                <label htmlFor="notif-sales" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Receber notificações de novas vendas
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="notif-messages" defaultChecked />
+                <label htmlFor="notif-messages" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Receber notificações de novas mensagens
+                </label>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Exibição do Dashboard</h3>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="dashboard-sales" defaultChecked />
+                <label htmlFor="dashboard-sales" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Mostrar gráfico de vendas
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="dashboard-commission" defaultChecked />
+                <label htmlFor="dashboard-commission" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Mostrar gráfico de comissões
+                </label>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Período padrão para relatórios</h3>
+              <div className="flex space-x-2">
+                <Button 
+                  variant={timeframeFilter === "week" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setTimeframeFilter("week")}
+                >
+                  Semana
+                </Button>
+                <Button 
+                  variant={timeframeFilter === "month" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setTimeframeFilter("month")}
+                >
+                  Mês
+                </Button>
+                <Button 
+                  variant={timeframeFilter === "quarter" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setTimeframeFilter("quarter")}
+                >
+                  Trimestre
+                </Button>
+                <Button 
+                  variant={timeframeFilter === "year" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setTimeframeFilter("year")}
+                >
+                  Ano
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Informações da conta</h3>
+              <div className="rounded-md border p-4">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Fornecedor: {user?.username}</p>
+                  <p className="text-sm text-muted-foreground">Email: {user?.email}</p>
+                  <p className="text-sm text-muted-foreground">Empresa: {user?.companyName || "Não informado"}</p>
+                  <p className="text-sm text-muted-foreground">CNPJ: {user?.cnpj || "Não informado"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex items-center justify-between">
+            <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              toast({
+                title: "Configurações salvas",
+                description: "Suas preferências foram atualizadas com sucesso.",
+              });
+              setIsSettingsOpen(false);
+            }}>
+              Salvar alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
