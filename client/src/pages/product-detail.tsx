@@ -724,14 +724,19 @@ export default function ProductDetailPage() {
                             optionSlug: option.slug
                           });
                           
-                          // Se tivermos o ID do fornecedor, usamos a nova rota de fornecedor específico
-                          if (option.supplierId && product.id) {
-                            // Navega para a página de detalhes do produto fornecido por um fornecedor específico
-                            navigate(`/produtos/${product.id}/fornecedor/${option.supplierId}`);
-                          } else {
-                            // Fallback para a navegação anterior
-                            navigate(`/produtos/${option.slug}`);
-                          }
+                          // Navegação para a página de detalhes do produto por fornecedor
+                          // Primeiro tentamos usar product.id e option.supplierId
+                          // Se não estiverem disponíveis, criamos uma URL baseada no slug
+                          const targetUrl = (product.id && option.supplierId) 
+                            ? `/produtos/${product.id}/fornecedor/${option.supplierId}`
+                            : `/produtos/${option.slug}`;
+                          
+                          navigate(targetUrl);
+                          toast({
+                            title: "Detalhes do fornecedor",
+                            description: `Visualizando detalhes do fornecedor: ${option.supplier?.name || 'Fornecedor'}`,
+                            duration: 3000,
+                          });
                         }}
                       >
                         <ExternalLink size={14} className="mr-1" />
