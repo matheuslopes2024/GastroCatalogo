@@ -5,6 +5,7 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import SearchResults from "@/pages/search-results";
 import ProductDetails from "@/pages/product-details";
+import ProductDetail from "@/pages/product-detail";
 import Checkout from "@/pages/checkout";
 import CartPage from "@/pages/cart-page";
 import ProductComparisonPage from "@/pages/product-comparison";
@@ -56,6 +57,7 @@ function MainRoutes() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/busca" component={SearchResults} />
         <Route path="/produto/:slug" component={ProductDetails} />
+        <Route path="/produtos/:slug" component={ProductDetail} />
         <Route path="/comparar/:slug" component={ProductComparisonPage} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/carrinho" component={CartPage} />

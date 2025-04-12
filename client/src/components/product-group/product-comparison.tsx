@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { 
@@ -12,7 +12,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUpDown, Check, Info, Star, Truck, ShoppingCart } from "lucide-react";
+import { 
+  ArrowUpDown, 
+  Check, 
+  Info, 
+  Star, 
+  Truck, 
+  ShoppingCart, 
+  Heart,
+  Maximize2,
+  Phone,
+  Mail,
+  ExternalLink,
+  Clock,
+  Package,
+  Shield,
+  DollarSign,
+  BarChart2,
+  Percent,
+  ChevronDown,
+  ChevronUp,
+  Share2
+} from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -21,8 +42,34 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 // Funções auxiliares
 const formatCurrency = (value: number): string => {
@@ -212,17 +259,36 @@ export default function ProductComparison() {
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-4 flex flex-col justify-center items-center md:border-r">
-                <div className="relative w-full h-32 mb-2">
+                <div className="relative w-full h-32 mb-2 group cursor-pointer">
                   <img 
                     src={item.product?.imageUrl || "https://via.placeholder.com/300x200"} 
                     alt={item.product?.name} 
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain transition-all group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Link to={`/produtos/${item.product?.slug}`}>
+                      <div className="bg-primary/90 text-white p-2 rounded-full">
+                        <Maximize2 size={20} />
+                      </div>
+                    </Link>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-center">{item.product?.name}</h3>
+                <Link to={`/produtos/${item.product?.slug}`} className="hover:text-primary transition-colors">
+                  <h3 className="text-lg font-semibold text-center">{item.product?.name}</h3>
+                </Link>
                 <div className="flex items-center mt-1">
-                  <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                  <span className="ml-1 text-sm">{item.product?.rating} ({item.product?.ratingsCount})</span>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star 
+                        key={star} 
+                        size={14} 
+                        className={`${parseFloat(item.product?.rating || "0") >= star 
+                          ? "text-yellow-500 fill-yellow-500" 
+                          : "text-gray-300"}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="ml-2 text-sm">{item.product?.rating} ({item.product?.ratingsCount})</span>
                 </div>
               </div>
               
@@ -238,18 +304,101 @@ export default function ProductComparison() {
                   </div>
                 </div>
                 
-                <div className="mt-3">
+                <div className="mt-3 space-y-2">
                   <div className="flex items-center text-sm">
-                    <Truck size={14} className="mr-1" />
+                    <Truck size={14} className="mr-1 text-primary" />
                     <span>Entrega em 3-5 dias úteis</span>
                   </div>
+                  <div className="flex items-center text-sm">
+                    <Shield size={14} className="mr-1 text-primary" />
+                    <span>Garantia do fornecedor</span>
+                  </div>
+                </div>
+                
+                <div className="mt-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-xs mt-1 px-2">
+                        Informações do fornecedor
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Sobre o fornecedor</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="flex items-center">
+                          <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                            {item.supplier?.name.charAt(0)}
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="font-bold text-lg">{item.supplier?.name}</h3>
+                            <p className="text-muted-foreground">{item.supplier?.companyName}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex items-center">
+                            <Building className="h-4 w-4 mr-2 text-primary" />
+                            <span>CNPJ Verificado</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 mr-2 text-primary" />
+                            <span>Ativo há 5 anos</span>
+                          </div>
+                          <div className="flex items-center">
+                            <DollarSign className="h-4 w-4 mr-2 text-primary" />
+                            <span>Pagamento em dia</span>
+                          </div>
+                          <div className="flex items-center">
+                            <BarChart2 className="h-4 w-4 mr-2 text-primary" />
+                            <span>25 produtos</span>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-2">Contato:</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <Phone className="h-4 w-4 mr-2 text-primary" />
+                              <span>(11) 9999-9999</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Mail className="h-4 w-4 mr-2 text-primary" />
+                              <span>contato@{item.supplier?.name.toLowerCase().replace(/\s+/g, '')}.com.br</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <Button className="w-full">
+                          Entrar em contato
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
               
               <div className="p-4 md:border-r">
                 <h4 className="text-sm font-medium text-muted-foreground mb-2">Características</h4>
-                <ul className="text-sm space-y-1">
-                  {item.product?.features?.map((feature, index) => (
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="features">
+                    <AccordionTrigger className="text-xs py-1">Ver todas as características</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="text-sm space-y-1">
+                        {item.product?.features?.map((feature, index) => (
+                          <li key={index} className="flex items-start">
+                            <Check size={16} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                <ul className="text-sm space-y-1 mt-2">
+                  {item.product?.features?.slice(0, 3).map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <Check size={16} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
                       <span>{feature}</span>
@@ -258,10 +407,21 @@ export default function ProductComparison() {
                 </ul>
                 
                 {item.matchConfidence && (
-                  <div className="mt-3 text-xs flex items-center">
-                    <Info size={12} className="mr-1" />
-                    <span>Compatibilidade: {parseFloat(item.matchConfidence).toFixed(0)}%</span>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="mt-3 text-xs flex items-center cursor-help">
+                          <Info size={12} className="mr-1" />
+                          <span>Compatibilidade: {parseFloat(item.matchConfidence).toFixed(0)}%</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs max-w-[200px]">
+                          Este percentual indica o quanto este produto corresponde às especificações padrão deste grupo.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
               
@@ -288,6 +448,10 @@ export default function ProductComparison() {
                       {formatCurrency(parseFloat(item.priceDifference))} mais caro
                     </span>
                   )}
+                  
+                  <span className="text-xs text-green-600 mt-1">
+                    Em até 12x no cartão
+                  </span>
                 </div>
                 
                 <Button 
@@ -303,7 +467,7 @@ export default function ProductComparison() {
                   className="w-full mt-2"
                   asChild
                 >
-                  <Link to={`/products/${item.product?.slug}`}>
+                  <Link to={`/produtos/${item.product?.slug}`}>
                     Ver detalhes
                   </Link>
                 </Button>
