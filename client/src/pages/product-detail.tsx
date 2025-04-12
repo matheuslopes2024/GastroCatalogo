@@ -59,7 +59,10 @@ import {
   DollarSign,
   CheckCircle,
   Crown,
-  ShieldCheck
+  ShieldCheck,
+  Store,
+  AlertCircle,
+  ArrowRightLeft
 } from "lucide-react";
 
 // Tipos
@@ -856,7 +859,7 @@ export default function ProductDetailPage() {
                           navigate(`/produtos/comparar/${product.categoryId}`);
                         }}
                       >
-                        <ArrowsCompare size={14} className="mr-1.5" /> 
+                        <ArrowRightLeft size={14} className="mr-1.5" /> 
                         Comparar com similares
                       </Button>
                       
@@ -889,7 +892,7 @@ export default function ProductDetailPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-10"
+                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-30"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   shareProduct();
@@ -910,7 +913,7 @@ export default function ProductDetailPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-10"
+                                className="h-8 w-8 rounded-full hover:bg-gray-100 relative z-30"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   toast({
@@ -1121,7 +1124,7 @@ export default function ProductDetailPage() {
                                 }
                               }}
                             >
-                              <ArrowsCompare size={16} className="mr-2" />
+                              <ArrowRightLeft size={16} className="mr-2" />
                               Ver todos os fornecedores
                             </Button>
                           </div>
