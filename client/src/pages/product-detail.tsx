@@ -557,7 +557,7 @@ export default function ProductDetailPage() {
                         className="w-full"
                         asChild
                       >
-                        <Link to={`/produtos/${option.slug}`}>
+                        <Link href={`/produtos/${option.slug}`}>
                           Ver detalhes
                         </Link>
                       </Button>
