@@ -53,6 +53,11 @@ export interface ChatConversation {
   // Campos adicionais para o status da conversa
   acceptedByAdmin?: boolean;
   adminId?: number;
+  // Campos opcionais para compatibilidade com API
+  participantRole?: string | null;
+  participantId?: number | null;
+  participantName?: string | null;
+  unreadCount?: number;
 }
 
 export interface Attachment {
@@ -191,6 +196,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       if (conversationId) {
         payload.conversationId = conversationId;
+        
+        // Adicionar lógica para determinar o destinatário quando apenas o conversationId é fornecido
+        if (!receiverId && activeConversation) {
+          // Extrair o destinatário com base nos participantes da conversa ativa
+          const otherParticipantId = activeConversation.participantIds.find(id => id !== user.id);
+          if (otherParticipantId) {
+            payload.receiverId = otherParticipantId;
+            console.log("Destinatário determinado automaticamente:", otherParticipantId);
+          } else {
+            console.warn("Não foi possível determinar o destinatário na conversa:", conversationId);
+            // Tente usar admin ID 1 como fallback para conversas com fornecedores
+            if (user.role === 'SUPPLIER' || user.role === 'supplier') {
+              payload.receiverId = 1; // Admin ID padrão
+              console.log("Usando admin ID 1 como destinatário padrão para fornecedor");
+            }
+          }
+        }
       }
       
       if (receiverId) {
@@ -202,6 +224,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         payload.attachmentType = attachment.type;
         payload.attachmentSize = attachment.size;
       }
+      
+      // Verificação final para garantir que há um destinatário válido
+      if (!payload.receiverId && !payload.conversationId) {
+        throw new Error("Destinatário não encontrado. É necessário fornecer um receiverId ou conversationId válido.");
+      }
+      
+      console.log("Enviando mensagem com payload:", {
+        ...payload, 
+        message: payload.message.substring(0, 20) + "...",
+        attachmentData: payload.attachmentData ? "[DADOS ANEXO]" : null
+      });
       
       const res = await apiRequest("POST", "/api/chat/messages", payload);
       return res.json();
@@ -405,8 +438,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Se ainda não temos receiverId, verificamos o participantRole para identificar um admin
-      if (!receiverId && activeConversation.participantRole === UserRole.ADMIN) {
+      // Se ainda não temos receiverId, verificamos se é uma conversa com admin
+      if (!receiverId && activeConversation.participantRole === 'ADMIN') {
         // Se estamos falando com um admin (caso de fornecedor->admin), usamos o ID 1 (admin padrão)
         receiverId = 1; // ID do administrador padrão do sistema
         console.log("Definindo destinatário como admin padrão (ID=1)");
