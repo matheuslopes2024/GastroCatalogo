@@ -532,16 +532,15 @@ export default function ProductDetailPage() {
             {supplierOptions.map((option, index) => (
               <Card 
                 key={option.id} 
-                className={`overflow-hidden transition-all border-2 ${option.isBestPrice ? 'border-primary' : 'hover:border-primary/50'} cursor-pointer group`}
+                className={`overflow-hidden transition-all border-2 ${option.isBestPrice ? 'border-primary' : 'border-gray-200 hover:border-primary/50'}`}
               >
                 <CardContent className="p-0">
                   <div 
-                    className="grid grid-cols-1 md:grid-cols-5 gap-2 relative hover:bg-gray-50/50 transition-colors"
-                    onClick={() => navigate(`/produtos/${option.slug}`)}
+                    className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-0 relative hover:bg-gray-50/50 transition-colors"
                   >
                     {/* Faixa "Melhor Preço" no canto superior esquerdo, se aplicável */}
                     {option.isBestPrice && (
-                      <div className="absolute top-0 left-0 bg-green-600 text-white text-xs py-1 px-3 rounded-br-md">
+                      <div className="absolute top-0 left-0 bg-green-600 text-white text-xs py-1 px-3 z-10 rounded-br-md font-medium">
                         MELHOR PREÇO
                       </div>
                     )}
@@ -693,10 +692,11 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
                     
-                    {/* Coluna de ação */}
-                    <div className="p-4 flex flex-col justify-center items-center gap-2 relative">
+                    {/* Coluna de ação - redesenhada para destacar os botões */}
+                    <div className="p-4 flex flex-col justify-center items-center gap-3 border-l border-gray-100">
+                      {/* Botão de Comprar com design de destaque */}
                       <Button 
-                        className="w-full group-hover:bg-primary/90"
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           navigate(`/produtos/${option.slug}`);
@@ -711,13 +711,14 @@ export default function ProductDetailPage() {
                         Comprar
                       </Button>
                       
+                      {/* Botão de Ver Fornecedor com nova aparência para destacar melhor */}
                       <Button 
-                        variant="outline" 
-                        className="w-full group-hover:bg-gray-50 group-hover:border-primary"
+                        variant="secondary"
+                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
                           
-                          // Verificar valores para debugging
+                          // Log para debugging
                           console.log("Navegando para detalhes do fornecedor:", {
                             productId: product.id,
                             supplierId: option.supplierId,
@@ -725,8 +726,6 @@ export default function ProductDetailPage() {
                           });
                           
                           // Navegação para a página de detalhes do produto por fornecedor
-                          // Primeiro tentamos usar product.id e option.supplierId
-                          // Se não estiverem disponíveis, criamos uma URL baseada no slug
                           const targetUrl = (product.id && option.supplierId) 
                             ? `/produtos/${product.id}/fornecedor/${option.supplierId}`
                             : `/produtos/${option.slug}`;
@@ -734,26 +733,39 @@ export default function ProductDetailPage() {
                           navigate(targetUrl);
                           toast({
                             title: "Detalhes do fornecedor",
-                            description: `Visualizando detalhes do fornecedor: ${option.supplier?.name || 'Fornecedor'}`,
+                            description: `Visualizando: ${option.supplier?.name || 'Fornecedor'}`,
                             duration: 3000,
                           });
                         }}
                       >
-                        <ExternalLink size={14} className="mr-1" />
-                        Ver detalhes do fornecedor
+                        <Building size={14} className="mr-1" />
+                        Ver fornecedor
                       </Button>
                       
-                      {/* Adicionar tooltips indicando interatividade */}
-                      <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Botão adicional de comparação - totalmente clicável */}
+                      <Button
+                        variant="ghost"
+                        className="w-full text-muted-foreground hover:text-primary hover:bg-primary/5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/produtos/comparar/${product.categoryId}`);
+                        }}
+                      >
+                        <ChevronRightCircle size={14} className="mr-1" /> 
+                        Comparar opções
+                      </Button>
+                      
+                      {/* Tooltip indicando interatividade */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="p-1 bg-primary/10 rounded-full">
+                              <div className="p-1 bg-primary/10 rounded-full cursor-help">
                                 <Info size={14} className="text-primary" />
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">Clique em qualquer lugar do card para ver detalhes do produto</p>
+                            <TooltipContent side="left">
+                              <p className="text-xs">Clique para ver produto completo</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
