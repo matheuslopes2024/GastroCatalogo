@@ -222,17 +222,27 @@ export function AdminChatProvider({ children }: { children: ReactNode }) {
   /**
    * Hook de efeito para inicialização única
    * Este useEffect só executa uma vez por mount do componente
+   * 
+   * CORRIGIDO: usa ref para evitar registro duplicado 
    */
   useEffect(() => {
     // Somente para admins
     if (!user || user.role !== UserRole.ADMIN) return;
     
-    // Inicializar o handler WebSocket (sem causas loops!)
-    setupWebSocketHandler();
+    // Prevenir registros múltiplos usando ref
+    if (!handlerRegisteredRef.current) {
+      console.log("Inicializando handler WebSocket para admin - primeira vez");
+      // Inicializar o handler WebSocket (sem causas loops!)
+      setupWebSocketHandler();
+      handlerRegisteredRef.current = true;
+    } else {
+      console.log("Handler WebSocket para admin já está registrado - ignorando");
+    }
     
     // Limpeza
     return () => {
       if (wsHandlerIdRef.current) {
+        console.log("Removendo handler WebSocket para admin");
         removeMessageHandler(wsHandlerIdRef.current);
         handlerRegisteredRef.current = false;
       }

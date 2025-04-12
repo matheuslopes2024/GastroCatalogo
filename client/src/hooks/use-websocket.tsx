@@ -1,3 +1,14 @@
+/**
+ * @file use-websocket.tsx
+ * @description Implementação otimizada de WebSocket para toda a aplicação
+ * 
+ * - Versão 2.0 com controle dedicado de ciclo de vida do WebSocket
+ * - Prevenção de conexões duplicadas
+ * - Throttling inteligente para mensagens
+ * - Gestão centralizada de eventos WebSocket 
+ * - Suporte a reconexão automática
+ */
+
 import { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./use-auth";
 import { useToast } from "@/hooks/use-toast";
