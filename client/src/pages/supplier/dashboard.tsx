@@ -809,15 +809,15 @@ export default function SupplierDashboard() {
               <div className="flex items-center space-x-4">
                 <div className="bg-primary/10 rounded-lg p-3 text-center">
                   <p className="text-sm text-gray-600">Total de Vendas</p>
-                  <p className="text-xl font-bold">{filteredSales?.length || 0}</p>
+                  <p className="text-xl font-bold">{dashboardSummary.totalOrders || 0}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3 text-center">
                   <p className="text-sm text-gray-600">Faturamento</p>
-                  <p className="text-xl font-bold">{formatCurrency(totalSales)}</p>
+                  <p className="text-xl font-bold">{formatCurrency(dashboardSummary.totalSales)}</p>
                 </div>
                 <div className="bg-blue-50 rounded-lg p-3 text-center">
                   <p className="text-sm text-gray-600">Líquido</p>
-                  <p className="text-xl font-bold">{formatCurrency(netEarnings)}</p>
+                  <p className="text-xl font-bold">{formatCurrency(dashboardSummary.netRevenue)}</p>
                 </div>
               </div>
             </div>
@@ -884,20 +884,20 @@ export default function SupplierDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {isLoadingSales ? (
+                    {isLoadingDashboard ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-4 text-center">
                           <Loading />
                         </td>
                       </tr>
-                    ) : !filteredSales || filteredSales.length === 0 ? (
+                    ) : !recentSales || recentSales.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                           Não há vendas no período selecionado.
                         </td>
                       </tr>
                     ) : (
-                      filteredSales.slice(0, 10).map((sale) => {
+                      recentSales.slice(0, 10).map((sale) => {
                         const product = products?.find(p => p.id === sale.productId);
                         return (
                           <tr key={sale.id}>
@@ -970,18 +970,18 @@ export default function SupplierDashboard() {
               <div>
                 <h3 className="text-base font-medium mb-2">Vendas por categoria</h3>
                 <div className="bg-white rounded-lg p-4 border h-[300px]">
-                  {isLoadingSales || !categories ? (
+                  {isLoadingDashboard || !categories ? (
                     <div className="flex items-center justify-center h-full">
                       <Loading />
                     </div>
-                  ) : !filteredSales || filteredSales.length === 0 ? (
+                  ) : !recentSales || recentSales.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <p className="text-gray-500">Não há dados suficientes para análise.</p>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart
-                        data={Object.values(filteredSales.reduce((acc, sale) => {
+                        data={Object.values(recentSales.reduce((acc, sale) => {
                           const product = products?.find(p => p.id === sale.productId);
                           if (!product) return acc;
                           
@@ -1027,17 +1027,17 @@ export default function SupplierDashboard() {
               <div>
                 <h3 className="text-base font-medium mb-2">Desempenho de produtos</h3>
                 <div className="bg-white rounded-lg p-4 border h-[300px] overflow-y-auto">
-                  {isLoadingSales ? (
+                  {isLoadingDashboard ? (
                     <div className="flex items-center justify-center h-full">
                       <Loading />
                     </div>
-                  ) : !topProducts || topProducts.length === 0 ? (
+                  ) : !productPerformance || productPerformance.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <p className="text-gray-500">Não há dados suficientes para análise.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {topProducts.map((item, index) => (
+                      {productPerformance.map((item, index) => (
                         <div key={item?.product?.id || index} className="flex items-center space-x-4">
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
                             #{index + 1}
