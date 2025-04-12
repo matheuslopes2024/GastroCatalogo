@@ -90,10 +90,39 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         }
       };
       
+      // Cache para evitar processamento de mensagens duplicadas
+      const processedMessages = new Set<string>();
+      
       ws.current.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log("Mensagem WebSocket recebida:", message);
+          
+          // Ignorar heartbeats e pings nos logs para reduzir ruído no console
+          if (message.type !== 'heartbeat' && message.type !== 'ping' && message.type !== 'pong') {
+            console.log("Mensagem WebSocket recebida:", message);
+          }
+          
+          // Criar um ID único para a mensagem para evitar duplicação
+          const messageId = `${message.type}_${message.timestamp || Date.now()}`;
+          
+          // Verificar se esta mensagem já foi processada recentemente
+          if (processedMessages.has(messageId)) {
+            return;
+          }
+          
+          // Adicionar ao cache de mensagens processadas
+          processedMessages.add(messageId);
+          
+          // Limitar tamanho do cache para evitar crescimento ilimitado
+          if (processedMessages.size > 1000) {
+            // Converter para array, remover primeiras 500 entradas e reconverter para Set
+            const messagesArray = Array.from(processedMessages);
+            const newCache = new Set(messagesArray.slice(500));
+            processedMessages.clear();
+            messagesArray.slice(500).forEach(id => processedMessages.add(id));
+          }
+          
+          console.log("Processando mensagem WebSocket:", message);
           setLastMessage(message);
           
           // Executar handlers específicos para esta mensagem
@@ -237,15 +266,28 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id]);
   
-  // Manter a conexão ativa enviando pings periódicos
+  // Manter a conexão ativa enviando pings periódicos e limitar duplicações de tentativas
   useEffect(() => {
     if (!connected) return;
     
+    // Anti-duplicação: usar um ID exclusivo para esta instância do efeito
+    const pingId = `ping-${Date.now()}`;
+    console.log(`[WS:${pingId}] Iniciando pings periódicos`);
+    
     const pingInterval = setInterval(() => {
-      sendMessage({ type: "ping" });
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        // Adicionar timestamp para tornar cada mensagem única
+        sendMessage({ 
+          type: "ping", 
+          timestamp: new Date().toISOString() 
+        });
+      }
     }, 30000); // A cada 30 segundos
     
-    return () => clearInterval(pingInterval);
+    return () => {
+      console.log(`[WS:${pingId}] Parando pings periódicos`);
+      clearInterval(pingInterval);
+    };
   }, [connected]);
   
   return (
