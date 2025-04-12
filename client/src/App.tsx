@@ -120,7 +120,7 @@ function MainRoutes() {
                 <span className="ml-2 font-medium text-gray-700">Carregando chat de suporte...</span>
               </div>
             }>
-              {React.createElement(lazy(() => import("@/pages/supplier/chat")))}
+              {React.createElement(lazy(() => import("@/pages/supplier/chat/index")))}
             </Suspense>
           )}
           allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
