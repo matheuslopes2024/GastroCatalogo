@@ -11,7 +11,8 @@ export default function ChatAdminPage() {
       console.log('[WS:patch] Aplicando correção WebSocket...');
       const originalWebSocket = window.WebSocket;
       
-      window.WebSocket = function(url, protocols) {
+      // Função que corrige a URL do WebSocket
+      const CustomWebSocket = function(url: string | URL, protocols?: string | string[]) {
         // Corrigir URLs incorretas que usam /?token= em vez de /ws?token=
         if (url && typeof url === 'string' && url.includes('/?token=')) {
           console.warn('[WS:patch] Corrigindo URL WebSocket incorreta', url);
@@ -23,11 +24,16 @@ export default function ChatAdminPage() {
         return new originalWebSocket(url, protocols);
       };
       
-      // Manter as propriedades estáticas do WebSocket
-      window.WebSocket.CONNECTING = originalWebSocket.CONNECTING;
-      window.WebSocket.OPEN = originalWebSocket.OPEN;
-      window.WebSocket.CLOSING = originalWebSocket.CLOSING;
-      window.WebSocket.CLOSED = originalWebSocket.CLOSED;
+      // Copiar propriedades estáticas do WebSocket original
+      CustomWebSocket.prototype = originalWebSocket.prototype;
+      CustomWebSocket.CONNECTING = originalWebSocket.CONNECTING;
+      CustomWebSocket.OPEN = originalWebSocket.OPEN;
+      CustomWebSocket.CLOSING = originalWebSocket.CLOSING;
+      CustomWebSocket.CLOSED = originalWebSocket.CLOSED;
+      
+      // Substituir o construtor WebSocket com nossa versão personalizada
+      // @ts-ignore - Ignoramos o erro de tipo aqui pois sabemos que funciona
+      window.WebSocket = CustomWebSocket;
       
       console.info('[WS:patch] Patch de WebSocket instalado para corrigir URL');
     }

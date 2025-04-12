@@ -27,6 +27,16 @@ import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+// Interface para mensagens WebSocket
+interface WebSocketMessage {
+  type: string;
+  conversationId?: number;
+  conversations?: any[];
+  timestamp?: string | number;
+  message?: string;
+  [key: string]: any;
+}
+
 // Cache para controle de requisições
 const DEBOUNCE_INTERVAL = 5000; // Aumentamos para 5s para garantir intervalos adequados
 // Usamos variáveis de memória em vez de localStorage para evitar problemas de "Access to storage is not allowed from this context"
