@@ -1,195 +1,228 @@
-import { useState, useEffect } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Product } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { ComparisonResult } from "@/components/product/comparison-result";
-import { Loading, ComparisonSkeleton } from "@/components/ui/loading";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { 
+  BarChart2, 
+  Sparkles, 
+  TrendingDown, 
+  Percent, 
+  ShoppingCart, 
+  ArrowRight,
+  Scale,
+  Search
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface ProductGroup {
+  id: number;
+  name: string;
+  slug: string;
+  displayName: string;
+  description: string | null;
+  features: string[] | null;
+  minPrice: string;
+  maxPrice: string;
+  avgPrice: string;
+  productsCount: number;
+  suppliersCount: number;
+  categoryId: number;
+  itemsCount: number;
+}
 
 export function ComparisonSection() {
-  const [orderBy, setOrderBy] = useState("price-asc");
-  const [searchTerm, setSearchTerm] = useState("lava-louças");
-  const [searchInput, setSearchInput] = useState("lava-louças");
-  const [limit, setLimit] = useState(5);
-  const { toast } = useToast();
-  
-  // Filtros reais baseados nas características dos produtos
-  const filters = [
-    { label: "Tipo de produto", value: "tipo" },
-    { label: "Capacidade", value: "capacidade" },
-    { label: "Fornecedores", value: "fornecedores" },
-    { label: "Preço", value: "preco" },
-    { label: "Avaliações", value: "avaliacoes" }
-  ];
-
-  const { data: productGroups, isLoading, refetch } = useQuery<Product[][]>({
-    queryKey: ["/api/compare-products", { name: searchTerm, limit }],
+  // Buscar os grupos de produtos para comparação
+  const { data: productGroups, isLoading, error } = useQuery({
+    queryKey: ["/api/product-groups"],
     queryFn: async () => {
-      try {
-        const response = await apiRequest(
-          "GET", 
-          `/api/compare-products?name=${encodeURIComponent(searchTerm)}&limit=${limit}`
-        );
-        
-        if (!response.ok) {
-          throw new Error("Falha ao buscar comparações de produtos");
-        }
-        
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Erro ao buscar comparações:", error);
-        toast({
-          title: "Erro ao buscar comparações",
-          description: "Não foi possível obter os dados de comparação de produtos",
-          variant: "destructive",
-        });
-        return [];
+      const res = await fetch("/api/product-groups");
+      if (!res.ok) {
+        throw new Error("Falha ao carregar grupos de produtos");
       }
-    },
-    enabled: searchTerm.length > 0
+      return res.json() as Promise<ProductGroup[]>;
+    }
   });
 
-  // Aplicar ordenação aos resultados
-  const sortedProductGroups = productGroups ? [...productGroups].map(group => {
-    if (orderBy === "price-asc") {
-      return [...group].sort((a, b) => parseFloat(a.price.toString()) - parseFloat(b.price.toString()));
-    } else if (orderBy === "price-desc") {
-      return [...group].sort((a, b) => parseFloat(b.price.toString()) - parseFloat(a.price.toString()));
-    } else if (orderBy === "rating") {
-      return [...group].sort((a, b) => {
-        const aRating = a.rating ? parseFloat(a.rating.toString()) : 0;
-        const bRating = b.rating ? parseFloat(b.rating.toString()) : 0;
-        return bRating - aRating;
-      });
-    }
-    return group;
-  }) : [];
-
-  const handleSearch = () => {
-    setSearchTerm(searchInput);
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+  
+  const item = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1 },
   };
 
-  const handleLoadMore = () => {
-    setLimit(prev => prev + 5);
-    refetch();
+  // Formatar o preço
+  const formatCurrency = (price: string) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(parseFloat(price));
   };
 
-  return (
-    <section className="py-12 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-end mb-6">
-          <h2 className="text-2xl font-bold font-sans">
-            Lava-louças de Capô: Compare as melhores ofertas
-          </h2>
-          <div className="hidden md:block">
-            <Select value={orderBy} onValueChange={setOrderBy}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="price-asc">Ordenar por: Preço (menor)</SelectItem>
-                <SelectItem value="price-desc">Ordenar por: Preço (maior)</SelectItem>
-                <SelectItem value="relevance">Ordenar por: Relevância</SelectItem>
-                <SelectItem value="rating">Ordenar por: Avaliações</SelectItem>
-              </SelectContent>
-            </Select>
+  if (isLoading) {
+    return (
+      <div className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center text-center mb-12">
+            <Skeleton className="h-10 w-3/4 max-w-md mb-4" />
+            <Skeleton className="h-6 w-full max-w-2xl" />
           </div>
-        </div>
-
-        {/* Filter bar */}
-        <div className="mb-6 bg-gray-100 p-4 rounded-lg">
-          <div className="flex flex-wrap gap-3">
-            <span className="font-medium text-gray-900">Filtros:</span>
-            {filters.map((filter) => (
-              <Button
-                key={filter.value}
-                variant="outline"
-                className="bg-white px-3 py-1 rounded border border-gray-200 text-sm flex items-center hover:bg-gray-50"
-              >
-                {filter.label}
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-64 w-full rounded-xl" />
             ))}
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Barra de pesquisa */}
-        <div className="mb-6 flex items-center gap-2">
-          <div className="flex-1 relative">
-            <Input
-              type="text"
-              placeholder="Buscar produtos (ex: lava-louças, forno, geladeira)"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+  if (error || !productGroups || productGroups.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="py-12 bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col items-center text-center mb-12">
+          <div className="bg-primary/10 text-primary font-semibold py-2 px-4 rounded-full inline-flex items-center mb-4">
+            <BarChart2 className="mr-2 h-4 w-4" /> 
+            <span>Compare e economize</span>
           </div>
-          <Button onClick={handleSearch} className="bg-primary text-white">
-            Buscar
-          </Button>
+          
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Compare os melhores equipamentos <br className="hidden md:inline" />
+            <span className="text-primary">e economize até 30%</span>
+          </h2>
+          
+          <p className="text-gray-600 max-w-2xl">
+            Encontre as melhores ofertas do mercado com nosso sistema de comparação exclusivo. 
+            Analisamos preços e condições de diversos fornecedores para você fazer a melhor escolha.
+          </p>
         </div>
         
-        {/* Comparison results */}
-        {isLoading ? (
-          <ComparisonSkeleton />
-        ) : (
-          <div>
-            {sortedProductGroups && sortedProductGroups.length > 0 ? (
-              <div className="space-y-8">
-                {sortedProductGroups.map((productGroup, groupIndex) => (
-                  <div key={groupIndex} className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 p-3 border-b border-gray-200">
-                      <h3 className="text-lg font-bold">{productGroup[0].name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Comparando {productGroup.length} ofertas de fornecedores diferentes
-                      </p>
-                    </div>
-                    <div className="divide-y divide-gray-200">
-                      {productGroup.map((product, index) => (
-                        <ComparisonResult 
-                          key={product.id} 
-                          product={product} 
-                          isBestPrice={index === 0} 
-                        />
-                      ))}
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          {productGroups.slice(0, 3).map((group) => (
+            <motion.div key={group.id} variants={item}>
+              <Card className="overflow-hidden h-full transition-all hover:shadow-lg flex flex-col border-2 hover:border-primary">
+                <div className="p-4 md:p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <Badge variant="outline" className="bg-primary/5 text-primary">
+                      {group.suppliersCount} fornecedores
+                    </Badge>
+                    
+                    <div className="text-sm bg-primary/10 rounded-full px-3 py-1 flex items-center">
+                      <Scale className="h-4 w-4 mr-1 text-primary" />
+                      <span>{group.itemsCount || 0} opções</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Nenhum resultado de comparação encontrado.</p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Tente buscar por outro termo ou categoria de produto.
-                </p>
-              </div>
-            )}
+                  
+                  <h3 className="text-xl font-bold mb-2">{group.displayName}</h3>
+                  
+                  <p className="text-gray-600 mb-4 text-sm flex-grow">
+                    {group.description || "Compare preços e condições de diversos fornecedores."}
+                  </p>
+                  
+                  <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Preço mais baixo</span>
+                      <span className="font-semibold text-green-600 flex items-center">
+                        <TrendingDown className="h-4 w-4 mr-1" />
+                        {formatCurrency(group.minPrice)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Média do mercado</span>
+                      <span className="font-semibold">
+                        {formatCurrency(group.avgPrice)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Economia potencial</span>
+                      <span className="font-semibold text-primary flex items-center">
+                        <Percent className="h-4 w-4 mr-1" />
+                        {Math.round(((parseFloat(group.maxPrice) - parseFloat(group.minPrice)) / parseFloat(group.maxPrice)) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 md:p-6 pt-0">
+                  <Link href={`/comparar/${group.id}`}>
+                    <Button className="w-full">
+                      <Search className="mr-2 h-4 w-4" />
+                      Comparar Opções
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+        
+        <div className="flex justify-center mt-10">
+          <Link href="/categorias">
+            <Button variant="outline" size="lg" className="gap-2">
+              Ver todos os grupos de comparação
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-primary/5 rounded-lg p-4 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+              <Search className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold mb-1">Busque</h3>
+            <p className="text-gray-600 text-sm">Encontre o produto ideal para o seu negócio</p>
           </div>
-        )}
-
-        {/* Load more */}
-        <div className="mt-8 text-center">
-          <Button
-            variant="outline"
-            onClick={handleLoadMore}
-            className="bg-white border border-primary text-primary hover:bg-primary hover:text-white font-medium py-2 px-6 rounded"
-          >
-            Carregar mais resultados
-          </Button>
+          
+          <div className="bg-primary/5 rounded-lg p-4 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+              <BarChart2 className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold mb-1">Compare</h3>
+            <p className="text-gray-600 text-sm">Analise preços, condições e características</p>
+          </div>
+          
+          <div className="bg-primary/5 rounded-lg p-4 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold mb-1">Economize</h3>
+            <p className="text-gray-600 text-sm">Encontre a melhor oferta do mercado</p>
+          </div>
+          
+          <div className="bg-primary/5 rounded-lg p-4 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+              <ShoppingCart className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold mb-1">Compre</h3>
+            <p className="text-gray-600 text-sm">Adquira com segurança e praticidade</p>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

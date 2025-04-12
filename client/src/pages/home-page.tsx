@@ -16,6 +16,7 @@ import { ProductGrid } from "@/components/home/product-grid";
 import { BenefitsSection } from "@/components/home/benefits-section";
 import { TestimonialsCarousel } from "@/components/home/testimonials-carousel";
 import { StatsSection } from "@/components/home/stats-section";
+import { ComparisonSection } from "@/components/home/comparison-section";
 
 // Componente de divisor visual
 const Divider = () => (
@@ -134,6 +135,13 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <ProductGrid />
         </div>
+        
+        <Divider />
+        
+        {/* Seção de Comparação */}
+        <ComparisonSection />
+        
+        <Divider />
         
         {/* Seção de Benefícios */}
         <BenefitsSection />
