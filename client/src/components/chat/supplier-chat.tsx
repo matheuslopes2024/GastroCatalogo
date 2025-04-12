@@ -1,15 +1,22 @@
 import { useChat } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
-import { useState, useEffect } from "react";
-import { Building2, MessageSquare, UserCircle, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Building2, MessageSquare, UserCircle, X, MessageCircle, Send, Paperclip, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import ChatWidget from "./chat-widget";
 import { apiRequest } from "@/lib/queryClient";
-import { ChatConversation } from "@shared/schema";
+import { ChatConversation, ChatMessage } from "@shared/schema";
 import { UserRole } from "@shared/schema";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow, isToday, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function SupplierChat() {
   const { user } = useAuth();

@@ -113,7 +113,16 @@ function MainRoutes() {
         />
         <ProtectedRoute 
           path="/fornecedor/chat" 
-          component={lazy(() => import("@/pages/supplier/chat"))} 
+          component={() => (
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="ml-2 font-medium text-gray-700">Carregando chat de suporte...</span>
+              </div>
+            }>
+              {React.createElement(lazy(() => import("@/pages/supplier/chat")))}
+            </Suspense>
+          )}
           allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
         />
         
