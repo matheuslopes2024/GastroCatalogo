@@ -1,3 +1,4 @@
+import React, { lazy, Suspense } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
@@ -58,7 +59,13 @@ function MainRoutes() {
         <Route path="/busca" component={SearchResults} />
         <Route path="/produto/:slug" component={ProductDetails} />
         <Route path="/produtos/:slug" component={ProductDetail} />
-        <Route path="/produtos/:productId/fornecedor/:supplierId" component={() => import("@/pages/supplier-product-detail").then(module => module.default)} />
+        <Route path="/produtos/:productId/fornecedor/:supplierId">
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>}>
+            {React.createElement(lazy(() => import("@/pages/supplier-product-detail")))}
+          </Suspense>
+        </Route>
         <Route path="/comparar/:slug" component={ProductComparisonPage} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/carrinho" component={CartPage} />
