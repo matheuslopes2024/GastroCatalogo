@@ -177,7 +177,13 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
   const hasAttachments = message.attachments && message.attachments.length > 0;
   
   // Detectar se é uma mensagem vazia
-  const hasContent = Boolean(message.text || message.message || message.content);
+  const hasContent = Boolean(message.text || message.message);
+  
+  // Verificar se é mensagem de erro do sistema
+  const isSystemError = Boolean(message.isSystemError);
+  
+  // Verificar se é mensagem do sistema
+  const isSystemMessage = Boolean(message.isSystemMessage);
   
   // Rolagem suave quando a mensagem é adicionada
   useEffect(() => {
@@ -233,8 +239,8 @@ export function AdminChatMessage({ message, showAvatar = true, senderName = 'Usu
               : "bg-muted",
           hasAttachments && "space-y-2"
         )}>
-          {(message.text || message.message || message.content) && (
-            <p className="whitespace-pre-wrap">{message.message || message.text || message.content}</p>
+          {(message.text || message.message) && (
+            <p className="whitespace-pre-wrap">{message.message || message.text}</p>
           )}
           
           {hasAttachments && (
