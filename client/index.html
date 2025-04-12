@@ -9,6 +9,52 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Gastro - Marketplace de Equipamentos</title>
+    <!-- Script para corrigir erro de "Access to storage is not allowed from this context" -->
+    <script>
+      // Solução para erros de Storage no contexto de Stripe e outros serviços externos
+      // Interceptamos as operações de localStorage e sessionStorage
+      (function() {
+        try {
+          // Criação de storages alternativos que não geram erro
+          const safeMemoryStorage = {
+            data: {},
+            length: 0,
+            clear: function() { this.data = {}; this.length = 0; },
+            getItem: function(key) { return this.data[key] === undefined ? null : this.data[key]; },
+            key: function(index) { return Object.keys(this.data)[index] || null; },
+            removeItem: function(key) { delete this.data[key]; this.length = Object.keys(this.data).length; },
+            setItem: function(key, value) { this.data[key] = String(value); this.length = Object.keys(this.data).length; }
+          };
+
+          // Somente substituir storages se houver erro ao acessá-los
+          let needToReplace = false;
+          try {
+            // Tenta acessar para verificar se há erro
+            window.localStorage.getItem('test');
+            window.sessionStorage.getItem('test');
+          } catch (e) {
+            console.warn('Detectado problema de acesso a localStorage/sessionStorage, usando substituto seguro');
+            needToReplace = true;
+          }
+
+          // Se houver erro, substituímos os storages
+          if (needToReplace) {
+            Object.defineProperty(window, 'localStorage', {
+              value: safeMemoryStorage,
+              writable: false,
+              configurable: true
+            });
+            Object.defineProperty(window, 'sessionStorage', {
+              value: {...safeMemoryStorage, data: {}},
+              writable: false,
+              configurable: true
+            });
+          }
+        } catch (e) {
+          console.error('Não foi possível substituir storage APIs:', e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
