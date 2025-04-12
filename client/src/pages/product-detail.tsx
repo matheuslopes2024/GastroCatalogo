@@ -716,11 +716,19 @@ export default function ProductDetailPage() {
                         className="w-full group-hover:bg-gray-50 group-hover:border-primary"
                         onClick={(e) => {
                           e.stopPropagation(); // Evita navegação duplicada
-                          navigate(`/produtos/${option.slug}`);
+                          
+                          // Se tivermos o ID do fornecedor, usamos a nova rota de fornecedor específico
+                          if (option.supplierId && product.id) {
+                            // Abre em uma nova guia para testar a nova rota
+                            window.open(`/api/products/${product.id}/supplier/${option.supplierId}`, '_blank');
+                          } else {
+                            // Fallback para a navegação anterior
+                            navigate(`/produtos/${option.slug}`);
+                          }
                         }}
                       >
                         <ExternalLink size={14} className="mr-1" />
-                        Ver detalhes
+                        Ver detalhes do fornecedor
                       </Button>
                       
                       {/* Adicionar tooltips indicando interatividade */}

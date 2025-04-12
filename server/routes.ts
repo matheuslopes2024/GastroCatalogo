@@ -211,6 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         supplierIds.map(id => storage.getUser(id))
       );
       
+      // Resto do código existente...
       // Criar mapa de fornecedores para acesso rápido
       const supplierMap = new Map();
       suppliers.forEach(supplier => {
@@ -334,6 +335,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao buscar produto de diferentes fornecedores:", error);
       res.status(500).json({ message: "Erro ao buscar produto de diferentes fornecedores" });
+    }
+  });
+  
+  // Rota para obter produto por fornecedor específico
+  app.get("/api/products/:productId/supplier/:supplierId", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const supplierId = parseInt(req.params.supplierId);
+      
+      // Verificar se o produto base existe
+      const baseProduct = await storage.getProduct(productId);
+      if (!baseProduct) {
+        return res.status(404).json({ message: "Produto base não encontrado" });
+      }
+      
+      // Obter o produto do fornecedor específico
+      const supplierProduct = await storage.getProductBySupplier(productId, supplierId);
+      
+      if (!supplierProduct) {
+        return res.status(404).json({ 
+          message: "Produto não encontrado para este fornecedor",
+          baseProduct // Retorna o produto base para que o front possa usar algumas informações
+        });
+      }
+      
+      // Buscar informações adicionais do fornecedor
+      const supplier = await storage.getUser(supplierId);
+      if (!supplier) {
+        return res.status(404).json({ message: "Fornecedor não encontrado" });
+      }
+      
+      // Remover informações sensíveis do fornecedor
+      const { password, ...safeSupplier } = supplier;
+      
+      // Retornar o produto com informações do fornecedor
+      res.json({
+        product: supplierProduct,
+        supplier: safeSupplier
+      });
+    } catch (error) {
+      console.error("Erro ao buscar produto por fornecedor:", error);
+      res.status(500).json({ message: "Erro ao buscar produto por fornecedor" });
     }
   });
   
