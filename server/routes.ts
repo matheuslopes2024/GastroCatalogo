@@ -1284,6 +1284,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.markMessagesAsRead(validMessageIds);
+      
+      // Notificar os remetentes originais que suas mensagens foram lidas
+      // Agrupar por remetente para enviar uma única notificação por remetente
+      const senderMap = new Map();
+      messages.forEach(msg => {
+        if (!msg) return;
+        
+        if (!senderMap.has(msg.senderId)) {
+          senderMap.set(msg.senderId, []);
+        }
+        
+        senderMap.get(msg.senderId).push(msg.id);
+      });
+      
+      // Enviar notificações para cada remetente usando a distribuição em tempo real
+      for (const [senderId, ids] of senderMap.entries()) {
+        distributeRealTimeMessage(
+          {
+            type: 'messages_read_by_recipient',
+            messageIds: ids,
+            readBy: req.user.id,
+            timestamp: new Date().toISOString()
+          },
+          {
+            recipientId: senderId,
+            senderId: req.user.id,
+            skipSender: false,
+            notifyAdmins: false // Não precisa notificar todos os admins, só o remetente
+          }
+        );
+      }
+      
+      // Atualizar as conversas para mostrar contadores corretos
+      for (const message of messages) {
+        if (message && message.conversationId) {
+          // Obter a conversa para acessar seus participantes
+          const conversation = await storage.getChatConversation(message.conversationId);
+          
+          if (conversation && conversation.participantIds) {
+            // Notificar todos os participantes sobre a atualização na conversa
+            for (const participantId of conversation.participantIds) {
+              const participantConversations = await storage.getChatConversations(participantId);
+              const participantClient = clients.get(Number(participantId));
+              
+              if (participantClient && participantClient.ws && participantClient.ws.readyState === WebSocket.OPEN) {
+                sendWebSocketMessage(participantClient.ws, {
+                  type: 'conversations_update',
+                  conversations: participantConversations
+                });
+              }
+            }
+          }
+        }
+      }
+      
       res.status(200).json({ success: true });
     } catch (error) {
       console.error("Erro ao marcar mensagens como lidas:", error);
@@ -1706,16 +1761,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
               senderMap.get(msg.senderId).push(msg.id);
             });
             
-            // Enviar notificações para cada remetente
+            // Enviar notificações para cada remetente usando a função otimizada
             for (const [senderId, ids] of senderMap.entries()) {
-              const senderClient = clients.get(Number(senderId));
-              if (senderClient && senderClient.ws.readyState === WebSocket.OPEN) {
-                senderClient.ws.send(JSON.stringify({
+              distributeRealTimeMessage(
+                {
                   type: 'messages_read_by_recipient',
                   messageIds: ids,
                   readBy: userId,
                   timestamp: new Date().toISOString()
-                }));
+                },
+                {
+                  recipientId: senderId,
+                  senderId: userId,
+                  skipSender: false,
+                  notifyAdmins: false // Não precisa notificar todos os admins, só o remetente específico
+                }
+              );
+            }
+            
+            // Atualizar contadores de não lidas nas conversas afetadas
+            const conversationIds = new Set<number>();
+            messages.forEach(msg => {
+              if (msg && msg.conversationId) {
+                conversationIds.add(msg.conversationId);
+              }
+            });
+            
+            // Para cada conversa afetada, notificar participantes sobre a atualização
+            for (const conversationId of conversationIds) {
+              // Obter a conversa para acessar seus participantes
+              const conversation = await storage.getChatConversation(conversationId);
+              
+              if (conversation && conversation.participantIds) {
+                for (const participantId of conversation.participantIds) {
+                  const participantConversations = await storage.getChatConversations(participantId);
+                  const participantClient = clients.get(Number(participantId));
+                  
+                  if (participantClient && participantClient.ws && participantClient.ws.readyState === WebSocket.OPEN) {
+                    sendWebSocketMessage(participantClient.ws, {
+                      type: 'conversations_update',
+                      conversations: participantConversations
+                    });
+                  }
+                }
               }
             }
           } catch (error) {
@@ -2233,11 +2321,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "IDs de mensagens são obrigatórios" });
       }
       
-      // Marcar mensagens como lidas
-      await storage.markMessagesAsRead(messageIds);
+      // Obter as mensagens para determinar participantes
+      const messages = await Promise.all(
+        messageIds.map(id => storage.getChatMessage(id))
+      );
       
-      // Atualizar contadores de não lidas nas conversas
-      // Esta operação é implícita através da API markMessagesAsRead
+      // Filtrar mensagens válidas
+      const validMessages = messages.filter(msg => msg !== undefined);
+      const validMessageIds = validMessages.map(msg => msg!.id);
+      
+      // Marcar mensagens como lidas
+      await storage.markMessagesAsRead(validMessageIds);
+      
+      // Agrupar por remetente para enviar uma única notificação por remetente
+      const senderMap = new Map();
+      validMessages.forEach(msg => {
+        if (!msg) return;
+        
+        if (!senderMap.has(msg.senderId)) {
+          senderMap.set(msg.senderId, []);
+        }
+        
+        senderMap.get(msg.senderId).push(msg.id);
+      });
+      
+      // Notificar cada remetente que suas mensagens foram lidas pelo admin
+      for (const [senderId, ids] of senderMap.entries()) {
+        distributeRealTimeMessage(
+          {
+            type: 'messages_read_by_admin',
+            messageIds: ids,
+            readBy: req.user?.id, // ID do admin
+            adminName: req.user?.username || 'Administrador',
+            timestamp: new Date().toISOString()
+          },
+          {
+            recipientId: senderId,
+            senderId: req.user?.id,
+            skipSender: false,
+            notifyAdmins: true // Notificar outros admins também
+          }
+        );
+      }
+      
+      // Atualizar contadores de não lidas nas conversas e notificar participantes
+      const conversationIds = new Set<number>();
+      validMessages.forEach(msg => {
+        if (msg && msg.conversationId) {
+          conversationIds.add(msg.conversationId);
+        }
+      });
+      
+      // Para cada conversa afetada, notificar participantes sobre a atualização
+      for (const conversationId of conversationIds) {
+        // Obter a conversa para acessar seus participantes
+        const conversation = await storage.getChatConversation(conversationId);
+        
+        if (conversation && conversation.participantIds) {
+          for (const participantId of conversation.participantIds) {
+            const participantConversations = await storage.getChatConversations(participantId);
+            const participantClient = clients.get(Number(participantId));
+            
+            if (participantClient && participantClient.ws && participantClient.ws.readyState === WebSocket.OPEN) {
+              sendWebSocketMessage(participantClient.ws, {
+                type: 'conversations_update',
+                conversations: participantConversations
+              });
+            }
+          }
+        }
+      }
       
       res.status(200).json({ success: true });
     } catch (error) {
