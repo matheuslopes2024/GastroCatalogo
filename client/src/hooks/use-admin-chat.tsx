@@ -75,8 +75,9 @@ const AdminChatContext = createContext<AdminChatContextType | undefined>(undefin
 /**
  * Provedor principal do chat administrativo
  * Implementação totalmente revisada para resolver problemas de looping e exibição
+ * @returns JSX.Element - Componente React
  */
-export function AdminChatProvider({ children }: { children: ReactNode }) {
+export function AdminChatProvider({ children }: { children: ReactNode }): JSX.Element {
   // Acesso a hooks do sistema
   const { user } = useAuth();
   const { sendWebSocketMessage, addMessageHandler, removeMessageHandler, connected } = useWebSocket();
