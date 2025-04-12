@@ -1,0 +1,36 @@
+suppliers-list.tsx:162 Uncaught ReferenceError: Building is not defined
+    at SupplierCard (suppliers-list.tsx:162:20)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=f9bbb7cb:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=f9bbb7cb:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=f9bbb7cb:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=f9bbb7cb:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=f9bbb7cb:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=f9bbb7cb:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=f9bbb7cb:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=f9bbb7cb:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=f9bbb7cb:19137:13)
+SupplierCard @ suppliers-list.tsx:162
+renderWithHooks @ chunk-RPCDYKBN.js?v=f9bbb7cb:11548
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=f9bbb7cb:14926
+beginWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:15914
+callCallback2 @ chunk-RPCDYKBN.js?v=f9bbb7cb:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=f9bbb7cb:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=f9bbb7cb:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=f9bbb7cb:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=f9bbb7cb:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=f9bbb7cb:18736
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18684
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+4chunk-RPCDYKBN.js?v=f9bbb7cb:14032 The above error occurred in the <SupplierCard> component:
+
+    at SupplierCard (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/pages/suppliers-list.tsx:145:25)
+    at div
+    at div
+    at section
+    at main
+    at div
+    at SuppliersListPage (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/pages/suppliers-list.tsx:482:37)
