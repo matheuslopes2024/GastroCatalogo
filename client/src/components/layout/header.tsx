@@ -314,8 +314,8 @@ export function Header() {
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 md:w-[600px] md:grid-cols-2 lg:w-[750px]">
                       <li className="col-span-2">
-                        <div
-                          onClick={() => window.location.href = '/busca'}
+                        <Link 
+                          href="/busca"
                           className="flex w-full select-none flex-col justify-end rounded-md bg-gradient-to-r from-primary/80 to-primary p-6 no-underline outline-none focus:shadow-md overflow-hidden relative group cursor-pointer"
                         >
                           <motion.div 
@@ -338,12 +338,12 @@ export function Header() {
                           <p className="text-sm leading-tight text-white/90">
                             Explore todas as categorias disponíveis em nosso marketplace profissional
                           </p>
-                        </div>
+                        </Link>
                       </li>
                       
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/busca?categoria=1'}
+                        <Link 
+                          href="/busca?categoria=1"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -354,12 +354,12 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Talheres, pratos, copos e utensílios diversos para seu restaurante
                           </p>
-                        </div>
+                        </Link>
                       </li>
                       
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/busca?categoria=2'}
+                        <Link 
+                          href="/busca?categoria=2"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -370,12 +370,12 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Fornos, fogões, chapas e equipamentos profissionais de alta performance
                           </p>
-                        </div>
+                        </Link>
                       </li>
                       
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/busca?categoria=3'}
+                        <Link 
+                          href="/busca?categoria=3"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -386,12 +386,12 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Geladeiras, freezers e equipamentos de refrigeração de alta qualidade
                           </p>
-                        </div>
+                        </Link>
                       </li>
                       
                       <li>
-                        <div 
-                          onClick={() => window.location.href = '/busca?categoria=4'}
+                        <Link 
+                          href="/busca?categoria=4"
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground group overflow-hidden relative cursor-pointer"
                         >
                           <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -402,7 +402,7 @@ export function Header() {
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             Máquinas de café, moedores e acessórios para cafeterias profissionais
                           </p>
-                        </div>
+                        </Link>
                       </li>
                     </ul>
                   </NavigationMenuContent>
