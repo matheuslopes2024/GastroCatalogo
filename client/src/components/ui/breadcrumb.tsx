@@ -40,20 +40,33 @@ const BreadcrumbItem = React.forwardRef<
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
 const BreadcrumbLink = React.forwardRef<
-  HTMLAnchorElement,
-  React.ComponentPropsWithoutRef<"a"> & {
-    asChild?: boolean
+  HTMLButtonElement | HTMLAnchorElement,
+  (React.ComponentPropsWithoutRef<"button"> | React.ComponentPropsWithoutRef<"a">) & {
+    asChild?: boolean;
+    href?: string;
   }
->(({ asChild, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "a"
-
-  return (
-    <Comp
-      ref={ref}
-      className={cn("transition-colors hover:text-foreground", className)}
-      {...props}
-    />
-  )
+>(({ asChild, className, href, ...props }, ref) => {
+  // Use button for internal navigation to avoid nested anchor tags
+  if (href) {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        ref={ref as React.ForwardedRef<HTMLButtonElement>}
+        className={cn("transition-colors hover:text-foreground bg-transparent border-none cursor-pointer text-sm p-0", className)}
+        onClick={() => window.location.href = href}
+        {...props}
+      />
+    );
+  } else {
+    const Comp = asChild ? Slot : "a";
+    return (
+      <Comp
+        ref={ref as React.ForwardedRef<HTMLAnchorElement>}
+        className={cn("transition-colors hover:text-foreground", className)}
+        {...props}
+      />
+    );
+  }
 })
 BreadcrumbLink.displayName = "BreadcrumbLink"
 
