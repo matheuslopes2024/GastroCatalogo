@@ -994,6 +994,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para buscar as configurações de comissão aplicáveis ao fornecedor atual
+  app.get("/api/supplier/commissions", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      const commissionSettings = await storage.getCommissionSettings({
+        supplierId,
+        active: true
+      });
+      
+      // Também buscar as configurações globais
+      const globalSettings = await storage.getCommissionSettings({
+        supplierId: null,
+        categoryId: null,
+        active: true
+      });
+      
+      // Combinar as configurações
+      const allSettings = [...commissionSettings, ...globalSettings];
+      
+      res.json(allSettings);
+    } catch (error) {
+      console.error("Erro ao buscar configurações de comissão:", error);
+      res.status(500).json({ error: "Erro ao buscar configurações de comissão" });
+    }
+  });
+  
+  // Rota para buscar produtos com suas respectivas comissões aplicáveis
+  app.get("/api/supplier/products/commissions", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      // Buscar produtos do fornecedor
+      const products = await storage.getProductsBySupplier(supplierId);
+      
+      // Para cada produto, buscar categoria e taxa de comissão aplicável
+      const productsWithCommissions = await Promise.all(
+        products.map(async (product) => {
+          // Buscar a categoria do produto
+          const category = product.categoryId 
+            ? await storage.getCategory(product.categoryId) 
+            : undefined;
+          
+          // Buscar a taxa de comissão aplicável ao produto
+          const commission = await storage.getProductCommissionRate(product.id);
+          
+          // Buscar imagem primária do produto
+          const images = await storage.getProductImages(product.id);
+          const primaryImage = images.find(img => img.isPrimary) || images[0];
+          
+          return {
+            product: {
+              ...product,
+              imageUrl: primaryImage?.imageUrl || 'https://via.placeholder.com/150?text=Produto',
+            },
+            category,
+            commission
+          };
+        })
+      );
+      
+      res.json(productsWithCommissions);
+    } catch (error) {
+      console.error("Erro ao buscar produtos com comissões:", error);
+      res.status(500).json({ error: "Erro ao buscar produtos com comissões" });
+    }
+  });
+  
+  // Rota para buscar resumo estatístico das comissões para o fornecedor
+  app.get("/api/supplier/commissions/summary", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      const summary = await storage.getSupplierCommissionSummary(supplierId);
+      res.json(summary);
+    } catch (error) {
+      console.error("Erro ao buscar resumo de comissões:", error);
+      res.status(500).json({ error: "Erro ao buscar resumo de comissões" });
+    }
+  });
+  
   // Commission Settings API
   app.get("/api/commission-settings", checkRole([UserRole.ADMIN]), async (req, res) => {
     try {
