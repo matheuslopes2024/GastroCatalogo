@@ -663,12 +663,20 @@ export class MemStorage implements IStorage {
         // Filtro de estoque
         if (options.inStock === true) {
           console.log(`Filtrando produtos em estoque`);
-          // Na versão atual, todos os produtos são considerados em estoque
-          // Este é um filtro simulado que mantém 70% dos produtos
-          // Produtos com ID ímpar são considerados em estoque
+          // Em uma aplicação real, isso consultaria a quantidade em estoque no banco de dados
+          // Vamos usar dados reais dos produtos para simular estoque:
+          // - Produtos com preço < 1000 são considerados "em estoque"
+          // - Produtos ativos sempre estão "em estoque"
           productResults = productResults.filter(product => {
-            return product.id % 2 !== 0; // Simplesmente usar IDs ímpares como "em estoque"
+            // Garantir que o produto está ativo
+            if (product.active !== true) return false;
+            
+            // Verificar se o preço é acessível (usado como proxy para disponibilidade)
+            const price = parseFloat(product.price as any);
+            // Produtos baratos têm mais chance de estarem em estoque
+            return !isNaN(price) && (price < 1000 || product.id % 3 === 0);
           });
+          console.log(`Após filtro de estoque: ${productResults.length} produtos`);
         }
         
         // Filtro por avaliação mínima

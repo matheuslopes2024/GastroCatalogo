@@ -251,13 +251,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Aplicar filtros booleanos com validação explícita
       console.log(`Parâmetro inStock recebido: "${inStock}" (${typeof inStock})`);
-      if (inStock === 'true' || inStock === true) {
+      if (inStock === 'true' || inStock === '1') {
         options.inStock = true;
         console.log('Filtro de estoque aplicado: apenas produtos em estoque');
       }
       
       console.log(`Parâmetro discount recebido: "${discount}" (${typeof discount})`);
-      if (discount === 'true' || discount === true) {
+      if (discount === 'true' || discount === '1') {
         options.hasDiscount = true;
         console.log('Filtro de desconto aplicado: apenas produtos com desconto');
       }
