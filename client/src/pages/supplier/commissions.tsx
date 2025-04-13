@@ -788,7 +788,7 @@ export default function SupplierCommissions() {
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction 
                                   className="bg-red-500 hover:bg-red-600"
-                                  onClick={() => handleDeleteCommission(item.commission.id)}
+                                  onClick={() => handleDeleteCommission(item.commission.settingId)}
                                 >
                                   Excluir
                                 </AlertDialogAction>
