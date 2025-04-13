@@ -1077,6 +1077,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoints para comissões específicas por produto
   
+  // Obter todas as comissões específicas por produto para o fornecedor
+  app.get("/api/supplier/products/commissions/specific", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      // Buscar as configurações de comissão específicas por produto
+      const productCommissions = await storage.getProductCommissionSettings({
+        supplierId,
+        active: true,
+      });
+      
+      // Enriquecer os dados com informações dos produtos
+      const enrichedCommissions = await Promise.all(
+        productCommissions.map(async (commission) => {
+          const product = await storage.getProduct(commission.productId);
+          return {
+            ...commission,
+            product: product ? {
+              id: product.id,
+              name: product.name,
+              imageUrl: product.imageUrl,
+              slug: product.slug,
+              price: product.price
+            } : null
+          };
+        })
+      );
+      
+      res.json(enrichedCommissions);
+    } catch (error) {
+      console.error("Erro ao buscar comissões específicas por produto:", error);
+      res.status(400).json({ 
+        message: "Erro ao buscar comissões específicas por produto", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Obter todas as comissões por produto para o fornecedor
   app.get("/api/supplier/products/commissions", checkRole([UserRole.SUPPLIER]), async (req, res) => {
     try {
