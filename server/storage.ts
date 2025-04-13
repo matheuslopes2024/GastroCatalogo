@@ -2214,9 +2214,9 @@ export class DatabaseStorage implements IStorage {
                   WHEN ${products.price} ~ '^[0-9]+(,[0-9]+)?$'
                   THEN REPLACE(${products.price}, ',', '.')::numeric
                   
-                  /* Estratégia 3: Tentar extrair números da string */
+                  /* Estratégia 3: Tentar extrair números da string usando função SQL padrão */
                   WHEN ${products.price} ~ '[0-9]'
-                  THEN extract_numeric(${products.price})
+                  THEN CAST(regexp_replace(${products.price}, '[^0-9.]', '', 'g') AS NUMERIC)
                   
                   /* Caso não seja possível converter, usar valor muito alto */
                   ELSE 999999999
