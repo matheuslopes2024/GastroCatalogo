@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SmartSearchBar } from "./smart-search-bar";
 import { 
   Heart, 
   User, 
@@ -47,7 +48,7 @@ import {
 import { UserRole } from "@shared/schema";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { motion } from "framer-motion";
-import { SmartSearchBar } from "@/components/layout/smart-search-bar";
+
 
 // Efeitos das animações
 const logoVariants = {
