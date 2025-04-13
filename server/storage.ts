@@ -1753,7 +1753,39 @@ export class DatabaseStorage implements IStorage {
   
   // Product methods
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    // Selecionar todos os campos explicitamente para garantir que todos são retornados
+    const [product] = await db.select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      slug: products.slug,
+      categoryId: products.categoryId,
+      supplierId: products.supplierId,  // Garantir que supplierId é retornado
+      price: products.price,
+      originalPrice: products.originalPrice,
+      discount: products.discount,
+      rating: products.rating,
+      ratingsCount: products.ratingsCount,
+      features: products.features,
+      imageUrl: products.imageUrl,
+      imageData: products.imageData,
+      imageType: products.imageType,
+      additionalImages: products.additionalImages,
+      active: products.active,
+      additionalCategories: products.additionalCategories,
+      createdAt: products.createdAt,
+    }).from(products).where(eq(products.id, id));
+    
+    // Adicionar diagnóstico para depuração
+    if (product) {
+      console.log(`Produto encontrado id=${id}:`, {
+        id: product.id,
+        supplierId: product.supplierId
+      });
+    } else {
+      console.log(`Produto não encontrado id=${id}`);
+    }
+    
     return product;
   }
   
