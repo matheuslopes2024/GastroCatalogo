@@ -141,23 +141,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Products API
+  // Products API - Endpoint com sistema de busca avançada
   app.get("/api/products", async (req, res) => {
     try {
-      const { categoryId, supplierId, search, limit } = req.query;
+      const { 
+        categoryId, 
+        supplierId, 
+        search, 
+        limit,
+        minPrice,
+        maxPrice,
+        sortBy,
+        sortDirection,
+        rating,
+        features,
+        brandId,
+        inStock,
+        discount,
+        additionalCategories,
+        createdAfter,
+        includeInactive,
+        page
+      } = req.query;
       
-      const options: any = { active: true };
+      // Configuração padrão para retornar apenas produtos ativos, a menos que especificado
+      const options: any = { active: includeInactive === 'true' ? undefined : true };
       
+      // Log de diagnóstico com todos os parâmetros recebidos
+      console.log("Parâmetros de busca avançada recebidos:", JSON.stringify(req.query, null, 2));
+      
+      // Filtros básicos
       if (categoryId) options.categoryId = parseInt(categoryId as string);
       if (supplierId) options.supplierId = parseInt(supplierId as string);
       if (search) options.search = search as string;
-      if (limit) options.limit = parseInt(limit as string);
       
+      // Filtros avançados
+      if (minPrice) options.minPrice = parseFloat(minPrice as string);
+      if (maxPrice) options.maxPrice = parseFloat(maxPrice as string);
+      if (rating) options.minRating = parseFloat(rating as string);
+      if (brandId) options.brandId = parseInt(brandId as string);
+      if (inStock === 'true') options.inStock = true;
+      if (discount === 'true') options.hasDiscount = true;
+      
+      // Opções de ordenação
+      if (sortBy && ['price', 'rating', 'createdAt', 'name', 'popularity'].includes(sortBy as string)) {
+        options.sortBy = sortBy as string;
+        options.sortDirection = sortDirection === 'desc' ? 'desc' : 'asc';
+      }
+      
+      // Recursos específicos (array de strings)
+      if (features) {
+        try {
+          if (typeof features === 'string') {
+            if (features.startsWith('[') && features.endsWith(']')) {
+              // É um array JSON
+              options.features = JSON.parse(features);
+            } else {
+              // É uma string única
+              options.features = [features];
+            }
+          } else {
+            // É provavelmente um array já
+            options.features = features;
+          }
+        } catch (err) {
+          console.warn("Erro ao processar recursos:", err);
+          // Ignorar filtro de recursos em caso de erro
+        }
+      }
+      
+      // Categorias adicionais (apenas produtos que estão em todas as categorias especificadas)
+      if (additionalCategories) {
+        try {
+          if (typeof additionalCategories === 'string') {
+            if (additionalCategories.startsWith('[') && additionalCategories.endsWith(']')) {
+              options.additionalCategories = JSON.parse(additionalCategories);
+            } else {
+              options.additionalCategories = [parseInt(additionalCategories)];
+            }
+          }
+        } catch (err) {
+          console.warn("Erro ao processar categorias adicionais:", err);
+        }
+      }
+      
+      // Produtos criados após uma data específica
+      if (createdAfter) {
+        try {
+          options.createdAfter = new Date(createdAfter as string);
+        } catch (err) {
+          console.warn("Erro ao processar data:", err);
+        }
+      }
+      
+      // Paginação
+      if (page) {
+        const pageNum = parseInt(page as string) || 1;
+        const pageSize = parseInt(limit as string) || 12;
+        options.offset = (pageNum - 1) * pageSize;
+        options.limit = pageSize;
+      } else if (limit) {
+        // Sem paginação, apenas limita os resultados
+        options.limit = parseInt(limit as string);
+      }
+      
+      // Log de diagnóstico com opções processadas
+      console.log("Opções de busca processadas:", JSON.stringify(options, null, 2));
+      
+      // Obter produtos com os filtros aplicados
       const products = await storage.getProducts(options);
-      res.json(products);
+      
+      // Adicionar meta-informações úteis (contagem total, filtros aplicados)
+      const response = {
+        data: products,
+        meta: {
+          totalCount: products.length,
+          appliedFilters: Object.keys(options).filter(k => k !== 'active' && options[k] !== undefined),
+          page: page ? parseInt(page as string) : 1,
+          pageSize: limit ? parseInt(limit as string) : products.length,
+          hasMore: options.limit && products.length === options.limit // Potencialmente há mais resultados
+        }
+      };
+      
+      res.json(response);
     } catch (error) {
       console.error("Erro detalhado ao buscar produtos:", error);
-      res.status(500).json({ message: "Erro ao buscar produtos" });
+      res.status(500).json({ 
+        error: { 
+          message: "Erro ao buscar produtos",
+          details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+        } 
+      });
     }
   });
   

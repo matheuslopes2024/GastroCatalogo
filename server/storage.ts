@@ -541,54 +541,294 @@ export class MemStorage implements IStorage {
   }
   
   async getProducts(options?: { 
+    // Filtros básicos
     categoryId?: number; 
     supplierId?: number; 
     active?: boolean;
     limit?: number;
+    offset?: number;
     search?: string;
+    
+    // Filtros avançados
+    minPrice?: number;
+    maxPrice?: number;
+    minRating?: number;
+    features?: string[];
+    hasDiscount?: boolean;
+    inStock?: boolean;
+    brandId?: number;
+    additionalCategories?: number[];
+    createdAfter?: Date;
+    
+    // Ordenação
+    sortBy?: string;
+    sortDirection?: 'asc' | 'desc';
   }): Promise<Product[]> {
     let products = Array.from(this.products.values());
     
+    console.log(`Buscando produtos com ${options ? Object.keys(options).length : 0} filtros aplicados`);
+    
     if (options) {
-      // Aplicação avançada de filtro por categoria
+      const startTime = Date.now();
+      
+      // ------ FILTROS PARA CATEGORIAS ------
+      
+      // Aplicação avançada de filtro por categoria principal
       if (options.categoryId !== undefined) {
         console.log(`Filtrando produtos por categoria ID: ${options.categoryId}`);
         products = products.filter(product => {
           // Garantir que o produto pertence exatamente à categoria especificada
           const categoryMatch = product.categoryId === options.categoryId;
-          
-          if (categoryMatch) {
-            console.log(`Produto "${product.name}" (ID: ${product.id}) corresponde à categoria ${options.categoryId}`);
-          }
-          
           return categoryMatch;
         });
+        console.log(`Restaram ${products.length} produtos após filtro de categoria principal`);
       }
+      
+      // Filtro adicional para múltiplas categorias (produto deve estar em TODAS as categorias especificadas)
+      if (options.additionalCategories && options.additionalCategories.length > 0) {
+        console.log(`Filtrando produtos que pertencem a todas as categorias adicionais: ${options.additionalCategories.join(', ')}`);
+        products = products.filter(product => {
+          // Verificar se o produto tem categorias adicionais
+          if (!product.additionalCategories || !Array.isArray(product.additionalCategories)) {
+            return false;
+          }
+          
+          // Verificar se todas as categorias requeridas estão presentes
+          return options.additionalCategories!.every(catId => 
+            product.additionalCategories.includes(catId) || product.categoryId === catId
+          );
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de categorias adicionais`);
+      }
+      
+      // ------ FILTROS PARA FORNECEDOR ------
       
       // Aplicação de filtro por fornecedor
       if (options.supplierId !== undefined) {
         console.log(`Filtrando produtos por fornecedor ID: ${options.supplierId}`);
         products = products.filter(product => product.supplierId === options.supplierId);
+        console.log(`Restaram ${products.length} produtos após filtro de fornecedor`);
       }
+      
+      // Filtro por marca (tratado como fornecedor específico, ou outra propriedade se existir)
+      if (options.brandId !== undefined) {
+        console.log(`Filtrando produtos por marca/fabricante ID: ${options.brandId}`);
+        products = products.filter(product => {
+          // Se tivermos um campo de marca específico, usá-lo aqui
+          // Por enquanto, assumimos que brandId é equivalente a um supplierId
+          return product.supplierId === options.brandId;
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de marca`);
+      }
+      
+      // ------ FILTROS PARA STATUS ------
       
       // Filtro de produtos ativos/inativos
       if (options.active !== undefined) {
+        console.log(`Filtrando por produtos ${options.active ? 'ativos' : 'inativos'}`);
         products = products.filter(product => product.active === options.active);
+        console.log(`Restaram ${products.length} produtos após filtro de status ativo`);
       }
       
-      // Aplicação de filtro por termo de busca
+      // ------ FILTROS PARA PREÇO ------
+      
+      // Filtro de preço mínimo
+      if (options.minPrice !== undefined) {
+        console.log(`Filtrando produtos com preço mínimo de ${options.minPrice}`);
+        products = products.filter(product => {
+          const price = parseFloat(product.price.toString());
+          return price >= options.minPrice!;
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de preço mínimo`);
+      }
+      
+      // Filtro de preço máximo
+      if (options.maxPrice !== undefined) {
+        console.log(`Filtrando produtos com preço máximo de ${options.maxPrice}`);
+        products = products.filter(product => {
+          const price = parseFloat(product.price.toString());
+          return price <= options.maxPrice!;
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de preço máximo`);
+      }
+      
+      // Filtro de desconto (produtos com preço original maior que o preço atual)
+      if (options.hasDiscount) {
+        console.log(`Filtrando produtos com desconto ativo`);
+        products = products.filter(product => {
+          if (!product.originalPrice) return false;
+          const currentPrice = parseFloat(product.price.toString());
+          const originalPrice = parseFloat(product.originalPrice.toString());
+          return originalPrice > currentPrice;
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de desconto`);
+      }
+      
+      // ------ FILTROS PARA AVALIAÇÃO ------
+      
+      // Filtro por avaliação mínima
+      if (options.minRating !== undefined) {
+        console.log(`Filtrando produtos com avaliação mínima de ${options.minRating}`);
+        products = products.filter(product => {
+          if (!product.rating) return false;
+          const rating = parseFloat(product.rating.toString());
+          return rating >= options.minRating!;
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de avaliação mínima`);
+      }
+      
+      // ------ FILTROS PARA CARACTERÍSTICAS ------
+      
+      // Filtro por recursos/características específicas
+      if (options.features && options.features.length > 0) {
+        console.log(`Filtrando produtos com características específicas: ${options.features.join(', ')}`);
+        products = products.filter(product => {
+          // Se o produto não tiver o campo features ou não for um array, filtrar
+          if (!product.features || !Array.isArray(product.features)) {
+            return false;
+          }
+          
+          // Verificar se possui TODAS as características requeridas
+          return options.features!.every(feature => {
+            // Normalizar para comparação case-insensitive
+            const normalizedFeature = feature.toLowerCase();
+            return product.features!.some(productFeature => 
+              typeof productFeature === 'string' && 
+              productFeature.toLowerCase().includes(normalizedFeature)
+            );
+          });
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de características`);
+      }
+      
+      // ------ FILTROS PARA ESTOQUE ------
+      
+      // Filtro produtos em estoque (por enquanto é mock, mas prepara para futura implementação)
+      if (options.inStock) {
+        console.log(`Filtrando produtos em estoque`);
+        // Aqui assumimos todos como em estoque, mas em uma versão posterior 
+        // o sistema pode verificar quantidades reais de estoque
+        products = products.filter(product => product.active);
+        console.log(`Restaram ${products.length} produtos após filtro de estoque`);
+      }
+      
+      // ------ FILTROS TEMPORAIS ------
+      
+      // Filtro por data de criação
+      if (options.createdAfter) {
+        console.log(`Filtrando produtos criados após ${options.createdAfter.toISOString()}`);
+        products = products.filter(product => {
+          return product.createdAt && product.createdAt >= options.createdAfter!;
+        });
+        console.log(`Restaram ${products.length} produtos após filtro de data de criação`);
+      }
+      
+      // ------ FILTRO DE PESQUISA TEXTUAL ------
+      
+      // Aplicação de filtro por termo de busca (mais elaborado)
       if (options.search) {
-        const searchTerm = options.search.toLowerCase();
+        const searchTerm = options.search.toLowerCase().trim();
         console.log(`Filtrando produtos pelo termo de busca: "${searchTerm}"`);
-        products = products.filter(product => 
-          product.name.toLowerCase().includes(searchTerm) || 
-          product.description.toLowerCase().includes(searchTerm)
-        );
+        
+        if (searchTerm.length > 0) {
+          // Sistema de pontuação para relevância da busca
+          const scoredProducts = products.map(product => {
+            let score = 0;
+            
+            // Pontuação maior para correspondência no nome (x10)
+            if (product.name.toLowerCase().includes(searchTerm)) {
+              score += 10;
+              // Pontuação extra (x2) para correspondência exata ou no início do nome
+              if (product.name.toLowerCase() === searchTerm || 
+                  product.name.toLowerCase().startsWith(searchTerm + ' ')) {
+                score += 20;
+              }
+            }
+            
+            // Pontuação para correspondência na descrição (x3)
+            if (product.description.toLowerCase().includes(searchTerm)) {
+              score += 3;
+            }
+            
+            // Pontuação para correspondência em recursos (x5)
+            if (product.features && Array.isArray(product.features)) {
+              const hasFeatureMatch = product.features.some(feature => 
+                typeof feature === 'string' && feature.toLowerCase().includes(searchTerm)
+              );
+              if (hasFeatureMatch) score += 5;
+            }
+            
+            return { product, score };
+          });
+          
+          // Filtrar produtos que não têm nenhuma correspondência (score = 0)
+          const matchingProducts = scoredProducts.filter(item => item.score > 0);
+          
+          // Ordenar por pontuação de correspondência (mais relevantes primeiro)
+          matchingProducts.sort((a, b) => b.score - a.score);
+          
+          // Extrair apenas os produtos da lista ordenada por relevância
+          products = matchingProducts.map(item => item.product);
+          
+          console.log(`Restaram ${products.length} produtos após filtro de busca por termo`);
+        }
       }
       
+      // ------ ORDENAÇÃO ------
+      
+      // Aplicar ordenação conforme solicitado
+      if (options.sortBy) {
+        console.log(`Ordenando produtos por ${options.sortBy} em ordem ${options.sortDirection || 'asc'}`);
+        
+        const isDesc = options.sortDirection === 'desc';
+        
+        products.sort((a, b) => {
+          let valueA, valueB;
+          
+          switch (options.sortBy) {
+            case 'price':
+              valueA = parseFloat(a.price.toString());
+              valueB = parseFloat(b.price.toString());
+              break;
+            case 'rating':
+              valueA = a.rating ? parseFloat(a.rating.toString()) : 0;
+              valueB = b.rating ? parseFloat(b.rating.toString()) : 0;
+              break;
+            case 'name':
+              return isDesc 
+                ? b.name.localeCompare(a.name) 
+                : a.name.localeCompare(b.name);
+            case 'createdAt':
+              valueA = a.createdAt?.getTime() || 0;
+              valueB = b.createdAt?.getTime() || 0;
+              break;
+            case 'popularity':
+              // Por enquanto, usamos contagem de avaliações como métrica de popularidade
+              valueA = a.ratingsCount || 0;
+              valueB = b.ratingsCount || 0;
+              break;
+            default:
+              return 0;
+          }
+          
+          return isDesc ? (valueB - valueA) : (valueA - valueB);
+        });
+      }
+      
+      // ------ PAGINAÇÃO ------
+      
+      // Aplicar offset (para paginação)
+      if (options.offset) {
+        products = products.slice(options.offset);
+      }
+      
+      // Aplicar limite (para paginação ou para limitar resultados)
       if (options.limit) {
         products = products.slice(0, options.limit);
       }
+      
+      const endTime = Date.now();
+      console.log(`Busca de produtos concluída em ${endTime - startTime}ms, retornando ${products.length} resultados`);
     }
     
     return products;
