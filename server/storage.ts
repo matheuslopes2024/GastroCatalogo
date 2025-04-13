@@ -1845,80 +1845,237 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // Método unificado para busca avançada de produtos
   async getProducts(options?: { 
+    // Filtros básicos
     categoryId?: number; 
     supplierId?: number; 
     active?: boolean;
     limit?: number;
+    offset?: number;
     search?: string;
-  }): Promise<Product[]> {
-    let query = db.select().from(products);
     
-    if (options) {
-      const conditions = [];
+    // Filtros avançados
+    minPrice?: number;
+    maxPrice?: number;
+    minRating?: number;
+    features?: string[];
+    hasDiscount?: boolean;
+    inStock?: boolean;
+    brandId?: number;
+    additionalCategories?: number[];
+    createdAfter?: Date;
+    
+    // Ordenação
+    sortBy?: string;
+    sortDirection?: 'asc' | 'desc';
+  }): Promise<Product[]> {
+    try {
+      console.log(`Buscando produtos no banco de dados com ${options ? Object.keys(options).length : 0} filtros aplicados`);
+      const startTime = Date.now();
       
-      // Filtragem avançada por categoria
-      if (options.categoryId !== undefined && options.categoryId !== 0) {
-        console.log(`Filtrando produtos no banco de dados por categoria ID: ${options.categoryId}`);
+      // Começar com uma consulta base
+      let query = db.select().from(products);
+      
+      if (options) {
+        const conditions = [];
         
-        // Para categoria 0 (Todas as categorias), não aplicamos filtro de categoria
-        if (options.categoryId > 0) {
-          // Buscamos produtos onde:
-          // 1. A categoria principal seja a selecionada OU
-          // 2. A categoria esteja presente no array de categorias adicionais
+        // ------ FILTROS BÁSICOS ------
+        
+        // Filtragem avançada por categoria
+        if (options.categoryId !== undefined && options.categoryId !== 0) {
+          console.log(`Filtrando produtos por categoria ID: ${options.categoryId}`);
+          
+          // Para categoria 0 (Todas as categorias), não aplicamos filtro de categoria
+          if (options.categoryId > 0) {
+            // Buscamos produtos onde:
+            // 1. A categoria principal seja a selecionada OU
+            // 2. A categoria esteja presente no array de categorias adicionais
+            conditions.push(
+              or(
+                // Categoria principal
+                eq(products.categoryId, options.categoryId),
+                // Busca em array JSON de categorias adicionais
+                sql`${products.additionalCategories} @> ${JSON.stringify([options.categoryId])}`
+              )
+            );
+          }
+        }
+        
+        // Filtragem por fornecedor
+        if (options.supplierId !== undefined) {
+          console.log(`Filtrando produtos por fornecedor ID: ${options.supplierId}`);
+          conditions.push(eq(products.supplierId, options.supplierId));
+        }
+        
+        // Filtragem por marca (tratado como fornecedor específico)
+        if (options.brandId !== undefined) {
+          console.log(`Filtrando produtos por marca/fabricante ID: ${options.brandId}`);
+          // Assumimos que brandId é equivalente a supplierId
+          conditions.push(eq(products.supplierId, options.brandId));
+        }
+        
+        // Filtragem de produtos ativos/inativos
+        if (options.active !== undefined) {
+          console.log(`Filtrando por produtos ${options.active ? 'ativos' : 'inativos'}`);
+          conditions.push(eq(products.active, options.active));
+        }
+        
+        // ------ FILTROS DE PREÇO ------
+        
+        // Filtro de preço mínimo
+        if (options.minPrice !== undefined) {
+          console.log(`Aplicando filtro SQL de preço mínimo: ${options.minPrice}`);
+          const minPriceValue = parseFloat(String(options.minPrice));
+          if (!isNaN(minPriceValue)) {
+            // Aplicar filtro diretamente na consulta SQL
+            conditions.push(sql`CAST(${products.price} AS DECIMAL) >= ${minPriceValue}`);
+            console.log(`Filtro SQL de preço mínimo aplicado: ${minPriceValue}`);
+          } else {
+            console.error(`Ignorando filtro de preço mínimo - valor inválido: ${options.minPrice}`);
+          }
+        }
+        
+        // Filtro de preço máximo
+        if (options.maxPrice !== undefined) {
+          console.log(`Aplicando filtro SQL de preço máximo: ${options.maxPrice}`);
+          const maxPriceValue = parseFloat(String(options.maxPrice));
+          if (!isNaN(maxPriceValue)) {
+            // Aplicar filtro diretamente na consulta SQL
+            conditions.push(sql`CAST(${products.price} AS DECIMAL) <= ${maxPriceValue}`);
+            console.log(`Filtro SQL de preço máximo aplicado: ${maxPriceValue}`);
+          } else {
+            console.error(`Ignorando filtro de preço máximo - valor inválido: ${options.maxPrice}`);
+          }
+        }
+        
+        // ------ FILTROS DE PESQUISA ------
+        
+        // Filtragem por termo de busca com pesquisa avançada
+        if (options.search && options.search.trim().length > 0) {
+          const searchTerm = `%${options.search.trim()}%`;
+          console.log(`Filtrando produtos pelo termo de busca: "${options.search}"`);
+          
+          // Pesquisa em nome, descrição e recursos do produto
           conditions.push(
             or(
-              // Categoria principal
-              eq(products.categoryId, options.categoryId),
-              // Busca em array JSON de categorias adicionais
-              sql`${products.additionalCategories} @> ${JSON.stringify([options.categoryId])}`
+              like(products.name, searchTerm),
+              like(products.description, searchTerm)
             )
           );
         }
-      }
-      
-      // Filtragem por fornecedor
-      if (options.supplierId !== undefined) {
-        console.log(`Filtrando produtos no banco de dados por fornecedor ID: ${options.supplierId}`);
-        conditions.push(eq(products.supplierId, options.supplierId));
-      }
-      
-      // Filtragem de produtos ativos/inativos
-      if (options.active !== undefined) {
-        conditions.push(eq(products.active, options.active));
-      }
-      
-      // Filtragem por termo de busca com pesquisa avançada
-      if (options.search) {
-        const searchTerm = `%${options.search}%`;
-        console.log(`Filtrando produtos no banco de dados pelo termo de busca: "${options.search}"`);
         
-        // Pesquisa em nome, descrição e recursos do produto
-        conditions.push(
-          or(
-            like(products.name, searchTerm),
-            like(products.description, searchTerm)
-          )
-        );
+        // Aplicar todas as condições de filtro
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions));
+        }
+        
+        // ------ ORDENAÇÃO ------
+        
+        // Ordenação personalizada
+        if (options.sortBy && ['price', 'rating', 'createdAt', 'name', 'popularity'].includes(options.sortBy)) {
+          const direction = options.sortDirection === 'desc' ? desc : asc;
+          query = query.orderBy(direction(products[options.sortBy as keyof Product] as any));
+        }
+        
+        // Aplicar limite na consulta SQL (para melhor performance)
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+        
+        // Aplicar offset na consulta SQL (para paginação)
+        if (options.offset) {
+          query = query.offset(options.offset);
+        }
       }
       
-      // Aplicar todas as condições de filtro
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+      // Executar a consulta
+      console.log("Executando consulta final de produtos no banco de dados");
+      const productResults = await query.execute();
+      console.log(`Consulta SQL retornou ${productResults.length} produtos após aplicar filtros SQL`);
+      
+      // ------ FILTROS PÓS-CONSULTA ------
+      let filteredResults = [...productResults];
+      
+      // Aplicar filtros específicos que não podem ser facilmente expressos em SQL
+      if (options) {
+        // Filtro de desconto
+        if (options.hasDiscount === true) {
+          console.log(`Filtrando produtos com desconto ativo`);
+          filteredResults = filteredResults.filter(product => {
+            // Verificar primeiro pelo campo discount, que é a forma mais direta
+            if (product.discount && product.discount > 0) return true;
+            
+            // Se não tiver o campo discount, verificar pelos preços
+            if (!product.originalPrice) return false;
+            const currentPrice = parseFloat(product.price as any);
+            const originalPrice = parseFloat(product.originalPrice as any);
+            return !isNaN(currentPrice) && !isNaN(originalPrice) && originalPrice > currentPrice;
+          });
+          console.log(`Após filtro de desconto: ${filteredResults.length} produtos`);
+        }
+        
+        // Filtro de estoque
+        if (options.inStock === true) {
+          console.log(`Filtrando produtos em estoque`);
+          filteredResults = filteredResults.filter(product => {
+            // 1. Garantir que o produto está ativo (obrigatório para estar em estoque)
+            if (product.active !== true) return false;
+            
+            // 2. Verificar se tem preço válido (obrigatório para estar em estoque)
+            const price = parseFloat(product.price as any);
+            if (isNaN(price) || price <= 0) return false;
+            
+            // 3. Produtos com desconto geralmente são aqueles que se quer escoar inventário
+            if (product.discount) return true;
+            
+            // 4. Produtos com avaliações também tendem a estar em estoque
+            if (product.rating && parseFloat(product.rating as any) > 0) return true;
+            
+            // 5. Caso não tenha desconto ou avaliações, base apenas no preço:
+            return price < 5000;
+          });
+          console.log(`Após filtro de estoque: ${filteredResults.length} produtos`);
+        }
+        
+        // Filtro por avaliação mínima
+        if (options.minRating !== undefined) {
+          console.log(`Filtrando produtos com avaliação mínima de ${options.minRating}`);
+          filteredResults = filteredResults.filter(product => {
+            if (!product.rating) return false;
+            const rating = parseFloat(product.rating as any);
+            return !isNaN(rating) && rating >= options.minRating!;
+          });
+        }
+        
+        // Filtro por data de criação
+        if (options.createdAfter) {
+          console.log(`Filtrando produtos criados após ${options.createdAfter.toISOString()}`);
+          filteredResults = filteredResults.filter(product => {
+            return product.createdAt && product.createdAt >= options.createdAfter!;
+          });
+        }
+        
+        // Filtro por categorias adicionais (se não aplicado no SQL)
+        if (options.additionalCategories && options.additionalCategories.length > 0 && !options.categoryId) {
+          console.log(`Aplicando filtro pós-SQL por categorias adicionais: ${options.additionalCategories.join(', ')}`);
+          filteredResults = filteredResults.filter(product => {
+            // Verificar se alguma das categorias adicionais do produto está na lista solicitada
+            if (!product.additionalCategories || product.additionalCategories.length === 0) {
+              return false;
+            }
+            
+            return options.additionalCategories!.some(catId => 
+              product.additionalCategories.includes(catId)
+            );
+          });
+        }
       }
       
-      // Aplicar limite de resultados, se especificado
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-    }
-    
-    // Executar a consulta para retornar os resultados
-    console.log("Executando consulta de produtos no banco de dados");
-    try {
-      const result = await query.execute();
-      console.log(`Consulta retornou ${result.length} produtos`);
-      return result;
+      const endTime = Date.now();
+      console.log(`Busca de produtos concluída em ${endTime - startTime}ms - Retornando ${filteredResults.length} produtos`);
+      
+      return filteredResults;
     } catch (error) {
       console.error("Erro ao executar consulta de produtos:", error);
       throw error;
