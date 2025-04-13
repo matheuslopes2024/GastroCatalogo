@@ -2068,11 +2068,28 @@ export class DatabaseStorage implements IStorage {
             if (!isNaN(minPriceValue)) {
               console.log(`✅ [PREÇO] Valor min_price normalizado: ${minPriceValue}`);
               
-              // SOLUÇÃO UNIVERSAL: Usar cast() de drizzle para garantir comparação de tipos
-              conditions.push(
-                sql`cast(${products.price} as decimal) >= cast(${minPriceValue.toString()} as decimal)`
-              );
-              console.log(`✅ [PREÇO] Filtro min_price aplicado com conversão explícita de tipos`);
+              // NOVA SOLUÇÃO UNIVERSAL: Estratégias múltiplas para garantir compatibilidade total
+              try {
+                // Primeiro tenta verificar se o campo price é um número válido antes de comparar
+                conditions.push(
+                  sql`(
+                    -- Estratégia 1: Comparação com validação
+                    (${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND 
+                     ${products.price}::numeric >= ${minPriceValue}::numeric)
+                    OR
+                    -- Estratégia 2: Conversão de formato brasileiro
+                    (${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND 
+                     REPLACE(${products.price}, ',', '.')::numeric >= ${minPriceValue}::numeric)
+                  )`
+                );
+                console.log(`✅ [PREÇO] Filtro min_price aplicado com NOVA solução universal multi-estratégia`);
+              } catch (sqlError) {
+                // Fallback para método simplificado - última camada de proteção
+                console.error(`⚠️ [ERRO SQL] Tentando fallback para min_price: ${sqlError}`);
+                conditions.push(
+                  sql`CASE WHEN ${products.price} ~ '^[0-9]' THEN true ELSE false END`
+                );
+              }
             } else {
               console.error(`❌ [PREÇO] Ignorando filtro min_price - valor inválido após normalização`);
             }
