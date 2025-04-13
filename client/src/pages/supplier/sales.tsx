@@ -48,18 +48,54 @@ export default function SupplierSales() {
   
   // Buscar produtos populares do fornecedor usando a API real
   const {
-    data: topProductsData,
+    data: topProductsResponse,
     isLoading: isLoadingTopProducts
   } = useQuery({
     queryKey: ["/api/supplier/dashboard/top-products"],
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
+  // Normaliza o formato dos produtos populares
+  const topProductsData = useMemo(() => {
+    if (!topProductsResponse) return { topProducts: [] };
+    
+    // Se já possui a estrutura esperada, retorna diretamente
+    if (topProductsResponse && typeof topProductsResponse === 'object' && 'topProducts' in topProductsResponse) {
+      // Garante que topProducts seja sempre um array
+      if (!Array.isArray(topProductsResponse.topProducts)) {
+        console.error("topProducts não é um array:", topProductsResponse.topProducts);
+        return { ...topProductsResponse, topProducts: [] };
+      }
+      return topProductsResponse;
+    }
+    
+    console.error("Formato inesperado de topProductsResponse:", topProductsResponse);
+    return { topProducts: [] }; // Formato fallback seguro
+  }, [topProductsResponse]);
+  
   // Buscar produtos do fornecedor para referência
-  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
+  const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["/api/products", { supplierId: user?.id }],
     enabled: !!user?.id,
   });
+  
+  // Normaliza o formato dos produtos para garantir que sempre seja um array
+  const products = useMemo(() => {
+    if (!productsResponse) return [];
+    
+    // Se a resposta for um array, usa diretamente
+    if (Array.isArray(productsResponse)) {
+      return productsResponse;
+    }
+    
+    // Se a resposta for um objeto com propriedade data que é um array, extrai o array
+    if (productsResponse && typeof productsResponse === 'object' && 'data' in productsResponse && Array.isArray(productsResponse.data)) {
+      return productsResponse.data;
+    }
+    
+    console.error("Formato de resposta de produtos inesperado:", productsResponse);
+    return []; // Retorna array vazio como fallback
+  }, [productsResponse]);
   
   // Extrair métricas do dashboard
   const dashboardSummary = useMemo(() => {
