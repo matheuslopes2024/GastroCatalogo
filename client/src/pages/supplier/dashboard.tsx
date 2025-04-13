@@ -298,9 +298,16 @@ export default function SupplierDashboard() {
           const totalRevenue = typeof product.totalRevenue === 'number' ? product.totalRevenue : 0;
           const totalSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
           
+          // Extrair o supplierId do produto, com valor padrão para o fornecedor atual se não estiver disponível
+          const supplierId = product.supplierId || user?.id || 0;
+          
           return {
             productId,
-            product: { id: productId, name },
+            product: { 
+              id: productId, 
+              name,
+              supplierId // Adicionar supplierId ao objeto de produto para permitir filtragem por fornecedor
+            },
             imageUrl,
             totalValue: totalRevenue,
             count: totalSales
@@ -360,11 +367,15 @@ export default function SupplierDashboard() {
         const totalRevenue = typeof product.totalRevenue === 'number' ? product.totalRevenue : 0;
         const totalSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
         
+        // Extrair o supplierId do produto, com valor padrão para o fornecedor atual se não estiver disponível
+        const supplierId = product.supplierId || user?.id || 0;
+        
         return {
           productId,
           product: { 
             id: productId, 
-            name 
+            name,
+            supplierId // Adicionar supplierId ao objeto de produto para permitir filtragem por fornecedor
           },
           imageUrl,
           totalValue: totalRevenue,
@@ -398,6 +409,9 @@ export default function SupplierDashboard() {
           return null;
         }
         
+        // Extrair o supplierId do produto, com valor padrão para o fornecedor atual
+        const supplierId = sale.supplierId || user?.id || 0;
+        
         // Extrair com valores padrão seguros
         return {
           id: sale.id || 0,
@@ -407,7 +421,8 @@ export default function SupplierDashboard() {
           buyerName: sale.buyerName || 'Cliente não identificado',
           quantity: typeof sale.quantity === 'number' ? sale.quantity : 1,
           totalPrice: sale.totalPrice || '0',
-          status: sale.status || 'pending'
+          status: sale.status || 'pending',
+          supplierId: supplierId // Adicionar supplierId ao objeto de vendas para permitir filtragem por fornecedor
         };
       }).filter(Boolean); // Remover itens nulos
     } catch (error) {
