@@ -1,0 +1,63 @@
+comissoes:1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
+queryClient.ts:35 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/chat/conversations 502 (Bad Gateway)
+apiRequest @ queryClient.ts:35
+queryFn @ use-chat.tsx:129
+fetchFn @ @tanstack_react-query.js?v=f9bbb7cb:840
+run @ @tanstack_react-query.js?v=f9bbb7cb:494
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+setOptions @ @tanstack_react-query.js?v=f9bbb7cb:1955
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3032
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=f9bbb7cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=f9bbb7cb:555
+flush @ @tanstack_react-query.js?v=f9bbb7cb:569
+batch @ @tanstack_react-query.js?v=f9bbb7cb:587
+dispatch_fn @ @tanstack_react-query.js?v=f9bbb7cb:996
+setData @ @tanstack_react-query.js?v=f9bbb7cb:696
+onSuccess @ @tanstack_react-query.js?v=f9bbb7cb:897
+resolve @ @tanstack_react-query.js?v=f9bbb7cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=f9bbb7cb:498
+start @ @tanstack_react-query.js?v=f9bbb7cb:536
+fetch @ @tanstack_react-query.js?v=f9bbb7cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=f9bbb7cb:2211
+onSubscribe @ @tanstack_react-query.js?v=f9bbb7cb:1898
+subscribe @ @tanstack_react-query.js?v=f9bbb7cb:24
+(anonymous) @ @tanstack_react-query.js?v=f9bbb7cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f9bbb7cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f9bbb7cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f9bbb7cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f9bbb7cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f9bbb7cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f9bbb7cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f9bbb7cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f9bbb7cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f9bbb7cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f9bbb7cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=f9bbb7cb:197
+flushWork @ chunk-RPCDYKBN.js?v=f9bbb7cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f9bbb7cb:384Understand this error
+App.tsx:123 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/pages/supplier/commissions.tsx net::ERR_ABORTED 502 (Bad Gateway)

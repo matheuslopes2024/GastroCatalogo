@@ -73,8 +73,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
       // Criar URL com um token único para evitar problemas de cache
       const token = `${Math.random().toString(36).substring(2, 10)}${Date.now().toString(36)}`;
       // Usar o caminho /ws na URL principal para garantir conexão WebSocket consistente
-      const wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
-      console.log(`[WS] Tentando conectar ao WebSocket: ${wsUrl}`);
+      let wsUrl = "";
+      
+      try {
+        // Verificar se estamos em ambiente Replit
+        if (currentHost && currentHost.includes("replit")) {
+          wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
+        } else {
+          // Fallback para desenvolvimento local
+          const port = window.location.port || (protocol === "wss:" ? "443" : "80");
+          wsUrl = `${protocol}//localhost:${port}/ws?token=${token}`;
+        }
+      } catch (urlError) {
+        console.error("[WS] Erro ao construir URL do WebSocket:", urlError);
+        setConnectionError(`Erro ao construir URL do WebSocket: ${urlError}`);
+        return;
+      }
       
       // Fechar conexão existente se houver
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
