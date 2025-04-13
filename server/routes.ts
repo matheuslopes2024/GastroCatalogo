@@ -525,13 +525,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Suppliers can only update their own products
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
-        // Correção: usar supplier_id em vez de supplierId para corresponder ao banco de dados
-        const productSupplierId = Number(product.supplier_id);
+        // Correção: usar supplierId em vez de supplier_id para corresponder ao modelo do produto
+        const productSupplierId = Number(product.supplierId);
         const userId = Number(req.user.id);
         
         console.log(`Verificação de permissão de produto:
           - ID do produto: ${id}
-          - Fornecedor do produto: ${productSupplierId}
+          - Fornecedor do produto (supplierId): ${productSupplierId}
           - ID do usuário: ${userId}
           - Papel do usuário: ${req.user.role}
         `);
@@ -569,13 +569,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Suppliers can only delete their own products
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
-        // Correção: usar supplier_id em vez de supplierId para corresponder ao banco de dados
-        const productSupplierId = Number(product.supplier_id);
+        // Correção: usar supplierId em vez de supplier_id para corresponder ao modelo do produto
+        const productSupplierId = Number(product.supplierId);
         const userId = Number(req.user.id);
         
         console.log(`Verificação de permissão para exclusão de produto:
           - ID do produto: ${id}
-          - Fornecedor do produto: ${productSupplierId}
+          - Fornecedor do produto (supplierId): ${productSupplierId}
           - ID do usuário: ${userId}
           - Papel do usuário: ${req.user.role}
         `);
