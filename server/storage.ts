@@ -1984,35 +1984,75 @@ export class DatabaseStorage implements IStorage {
         
         // ------ FILTROS DE PREÇO ------
         
-        // Filtro de preço mínimo - implementação melhorada
+        // Filtro de preço mínimo - implementação UNIVERSAL
         if (options.minPrice !== undefined) {
-          console.log(`Aplicando filtro SQL de preço mínimo: ${options.minPrice}`);
-          const minPriceValue = parseFloat(String(options.minPrice));
-          if (!isNaN(minPriceValue)) {
-            // Aplicar filtro com conversão explícita para decimal com tratamento especial de texto
-            conditions.push(sql`CAST(REPLACE(REPLACE(${products.price}, '.', ''), ',', '.') AS DECIMAL) >= ${minPriceValue}`);
-            console.log(`Filtro SQL de preço mínimo aplicado com novo formato: ${minPriceValue}`);
+          console.log(`❇️ [PREÇO] Aplicando filtro UNIVERSAL de preço mínimo: "${options.minPrice}" (${typeof options.minPrice})`);
+          
+          try {
+            // Tentativa 1: Conversão direta para número
+            let minPriceValue = 0;
             
-            // Validação adicional para garantir que o valor não seja uma string sem significado numérico
-            conditions.push(sql`${products.price} ~ '^[0-9]+\.?[0-9]*$'`);
-          } else {
-            console.error(`Ignorando filtro de preço mínimo - valor inválido: ${options.minPrice}`);
+            if (typeof options.minPrice === 'string') {
+              // Tratar strings em formato brasileiro (com vírgula)
+              let cleanedPrice = options.minPrice.replace(/[^\d.,]/g, '');
+              cleanedPrice = cleanedPrice.replace(',', '.');
+              minPriceValue = parseFloat(cleanedPrice);
+            } else if (typeof options.minPrice === 'number') {
+              minPriceValue = options.minPrice;
+            } else {
+              // Fallback para outros tipos inesperados
+              minPriceValue = parseFloat(String(options.minPrice));
+            }
+            
+            if (!isNaN(minPriceValue)) {
+              console.log(`✅ [PREÇO] Valor min_price normalizado: ${minPriceValue}`);
+              
+              // SOLUÇÃO UNIVERSAL: Usar cast() de drizzle para garantir comparação de tipos
+              conditions.push(
+                sql`cast(${products.price} as decimal) >= cast(${minPriceValue.toString()} as decimal)`
+              );
+              console.log(`✅ [PREÇO] Filtro min_price aplicado com conversão explícita de tipos`);
+            } else {
+              console.error(`❌ [PREÇO] Ignorando filtro min_price - valor inválido após normalização`);
+            }
+          } catch (error) {
+            console.error(`❌ [PREÇO] Erro ao processar filtro min_price:`, error);
           }
         }
         
-        // Filtro de preço máximo - implementação melhorada
+        // Filtro de preço máximo - implementação UNIVERSAL
         if (options.maxPrice !== undefined) {
-          console.log(`Aplicando filtro SQL de preço máximo: ${options.maxPrice}`);
-          const maxPriceValue = parseFloat(String(options.maxPrice));
-          if (!isNaN(maxPriceValue)) {
-            // Aplicar filtro com conversão explícita para decimal com tratamento especial de texto
-            conditions.push(sql`CAST(REPLACE(REPLACE(${products.price}, '.', ''), ',', '.') AS DECIMAL) <= ${maxPriceValue}`);
-            console.log(`Filtro SQL de preço máximo aplicado com novo formato: ${maxPriceValue}`);
+          console.log(`❇️ [PREÇO] Aplicando filtro UNIVERSAL de preço máximo: "${options.maxPrice}" (${typeof options.maxPrice})`);
+          
+          try {
+            // Tentativa 1: Conversão direta para número
+            let maxPriceValue = 999999;
             
-            // Validação adicional para garantir que o valor não seja uma string sem significado numérico
-            conditions.push(sql`${products.price} ~ '^[0-9]+\.?[0-9]*$'`);
-          } else {
-            console.error(`Ignorando filtro de preço máximo - valor inválido: ${options.maxPrice}`);
+            if (typeof options.maxPrice === 'string') {
+              // Tratar strings em formato brasileiro (com vírgula)
+              let cleanedPrice = options.maxPrice.replace(/[^\d.,]/g, '');
+              cleanedPrice = cleanedPrice.replace(',', '.');
+              maxPriceValue = parseFloat(cleanedPrice);
+            } else if (typeof options.maxPrice === 'number') {
+              maxPriceValue = options.maxPrice;
+            } else {
+              // Fallback para outros tipos inesperados
+              maxPriceValue = parseFloat(String(options.maxPrice));
+            }
+            
+            if (!isNaN(maxPriceValue)) {
+              console.log(`✅ [PREÇO] Valor max_price normalizado: ${maxPriceValue}`);
+              
+              // SOLUÇÃO UNIVERSAL: Usar cast() de drizzle para garantir comparação de tipos
+              conditions.push(
+                sql`cast(${products.price} as decimal) <= cast(${maxPriceValue.toString()} as decimal)`
+              );
+              console.log(`✅ [PREÇO] Filtro max_price aplicado com conversão explícita de tipos`);
+            } else {
+              console.error(`❌ [PREÇO] Ignorando filtro max_price - valor inválido após normalização`);
+            }
+          } catch (error) {
+            console.error(`❌ [PREÇO] Erro ao processar filtro max_price:`, error);
           }
         }
         
