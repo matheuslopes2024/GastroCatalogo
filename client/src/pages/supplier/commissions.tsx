@@ -61,7 +61,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Calculator,
-  CalendarDays,
   ChevronDown,
   HelpCircle,
   Info,
@@ -630,7 +629,14 @@ export default function SupplierCommissions() {
                                       <div className="mt-2 flex items-center">
                                         <span className="font-medium">Válido até:</span>
                                         <span className="text-gray-600 ml-1 flex items-center">
-                                          <CalendarDays className="h-3 w-3 mr-1" />
+                                          <span className="inline-flex h-3 w-3 mr-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                                              <line x1="16" x2="16" y1="2" y2="6" />
+                                              <line x1="8" x2="8" y1="2" y2="6" />
+                                              <line x1="3" x2="21" y1="10" y2="10" />
+                                            </svg>
+                                          </span>
                                           {new Date(details.validUntil).toLocaleDateString('pt-BR')}
                                         </span>
                                       </div>
@@ -1192,7 +1198,14 @@ function ProductCommissionForm({
             <FormItem>
               <FormLabel>Validade</FormLabel>
               <div className="relative">
-                <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
+                  </svg>
+                </span>
                 <FormControl>
                   <Input 
                     type="date"
