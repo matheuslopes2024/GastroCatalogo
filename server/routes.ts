@@ -525,7 +525,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Suppliers can only update their own products
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
-        // Correção: usar supplierId em vez de supplier_id para corresponder ao modelo do produto
         const productSupplierId = Number(product.supplierId);
         const userId = Number(req.user.id);
         
@@ -549,7 +548,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const updatedProduct = await storage.updateProduct(id, req.body);
+      // Garantir que o supplierId seja mantido consistente
+      let productData = { ...req.body };
+      
+      // Se o supplierId não foi fornecido ou é diferente do original para um fornecedor,
+      // mantenha o original ou use o ID do usuário atual
+      if (req.user.role === UserRole.SUPPLIER) {
+        productData.supplierId = req.user.id;
+      } else if (!productData.supplierId) {
+        // Se não foi fornecido, manter o original
+        productData.supplierId = product.supplierId;
+      }
+      
+      console.log("Dados finais para atualização:", {
+        id: productData.id,
+        name: productData.name,
+        supplierId: productData.supplierId
+      });
+      
+      const updatedProduct = await storage.updateProduct(id, productData);
       res.json(updatedProduct);
     } catch (error) {
       console.error("Erro ao atualizar produto:", error);
