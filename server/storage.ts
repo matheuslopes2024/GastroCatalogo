@@ -3539,7 +3539,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    const supplierProducts = await query;
+    const supplierProducts = await query.execute();
     
     // Aplicar ordenação (deve ser feita após a consulta no Drizzle)
     if (options?.orderBy) {
