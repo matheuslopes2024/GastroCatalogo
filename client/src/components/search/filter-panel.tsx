@@ -59,7 +59,7 @@ export function FilterPanel({
   
   // Função para atualizar o filtro de ordenação
   const handleSortChange = (value: string) => {
-    const { field, direction } = parseSortValue(value);
+    const { field, direction } = parseSortOption(value);
     onFilterChange({
       ...filters,
       sortBy: field,
