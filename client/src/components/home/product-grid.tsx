@@ -235,10 +235,21 @@ export function ProductGrid() {
           productsArray.map(p => `${p.id} (${p.name})`).join(', '));
         
         // Verificar se temos os produtos específicos que estamos procurando
-        const hasMessiProduct = productsArray.some(p => p.name.includes('MESSI'));
-        const hasCR7Product = productsArray.some(p => p.name.includes('CR7'));
+        // Usando toLowerCase() para garantir que a pesquisa não seja sensível a maiúsculas/minúsculas
+        const hasMessiProduct = productsArray.some(p => p.name.toLowerCase().includes('messi'));
+        const hasCR7Product = productsArray.some(p => p.name.toLowerCase().includes('cr7'));
         
-        console.log(`ProductGrid: Produtos específicos: MESSI=${hasMessiProduct}, CR7=${hasCR7Product}`);
+        // Encontrar e logar os produtos específicos para diagnóstico
+        const messiProducts = productsArray.filter(p => p.name.toLowerCase().includes('messi'));
+        const cr7Products = productsArray.filter(p => p.name.toLowerCase().includes('cr7'));
+        
+        console.log(`ProductGrid: Produtos específicos: MESSI=${hasMessiProduct} (${messiProducts.length} encontrados), CR7=${hasCR7Product} (${cr7Products.length} encontrados)`);
+        if (messiProducts.length > 0) {
+          console.log("ProductGrid: Detalhes do produto Messi:", messiProducts.map(p => `${p.id} - ${p.name}`));
+        }
+        if (cr7Products.length > 0) {
+          console.log("ProductGrid: Detalhes do produto CR7:", cr7Products.map(p => `${p.id} - ${p.name}`));
+        }
         
         // Mostrar todos os produtos buscados (ou limitar a 8 conforme necessário)
         setProducts(productsArray); // Removida a limitação para mostrar mais produtos
