@@ -1895,7 +1895,7 @@ export class DatabaseStorage implements IStorage {
     // Executar a consulta para retornar os resultados
     console.log("Executando consulta de produtos no banco de dados");
     try {
-      const result = await query;
+      const result = await query.execute();
       console.log(`Consulta retornou ${result.length} produtos`);
       return result;
     } catch (error) {
@@ -1944,7 +1944,7 @@ export class DatabaseStorage implements IStorage {
     // Executar a consulta para retornar os resultados
     console.log("Executando consulta de vendas no banco de dados");
     try {
-      const result = await query;
+      const result = await query.execute();
       console.log(`Consulta retornou ${result.length} vendas`);
       return result;
     } catch (error) {
@@ -2161,7 +2161,7 @@ export class DatabaseStorage implements IStorage {
     // Executar a consulta para retornar os resultados
     console.log("Executando consulta de mensagens no banco de dados");
     try {
-      const result = await query;
+      const result = await query.execute();
       console.log(`Consulta retornou ${result.length} mensagens`);
       return result;
     } catch (error) {
@@ -2229,7 +2229,7 @@ export class DatabaseStorage implements IStorage {
         .where(sql`${chatConversations.participantIds}::text LIKE '%' || ${userId} || '%'`)
         .orderBy(desc(chatConversations.lastActivityAt));
         
-      const result = await query;
+      const result = await query.execute();
       console.log(`Encontradas ${result.length} conversas para o usuário ${userId}`);
       return result;
     } catch (error) {
@@ -2246,7 +2246,7 @@ export class DatabaseStorage implements IStorage {
         .from(chatConversations)
         .orderBy(desc(chatConversations.lastActivityAt));
         
-      const result = await query;
+      const result = await query.execute();
       console.log(`Encontradas ${result.length} conversas no total`);
       return result;
     } catch (error) {
@@ -2344,7 +2344,7 @@ export class DatabaseStorage implements IStorage {
     
     console.log("Executando consulta de configurações de comissão");
     try {
-      const result = await query.orderBy(commissionSettings.id);
+      const result = await query.orderBy(commissionSettings.id).execute();
       console.log(`Consulta retornou ${result.length} configurações de comissão`);
       return result;
     } catch (error) {
