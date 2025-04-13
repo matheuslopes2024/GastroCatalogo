@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, ArrowRight, Loader2 } from "lucide-react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { 
   CommandDialog,
@@ -30,7 +30,7 @@ export function SmartSearchBar() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   // Controle de foco no input ao abrir o diálogo
   useEffect(() => {
@@ -82,7 +82,7 @@ export function SmartSearchBar() {
   const handleSearch = () => {
     if (value.trim()) {
       setOpen(false);
-      navigate(`/busca?q=${encodeURIComponent(value.trim())}`);
+      setLocation(`/busca?q=${encodeURIComponent(value.trim())}`);
     }
   };
 
@@ -91,10 +91,10 @@ export function SmartSearchBar() {
     setOpen(false);
     
     if (productSlug) {
-      navigate(`/produto/${productSlug}`);
+      setLocation(`/produto/${productSlug}`);
     } else {
       setValue(selectedValue);
-      navigate(`/busca?q=${encodeURIComponent(selectedValue)}`);
+      setLocation(`/busca?q=${encodeURIComponent(selectedValue)}`);
     }
   };
 

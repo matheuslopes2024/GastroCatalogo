@@ -141,6 +141,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API de sugestões de pesquisa inteligente
+  app.get("/api/search-suggestions", async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.length < 2) {
+        return res.json([]);
+      }
+      
+      console.log(`Buscando sugestões para termo: "${q}"`);
+      
+      // Buscando produtos que correspondem ao termo de pesquisa
+      const products = await storage.getProducts({
+        search: q,
+        active: true,
+        limit: 8 // Limitando a 8 sugestões
+      });
+      
+      console.log(`Encontrados ${products.length} produtos para sugestões`);
+      
+      // Para cada produto, buscamos a categoria
+      const results = await Promise.all(
+        products.map(async product => {
+          let categoryName = "";
+          
+          if (product.categoryId) {
+            const category = await storage.getCategory(product.categoryId);
+            if (category) {
+              categoryName = category.name;
+            }
+          }
+          
+          // Formatação do preço para exibição
+          const formattedPrice = parseFloat(product.price).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          });
+          
+          return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            imageUrl: product.imageUrl,
+            category: categoryName,
+            price: formattedPrice,
+            categoryId: product.categoryId
+          };
+        })
+      );
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Erro ao buscar sugestões de pesquisa:", error);
+      res.status(500).json({ message: "Erro ao buscar sugestões" });
+    }
+  });
+  
   // Products API - Endpoint com sistema de busca avançada
   app.get("/api/products", async (req, res) => {
     try {
