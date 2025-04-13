@@ -22,20 +22,8 @@ import { Category } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
 import { Search, Filter, CircleCheck, Star, CircleDollarSign, Truck, CalendarCheck, CircleX, ArrowUpDown } from "lucide-react";
 
-// Interface para os filtros
-export interface SearchFilters {
-  minPrice?: number;
-  maxPrice?: number;
-  rating?: number;
-  inStock?: boolean;
-  hasDiscount?: boolean;
-  supplierId?: number;
-  brandId?: number;
-  sortBy?: string;
-  sortDirection?: string;
-  features?: string[];
-  additionalCategories?: number[];
-}
+// Importando a interface e funções de gerenciamento de filtros
+import { SearchFilters, SortOption, sortOptionLabels, parseSortOption } from "@/types/search-filters";
 
 interface FilterPanelProps {
   categories?: Category[]; 
@@ -63,21 +51,11 @@ export function FilterPanel({
     filters.maxPrice || 1000
   ]);
   
-  // Rótulos para a ordenação
-  const sortOptions = [
-    { value: "price-asc", label: "Menor preço" },
-    { value: "price-desc", label: "Maior preço" },
-    { value: "rating-desc", label: "Melhor avaliação" },
-    { value: "name-asc", label: "Nome (A-Z)" },
-    { value: "createdAt-desc", label: "Mais recentes" },
-    { value: "popularity-desc", label: "Mais populares" },
-  ];
-  
-  // Função para extrair valores da ordenação (price-asc -> price, asc)
-  const parseSortValue = (value: string) => {
-    const [field, direction] = value.split('-');
-    return { field, direction };
-  };
+  // Mapeando as opções de ordenação a partir da enumeração
+  const sortOptions = Object.values(SortOption).map(value => ({
+    value,
+    label: sortOptionLabels[value]
+  }));
   
   // Função para atualizar o filtro de ordenação
   const handleSortChange = (value: string) => {

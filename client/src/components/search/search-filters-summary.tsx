@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SearchFilters } from "./filter-panel";
 import { formatCurrency } from "@/lib/utils";
 import { Star, X } from "lucide-react";
 import { Category } from "@shared/schema";
+import { SearchFilters, hasActiveFilters } from "@/types/search-filters";
 
 interface SearchFiltersSummaryProps {
   filters: SearchFilters;
@@ -18,10 +18,7 @@ export function SearchFiltersSummary({
   suppliers = [],
   onRemoveFilter 
 }: SearchFiltersSummaryProps) {
-  const hasFilters = Object.values(filters).some(value => 
-    value !== undefined && 
-    (Array.isArray(value) ? value.length > 0 : true)
-  );
+  const hasFilters = hasActiveFilters(filters);
   
   // Ordenação
   const getSortLabel = () => {
