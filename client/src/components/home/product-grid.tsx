@@ -202,11 +202,27 @@ export function ProductGrid() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await apiRequest('GET', '/api/products', undefined, {
-          // Garantir que estamos enviando header para indicar que NÃO é dashboard de fornecedor
-          'x-supplier-dashboard': 'false'
+        // Preparar parâmetros de busca para garantir que pegamos TODOS os produtos ativos
+        const params = new URLSearchParams({
+          limit: '50', // Aumentamos o limite para garantir que pegamos mais produtos
+          includeInactive: 'false' // Apenas produtos ativos
         });
+        
+        console.log('ProductGrid: Buscando produtos na API com parâmetros:', params.toString());
+        
+        // Fazer requisição à API com parâmetros específicos
+        const res = await apiRequest(
+          'GET', 
+          `/api/products?${params.toString()}`, 
+          undefined, 
+          {
+            // Garantir que estamos enviando header para indicar que NÃO é dashboard de fornecedor
+            'x-supplier-dashboard': 'false'
+          }
+        );
+        
         const responseData = await res.json();
+        console.log('ProductGrid: Resposta da API:', responseData);
         
         // Lidar com ambos os formatos de resposta (array ou objeto com data)
         const productsArray = Array.isArray(responseData) 
@@ -215,10 +231,17 @@ export function ProductGrid() {
             ? responseData.data 
             : [];
             
-        console.log(`ProductGrid: Buscou ${productsArray.length} produtos no total`);
+        console.log(`ProductGrid: Buscou ${productsArray.length} produtos no total, IDs:`, 
+          productsArray.map(p => `${p.id} (${p.name})`).join(', '));
         
-        // Limitar a 8 produtos para a grade principal
-        setProducts(productsArray.slice(0, 8));
+        // Verificar se temos os produtos específicos que estamos procurando
+        const hasMessiProduct = productsArray.some(p => p.name.includes('MESSI'));
+        const hasCR7Product = productsArray.some(p => p.name.includes('CR7'));
+        
+        console.log(`ProductGrid: Produtos específicos: MESSI=${hasMessiProduct}, CR7=${hasCR7Product}`);
+        
+        // Mostrar todos os produtos buscados (ou limitar a 8 conforme necessário)
+        setProducts(productsArray); // Removida a limitação para mostrar mais produtos
         setLoading(false);
       } catch (error) {
         console.error('Erro ao buscar produtos:', error);
