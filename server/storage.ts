@@ -1923,30 +1923,73 @@ export class DatabaseStorage implements IStorage {
         
         // ------ FILTROS DE PREÇO ------
         
-        // Filtro de preço mínimo
+        // Filtro de preço mínimo - implementação melhorada
         if (options.minPrice !== undefined) {
           console.log(`Aplicando filtro SQL de preço mínimo: ${options.minPrice}`);
           const minPriceValue = parseFloat(String(options.minPrice));
           if (!isNaN(minPriceValue)) {
-            // Aplicar filtro diretamente na consulta SQL
-            conditions.push(sql`CAST(${products.price} AS DECIMAL) >= ${minPriceValue}`);
-            console.log(`Filtro SQL de preço mínimo aplicado: ${minPriceValue}`);
+            // Aplicar filtro com conversão explícita para decimal com tratamento especial de texto
+            conditions.push(sql`CAST(REPLACE(REPLACE(${products.price}, '.', ''), ',', '.') AS DECIMAL) >= ${minPriceValue}`);
+            console.log(`Filtro SQL de preço mínimo aplicado com novo formato: ${minPriceValue}`);
+            
+            // Validação adicional para garantir que o valor não seja uma string sem significado numérico
+            conditions.push(sql`${products.price} ~ '^[0-9]+\.?[0-9]*$'`);
           } else {
             console.error(`Ignorando filtro de preço mínimo - valor inválido: ${options.minPrice}`);
           }
         }
         
-        // Filtro de preço máximo
+        // Filtro de preço máximo - implementação melhorada
         if (options.maxPrice !== undefined) {
           console.log(`Aplicando filtro SQL de preço máximo: ${options.maxPrice}`);
           const maxPriceValue = parseFloat(String(options.maxPrice));
           if (!isNaN(maxPriceValue)) {
-            // Aplicar filtro diretamente na consulta SQL
-            conditions.push(sql`CAST(${products.price} AS DECIMAL) <= ${maxPriceValue}`);
-            console.log(`Filtro SQL de preço máximo aplicado: ${maxPriceValue}`);
+            // Aplicar filtro com conversão explícita para decimal com tratamento especial de texto
+            conditions.push(sql`CAST(REPLACE(REPLACE(${products.price}, '.', ''), ',', '.') AS DECIMAL) <= ${maxPriceValue}`);
+            console.log(`Filtro SQL de preço máximo aplicado com novo formato: ${maxPriceValue}`);
+            
+            // Validação adicional para garantir que o valor não seja uma string sem significado numérico
+            conditions.push(sql`${products.price} ~ '^[0-9]+\.?[0-9]*$'`);
           } else {
             console.error(`Ignorando filtro de preço máximo - valor inválido: ${options.maxPrice}`);
           }
+        }
+        
+        // Adicionando melhor tratamento para casos onde minPrice ou maxPrice podem estar presentes
+        if (options.minPrice !== undefined || options.maxPrice !== undefined) {
+          // Log detalhado para depuração do filtro de preço
+          console.log(`[DEBUG PREÇO] Aplicando filtros de preço avançados...`);
+          console.log(`[DEBUG PREÇO] Faixa de preço definida: ${options.minPrice || 0} a ${options.maxPrice || 'infinito'}`);
+          
+          // Abordagem adicional para garantir que preços sejam tratados corretamente
+          // Filtro extra que usa REGEX para garantir que só números com formato válido sejam considerados
+          conditions.push(sql`${products.price} ~ '^[0-9]+(\.[0-9]+)?$'`);
+          
+          // Para PostgreSQL, também podemos aplicar um filtro direto com conversão explícita
+          if (options.minPrice !== undefined) {
+            console.log(`[DEBUG PREÇO] Aplicando filtro definitivo usando numeric_price para mínimo: ${options.minPrice}`);
+            conditions.push(sql`(
+              CASE 
+                WHEN ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' 
+                THEN ${products.price}::numeric 
+                ELSE 0 
+              END >= ${options.minPrice}::numeric
+            )`);
+          }
+          
+          if (options.maxPrice !== undefined) {
+            console.log(`[DEBUG PREÇO] Aplicando filtro definitivo usando numeric_price para máximo: ${options.maxPrice}`);
+            conditions.push(sql`(
+              CASE 
+                WHEN ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' 
+                THEN ${products.price}::numeric 
+                ELSE 999999 
+              END <= ${options.maxPrice}::numeric
+            )`);
+          }
+          
+          // Diagnóstico adicional para garantir que os dados estão sendo manipulados corretamente
+          console.log(`[DEBUG PREÇO] Total de condições SQL aplicadas: ${conditions.length}`);
         }
         
         // ------ FILTROS DE PESQUISA ------
