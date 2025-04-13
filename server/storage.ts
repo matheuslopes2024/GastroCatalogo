@@ -2358,9 +2358,20 @@ export class DatabaseStorage implements IStorage {
    * @returns A configuração de comissão ou undefined se não existir
    */
   async getProductCommissionSettingByProductId(productId: number): Promise<ProductCommissionSetting | undefined> {
-    return Array.from(this.productCommissionSettings.values()).find(
-      setting => setting.productId === productId
-    );
+    try {
+      if (!this.productCommissionSettings) {
+        // Inicializa Map vazio se ainda não existir
+        this.productCommissionSettings = new Map();
+        return undefined;
+      }
+      
+      return Array.from(this.productCommissionSettings.values()).find(
+        setting => setting.productId === productId
+      );
+    } catch (error) {
+      console.error(`Erro ao buscar configuração de comissão para produto ${productId}:`, error);
+      return undefined;
+    }
   }
   
   /**
