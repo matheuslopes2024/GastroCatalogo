@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { User, UserRole, Sale, Product } from "@shared/schema";
+import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
@@ -68,9 +69,28 @@ export default function AdminDashboard() {
   });
   
   // Fetch all products
-  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
+  const { data: productsResponse, isLoading: isLoadingProducts } = useQuery<Product[] | { data: Product[] }>({
     queryKey: ["/api/products"],
   });
+  
+  // Normaliza o formato dos produtos para garantir que sempre seja um array
+  const products = useMemo(() => {
+    if (!productsResponse) return [];
+    
+    // Se já for um array, usar diretamente
+    if (Array.isArray(productsResponse)) {
+      return productsResponse;
+    }
+    
+    // Se for um objeto com propriedade 'data' como array, usar esse array
+    if (productsResponse && typeof productsResponse === 'object' && 
+        'data' in productsResponse && Array.isArray(productsResponse.data)) {
+      return productsResponse.data;
+    }
+    
+    console.error("Formato inesperado de resposta de produtos:", productsResponse);
+    return []; // Fallback para array vazio
+  }, [productsResponse]);
   
   // Supplier count
   const supplierCount = users?.filter(u => u.role === UserRole.SUPPLIER).length || 0;
