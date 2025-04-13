@@ -197,9 +197,95 @@ export default function SupplierDashboard() {
     }
   }, [dashboardData, isLoadingDashboard]);
   
-  // Extrair métricas do dashboard
+  // Extrair métricas do dashboard com tratamento de erro aprimorado
   const dashboardSummary = useMemo(() => {
-    if (isLoadingDashboard || !dashboardData || !dashboardData.summary) {
+    try {
+      // Verificação de estado de carregamento e existência de dados
+      if (isLoadingDashboard || !dashboardData) {
+        return {
+          totalSales: 0,
+          totalOrders: 0,
+          totalRevenue: 0,
+          totalCommission: 0,
+          netRevenue: 0,
+          avgCommissionRate: "0.00",
+          topProducts: []
+        };
+      }
+      
+      // Verificar explicitamente a existência do objeto summary
+      if (!dashboardData.summary || typeof dashboardData.summary !== 'object') {
+        console.log("Dados de resumo do dashboard não disponíveis ou em formato inválido");
+        return {
+          totalSales: 0,
+          totalOrders: 0,
+          totalRevenue: 0,
+          totalCommission: 0,
+          netRevenue: 0,
+          avgCommissionRate: "0.00",
+          topProducts: []
+        };
+      }
+      
+      // Extrair valores com fallbacks seguros para cada métrica
+      const totalSales = typeof dashboardData.summary.totalSales === 'number' 
+        ? dashboardData.summary.totalSales 
+        : 0;
+        
+      const totalRevenue = typeof dashboardData.summary.totalRevenue === 'number' 
+        ? dashboardData.summary.totalRevenue 
+        : 0;
+        
+      const totalCommission = typeof dashboardData.summary.totalCommission === 'number' 
+        ? dashboardData.summary.totalCommission 
+        : 0;
+        
+      const netRevenue = typeof dashboardData.summary.netRevenue === 'number' 
+        ? dashboardData.summary.netRevenue 
+        : 0;
+      
+      // Calcular taxa média de comissão com proteção contra divisão por zero
+      const avgCommissionRate = totalRevenue > 0
+        ? (totalCommission / totalRevenue * 100).toFixed(2)
+        : "0.00";
+        
+      // Processamento seguro de topProducts
+      let topProducts = [];
+      
+      if (Array.isArray(dashboardData.topProducts)) {
+        topProducts = dashboardData.topProducts.map(product => {
+          // Verificar se o item é um objeto válido
+          if (!product || typeof product !== 'object') {
+            return null;
+          }
+          
+          // Extrair valores com fallbacks seguros
+          const productId = product.productId || 0;
+          const name = product.name || 'Produto sem nome';
+          const imageUrl = product.imageUrl || null;
+          const totalRevenue = typeof product.totalRevenue === 'number' ? product.totalRevenue : 0;
+          const totalSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
+          
+          return {
+            productId,
+            product: { id: productId, name },
+            imageUrl,
+            totalValue: totalRevenue,
+            count: totalSales
+          };
+        }).filter(Boolean); // Filtrar itens nulos ou undefined
+      }
+        
+      return {
+        totalOrders: totalSales,
+        totalSales: totalRevenue,
+        totalCommission,
+        netRevenue,
+        avgCommissionRate,
+        topProducts
+      };
+    } catch (error) {
+      console.error("Erro ao processar dados do dashboard:", error);
       return {
         totalSales: 0,
         totalOrders: 0,
@@ -210,57 +296,92 @@ export default function SupplierDashboard() {
         topProducts: []
       };
     }
-    
-    const { totalSales, totalRevenue, totalCommission, netRevenue } = dashboardData.summary;
-    
-    // Calcular taxa média de comissão
-    const avgCommissionRate = totalRevenue > 0
-      ? (totalCommission / totalRevenue * 100).toFixed(2)
-      : "0.00";
-      
-    return {
-      totalOrders: totalSales,
-      totalSales: totalRevenue,
-      totalCommission,
-      netRevenue,
-      avgCommissionRate,
-      topProducts: dashboardData.topProducts?.map(product => ({
-        productId: product.productId,
-        product: { id: product.productId, name: product.name },
-        imageUrl: product.imageUrl,
-        totalValue: product.totalRevenue,
-        count: product.totalSales
-      })) || []
-    };
   }, [dashboardData, isLoadingDashboard]);
   
   // Este useMemo foi substituído pelo topProducts dentro do dashboardSummary
   
-  // Extrair desempenho de produtos para visualização na tabela
+  // Extrair desempenho de produtos para visualização na tabela com tratamento de erro aprimorado
   const productPerformance = useMemo(() => {
-    if (isLoadingDashboard || !dashboardData || !dashboardData.topProducts) {
+    try {
+      // Verificação inicial de estado e existência de dados
+      if (isLoadingDashboard || !dashboardData) {
+        return [];
+      }
+      
+      // Verificação explícita do formato dos dados de produtos
+      if (!dashboardData.topProducts || !Array.isArray(dashboardData.topProducts)) {
+        console.log("Dados de produtos mais vendidos não disponíveis ou em formato inválido");
+        return [];
+      }
+      
+      // Processamento seguro dos produtos com validações
+      return dashboardData.topProducts.map(product => {
+        // Verificar se o item é um objeto válido
+        if (!product || typeof product !== 'object') {
+          return null;
+        }
+        
+        // Extrair valores com fallbacks seguros
+        const productId = product.productId || 0;
+        const name = product.name || 'Produto sem nome';
+        const imageUrl = product.imageUrl || null;
+        const totalRevenue = typeof product.totalRevenue === 'number' ? product.totalRevenue : 0;
+        const totalSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
+        
+        return {
+          productId,
+          product: { 
+            id: productId, 
+            name 
+          },
+          imageUrl,
+          totalValue: totalRevenue,
+          count: totalSales
+        };
+      }).filter(Boolean); // Remover itens nulos ou undefined
+    } catch (error) {
+      console.error("Erro ao processar dados de desempenho de produtos:", error);
       return [];
     }
-    
-    return dashboardData.topProducts.map(product => ({
-      productId: product.productId,
-      product: { 
-        id: product.productId, 
-        name: product.name 
-      },
-      imageUrl: product.imageUrl,
-      totalValue: product.totalRevenue,
-      count: product.totalSales
-    }));
   }, [dashboardData, isLoadingDashboard]);
   
-  // Extrair vendas recentes
+  // Extrair vendas recentes com tratamento de erro aprimorado
   const recentSales = useMemo(() => {
-    if (isLoadingDashboard || !dashboardData || !dashboardData.recentSales) {
+    try {
+      // Verificação inicial de estado e existência de dados
+      if (isLoadingDashboard || !dashboardData) {
+        return [];
+      }
+      
+      // Verificação explícita do formato dos dados
+      if (!dashboardData.recentSales || !Array.isArray(dashboardData.recentSales)) {
+        console.log("Dados de vendas recentes não disponíveis ou em formato inválido");
+        return [];
+      }
+      
+      // Verificar se cada elemento é válido
+      return dashboardData.recentSales.map(sale => {
+        // Verificar se o item é um objeto válido
+        if (!sale || typeof sale !== 'object') {
+          return null;
+        }
+        
+        // Extrair com valores padrão seguros
+        return {
+          id: sale.id || 0,
+          date: sale.date || new Date().toISOString(),
+          productId: sale.productId || 0,
+          productName: sale.productName || 'Produto não identificado',
+          buyerName: sale.buyerName || 'Cliente não identificado',
+          quantity: typeof sale.quantity === 'number' ? sale.quantity : 1,
+          totalPrice: sale.totalPrice || '0',
+          status: sale.status || 'pending'
+        };
+      }).filter(Boolean); // Remover itens nulos
+    } catch (error) {
+      console.error("Erro ao processar dados de vendas recentes:", error);
       return [];
     }
-    
-    return dashboardData.recentSales;
   }, [dashboardData, isLoadingDashboard]);
   
   // Get total active products - verificamos se products é um array antes de usar filter
