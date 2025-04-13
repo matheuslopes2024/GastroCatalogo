@@ -1,6 +1,8 @@
 import React, { lazy, Suspense } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
+import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
@@ -114,14 +116,24 @@ function MainRoutes() {
         <ProtectedRoute 
           path="/fornecedor/comissoes" 
           component={() => (
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <span className="ml-2 font-medium text-gray-700">Carregando comissões...</span>
-              </div>
-            }>
-              {React.createElement(lazy(() => import("@/pages/supplier/commissions")))}
-            </Suspense>
+            <ErrorBoundary
+              fallback={
+                <div className="flex flex-col items-center justify-center min-h-screen p-4">
+                  <div className="text-red-500 text-lg font-semibold mb-2">Erro ao carregar a página de comissões</div>
+                  <p className="text-gray-600 mb-4">Houve um problema ao carregar os dados de comissões.</p>
+                  <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
+                </div>
+              }
+            >
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 font-medium text-gray-700">Carregando comissões...</span>
+                </div>
+              }>
+                {React.createElement(lazy(() => import("@/pages/supplier/commissions")))}
+              </Suspense>
+            </ErrorBoundary>
           )}
           allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
         />
