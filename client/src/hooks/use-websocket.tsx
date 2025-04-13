@@ -80,19 +80,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
         let port = "5000"; // Porta padrão do servidor
         
         // Garantir que temos um host válido
-        if (currentHost && currentHost.includes("replit")) {
-          // Estamos em ambiente Replit
+        if (currentHost) {
+          // Sempre usar o host atual para evitar problemas de localhost:undefined
           wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
-          console.log("[WS] Usando URL Replit:", wsUrl);
-        } else if (window.location.port) {
-          // Estamos em desenvolvimento local com porta específica
-          port = window.location.port;
-          wsUrl = `${protocol}//localhost:${port}/ws?token=${token}`;
-          console.log("[WS] Usando URL local com porta:", wsUrl);
+          console.log("[WS] Usando URL com host atual:", wsUrl);
         } else {
-          // Fallback para desenvolvimento local sem porta específica
-          wsUrl = `${protocol}//localhost:${port}/ws?token=${token}`;
-          console.log("[WS] Usando URL local com porta padrão:", wsUrl);
+          // Fallback absoluto para desenvolvimento local
+          wsUrl = `${protocol}//localhost:5000/ws?token=${token}`;
+          console.log("[WS] Usando URL local fallback:", wsUrl);
         }
         
         // Verificação final para garantir que temos uma URL válida

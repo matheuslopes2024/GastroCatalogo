@@ -219,8 +219,8 @@ export default function SupplierDashboard() {
     return dashboardData.recentSales;
   }, [dashboardData, isLoadingDashboard]);
   
-  // Get total active products
-  const activeProducts = products?.filter(p => p.active).length || 0;
+  // Get total active products - verificamos se products é um array antes de usar filter
+  const activeProducts = Array.isArray(products) ? products.filter(p => p.active).length || 0 : 0;
   
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
