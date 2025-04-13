@@ -2449,6 +2449,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   /**
+   * Remove uma configuração de comissão específica de produto
+   * @param id ID da configuração de comissão a ser excluída
+   * @returns true se a configuração foi excluída com sucesso, false caso contrário
+   */
+  async deleteProductCommissionSetting(id: number): Promise<boolean> {
+    try {
+      // Verificar se a configuração existe
+      const setting = await this.getProductCommissionSetting(id);
+      if (!setting) return false;
+      
+      // Remover a configuração
+      const result = this.productCommissionSettings.delete(id);
+      
+      // Registrar log da operação
+      console.log(`Configuração de comissão #${id} para o produto #${setting.productId} foi excluída`);
+      
+      return result;
+    } catch (error) {
+      console.error(`Erro ao excluir configuração de comissão #${id}:`, error);
+      return false;
+    }
+  }
+  
+  /**
    * Obtém as configurações de comissão de produtos com filtros opcionais
    * @param options Opções de filtragem (supplierId, active)
    * @returns Lista de configurações de comissão de produtos

@@ -81,6 +81,8 @@ import {
   CheckCircle2,
   ToggleLeft,
   ToggleRight,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,6 +98,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Tipos relacionados às comissões
 interface Category {
@@ -250,6 +263,8 @@ export default function SupplierCommissions() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingCommission, setEditingCommission] = useState<ProductCommissionSetting | null>(null);
+  const [commissionToDelete, setCommissionToDelete] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   
   // Função para buscar uma comissão específica para edição
   const handleEditCommission = async (commissionId: number) => {
