@@ -1704,13 +1704,14 @@ export class DatabaseStorage implements IStorage {
       active: products.active,
       additionalCategories: products.additionalCategories,
       createdAt: products.createdAt,
-    }).from(products).where(eq(products.id, id));
+    }).from(products).where(eq(products.id, id)).execute();
     
     // Adicionar diagnóstico para depuração
     if (product) {
       console.log(`Produto encontrado id=${id}:`, {
         id: product.id,
-        supplierId: product.supplierId
+        supplierId: product.supplierId,
+        supplierId_tipo: typeof product.supplierId
       });
     } else {
       console.log(`Produto não encontrado id=${id}`);
@@ -1778,12 +1779,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
-    const [updatedProduct] = await db
-      .update(products)
-      .set(productData)
-      .where(eq(products.id, id))
-      .returning();
-    return updatedProduct;
+    try {
+      const [updatedProduct] = await db
+        .update(products)
+        .set(productData)
+        .where(eq(products.id, id))
+        .returning()
+        .execute();
+        
+      // Adicionar diagnóstico para depuração
+      if (updatedProduct) {
+        console.log(`Produto atualizado id=${id}:`, {
+          id: updatedProduct.id,
+          supplierId: updatedProduct.supplierId,
+          supplierId_tipo: typeof updatedProduct.supplierId
+        });
+      } else {
+        console.log(`Produto não foi atualizado id=${id}`);
+      }
+        
+      return updatedProduct;
+    } catch (error) {
+      console.error(`Erro ao atualizar produto id=${id}:`, error);
+      throw error;
+    }
   }
   
   async getProducts(options?: { 
