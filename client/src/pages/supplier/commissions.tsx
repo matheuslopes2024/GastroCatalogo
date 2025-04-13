@@ -600,6 +600,7 @@ export default function SupplierCommissions() {
                 <TableHead>Taxa de Comissão</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Valor Líquido</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
