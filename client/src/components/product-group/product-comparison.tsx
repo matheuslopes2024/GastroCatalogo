@@ -1259,15 +1259,34 @@ export default function ProductComparison() {
         {/* Visualização detalhada com comparação de características */}
         {viewMode === "detailed" && (
           <div className="space-y-8">
+            <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 className="text-lg font-semibold mb-2 text-blue-700 flex items-center">
+                <Info className="h-5 w-5 mr-2" /> Comparação lado a lado
+              </h3>
+              <p className="text-sm text-blue-600">
+                Compare detalhadamente as características, vantagens econômicas e benefícios de cada produto. 
+                Destaque os itens com melhor custo-benefício e encontre a opção ideal para sua necessidade.
+              </p>
+            </div>
+            
             <div className="overflow-x-auto">
-              <Table>
-                <TableCaption>Comparação detalhada de produtos</TableCaption>
-                <TableHeader>
+              <Table className="border rounded-lg">
+                <TableCaption>Comparação detalhada de produtos - {productGroup?.displayName}</TableCaption>
+                <TableHeader className="bg-muted/30 sticky top-0">
                   <TableRow>
-                    <TableHead className="w-[180px]">Detalhes</TableHead>
+                    <TableHead className="w-[180px] bg-muted/50">Detalhes</TableHead>
                     {sortedItems.map((item) => (
-                      <TableHead key={item.id} className={`w-[220px] text-center ${item.isHighlighted ? "bg-primary/10" : ""}`}>
-                        <div className="flex flex-col items-center gap-2">
+                      <TableHead 
+                        key={item.id} 
+                        className={`w-[220px] text-center ${
+                          item.isHighlighted 
+                            ? "bg-primary/10 border-b-2 border-primary" 
+                            : item.isCheapest 
+                              ? "bg-green-50" 
+                              : ""
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2 p-2">
                           <div className="w-16 h-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center">
                             {item.product?.imageUrl ? (
                               <img 
