@@ -368,10 +368,16 @@ export default function SupplierCommissions() {
     queryFn: async () => {
       const res = await fetch("/api/supplier/products/commissions");
       if (!res.ok) {
+        console.error("Erro ao carregar produtos com comissões:", await res.text());
         throw new Error("Erro ao carregar produtos com comissões");
       }
-      return res.json();
+      
+      const data = await res.json();
+      console.log(`Número de produtos carregados: ${data?.length || 0}`);
+      return data;
     },
+    staleTime: 30000, // 30 segundos
+    refetchOnWindowFocus: true,
   });
 
   // Buscar categorias

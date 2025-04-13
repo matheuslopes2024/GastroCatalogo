@@ -2128,66 +2128,108 @@ export class DatabaseStorage implements IStorage {
     type: "specific" | "supplier" | "category" | "global", 
     settingId: number 
   }> {
-    // Buscar o produto
-    const product = await this.getProduct(productId);
-    if (!product) {
-      throw new Error("Produto não encontrado");
-    }
-    
-    // Primeiro, verificar se existe uma configuração específica para este produto
-    const productSpecificCommission = await this.getProductCommissionSettingByProductId(productId);
-    if (productSpecificCommission && productSpecificCommission.active) {
-      return {
-        rate: productSpecificCommission.rate,
-        type: "specific",
-        settingId: productSpecificCommission.id
-      };
-    }
-    
-    // Se não houver configuração específica, buscar as configurações de comissão gerais aplicáveis
-    const applicableSettings = await this.getSupplierApplicableCommissionSettings(product.supplierId);
-    
-    // Se não houver configurações, retornar uma taxa padrão
-    if (applicableSettings.length === 0) {
-      return { rate: "3.0", type: "global", settingId: 0 };
-    }
-    
-    // Função para verificar se a configuração se aplica a este produto específico
-    const isApplicable = (setting: CommissionSetting & { type: string, priority: number }) => {
-      if (setting.categoryId === null) {
-        return true; // Configuração global ou de fornecedor
-      }
+    try {
+      // Buscar o produto
+      let product;
       
-      // Verificar se o produto está na categoria da configuração
-      if (product.categoryId === setting.categoryId) {
-        return true;
-      }
-      
-      // Verificar categorias adicionais
-      if (product.additionalCategories && product.additionalCategories.includes(setting.categoryId)) {
-        return true;
-      }
-      
-      return false;
-    };
-    
-    // Encontrar a primeira configuração aplicável seguindo a ordem de prioridade
-    for (const setting of applicableSettings) {
-      if (isApplicable(setting)) {
+      try {
+        product = await this.getProduct(productId);
+        if (!product) {
+          console.error(`Produto não encontrado para ID: ${productId}`);
+          // Retornar taxa padrão quando o produto não for encontrado
+          return {
+            rate: "0.0",
+            type: "global",
+            settingId: 0
+          };
+        }
+      } catch (error) {
+        console.error(`Erro ao buscar produto ${productId}:`, error);
         return {
-          rate: setting.rate,
-          type: setting.type as "specific" | "supplier" | "category" | "global",
-          settingId: setting.id
+          rate: "0.0",
+          type: "global",
+          settingId: 0
         };
       }
+      
+      // Primeiro, verificar se existe uma configuração específica para este produto
+      try {
+        const productSpecificCommission = await this.getProductCommissionSettingByProductId(productId);
+        if (productSpecificCommission && productSpecificCommission.active) {
+          return {
+            rate: productSpecificCommission.rate,
+            type: "specific",
+            settingId: productSpecificCommission.id
+          };
+        }
+      } catch (error) {
+        console.error(`Erro ao buscar configuração específica para produto ${productId}:`, error);
+        // Continuar para o próximo método de obtenção da taxa
+      }
+      
+      // Se não houver configuração específica, buscar as configurações de comissão gerais aplicáveis
+      let applicableSettings = [];
+      try {
+        applicableSettings = await this.getSupplierApplicableCommissionSettings(product.supplierId);
+      } catch (error) {
+        console.error(`Erro ao buscar configurações aplicáveis para fornecedor ${product.supplierId}:`, error);
+      }
+      
+      // Se não houver configurações, retornar uma taxa padrão
+      if (!applicableSettings || applicableSettings.length === 0) {
+        return { rate: "3.0", type: "global", settingId: 0 };
+      }
+      
+      try {
+        // Função para verificar se a configuração se aplica a este produto específico
+        const isApplicable = (setting: CommissionSetting & { type: string, priority: number }) => {
+          if (!setting || setting.categoryId === null) {
+            return true; // Configuração global ou de fornecedor
+          }
+          
+          // Verificar se o produto está na categoria da configuração
+          if (product.categoryId === setting.categoryId) {
+            return true;
+          }
+          
+          // Verificar categorias adicionais
+          if (product.additionalCategories && Array.isArray(product.additionalCategories) && 
+              product.additionalCategories.includes(setting.categoryId)) {
+            return true;
+          }
+          
+          return false;
+        };
+        
+        // Encontrar a primeira configuração aplicável seguindo a ordem de prioridade
+        for (const setting of applicableSettings) {
+          if (isApplicable(setting)) {
+            return {
+              rate: setting.rate,
+              type: setting.type as "specific" | "supplier" | "category" | "global",
+              settingId: setting.id
+            };
+          }
+        }
+        
+        // Se nenhuma configuração for aplicável, tentar usar a primeira configuração disponível
+        if (applicableSettings.length > 0 && applicableSettings[0]) {
+          return {
+            rate: applicableSettings[0].rate,
+            type: applicableSettings[0].type as "specific" | "supplier" | "category" | "global",
+            settingId: applicableSettings[0].id
+          };
+        }
+      } catch (error) {
+        console.error(`Erro ao processar configurações aplicáveis para produto ${productId}:`, error);
+      }
+      
+      // Fallback final - se tudo falhar, retornar uma taxa padrão
+      return { rate: "3.0", type: "global", settingId: 0 };
+    } catch (error) {
+      console.error(`Erro geral ao obter taxa de comissão para produto ${productId}:`, error);
+      return { rate: "3.0", type: "global", settingId: 0 };
     }
-    
-    // Se nenhuma configuração for aplicável (não deve acontecer devido à configuração global)
-    return {
-      rate: applicableSettings[0].rate,
-      type: applicableSettings[0].type as "specific" | "supplier" | "category" | "global",
-      settingId: applicableSettings[0].id
-    };
   }
   
   /**
