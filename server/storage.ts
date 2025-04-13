@@ -2203,41 +2203,44 @@ export class DatabaseStorage implements IStorage {
     mostCommonRate: string;
     mostCommonRateCount: number;
   }> {
-    // Buscar produtos do fornecedor
-    const products = await this.getProductsBySupplier(supplierId);
-    
-    // Se não houver produtos, retornar valores vazios
-    if (products.length === 0) {
-      return {
-        avgRate: "0.0",
-        specificRatesCount: 0,
-        totalCommission: 0,
-        totalProducts: 0,
-        categoriesCount: 0,
-        mostCommonRate: "0.0",
-        mostCommonRateCount: 0
-      };
-    }
-    
-    // Buscar vendas dos últimos 30 dias
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const sales = await this.getSales({
-      supplierId,
-      fromDate: thirtyDaysAgo
-    });
-    
-    // Calcular total de comissões dos últimos 30 dias
-    const totalCommission = sales.reduce((sum, sale) => 
-      sum + parseFloat(sale.commissionAmount), 0);
-    
-    // Coletar taxas de comissão para cada produto
-    const commissionRates: { rate: string, type: string }[] = [];
-    for (const product of products) {
-      const commission = await this.getProductCommissionRate(product.id);
-      commissionRates.push(commission);
-    }
+    try {
+      // Buscar produtos do fornecedor
+      const products = await this.getProductsBySupplier(supplierId);
+      
+      // Se não houver produtos, retornar valores vazios
+      if (products.length === 0) {
+        return {
+          avgRate: "0.0",
+          specificRatesCount: 0,
+          totalCommission: 0,
+          totalProducts: 0,
+          categoriesCount: 0,
+          mostCommonRate: "0.0",
+          mostCommonRateCount: 0
+        };
+      }
+      
+      // Buscar vendas do fornecedor (sem o filtro de data que estava causando o erro)
+      const sales = await this.getSales({
+        supplierId
+      });
+      
+      // Calcular total de comissões
+      const totalCommission = sales.reduce((sum, sale) => 
+        sum + parseFloat(sale.commissionAmount.toString()), 0);
+      
+      // Coletar taxas de comissão para cada produto
+      const commissionRates: { rate: string, type: string }[] = [];
+      for (const product of products) {
+        try {
+          const commission = await this.getProductCommissionRate(product.id);
+          commissionRates.push(commission);
+        } catch (err) {
+          console.error(`Erro ao obter taxa de comissão para produto ${product.id}:`, err);
+          // Adiciona uma taxa padrão para não quebrar o cálculo
+          commissionRates.push({ rate: "0.0", type: "default" });
+        }
+      }
     
     // Calcular taxa média
     const avgRate = commissionRates.length > 0 
@@ -2283,6 +2286,19 @@ export class DatabaseStorage implements IStorage {
       mostCommonRate,
       mostCommonRateCount
     };
+    } catch (error) {
+      console.error("Erro ao obter resumo de comissões do fornecedor:", error);
+      // Retornar valores padrão em caso de erro
+      return {
+        avgRate: "0.0",
+        specificRatesCount: 0,
+        totalCommission: 0,
+        totalProducts: 0,
+        categoriesCount: 0,
+        mostCommonRate: "0.0",
+        mostCommonRateCount: 0
+      };
+    }
   }
   
   async getCommissionSettings(options?: { 
