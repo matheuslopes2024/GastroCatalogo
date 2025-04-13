@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
@@ -128,10 +128,28 @@ export default function ProductManagement() {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   
   // Fetch supplier products
-  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
+  const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["/api/products", { supplierId: user?.id }],
     enabled: !!user?.id,
   });
+  
+  // Normaliza o formato dos produtos para garantir que sempre seja um array
+  const products = useMemo(() => {
+    if (!productsResponse) return [];
+    
+    // Se a resposta for um array, usa diretamente
+    if (Array.isArray(productsResponse)) {
+      return productsResponse;
+    }
+    
+    // Se a resposta for um objeto com propriedade data que é um array, extrai o array
+    if (productsResponse && typeof productsResponse === 'object' && 'data' in productsResponse && Array.isArray(productsResponse.data)) {
+      return productsResponse.data;
+    }
+    
+    console.error("Formato de resposta de produtos inesperado:", productsResponse);
+    return []; // Retorna array vazio como fallback
+  }, [productsResponse]);
   
   // Fetch categories for the select dropdown
   const { data: categories } = useQuery<Category[]>({
