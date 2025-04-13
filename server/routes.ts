@@ -243,25 +243,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (categoryId) options.categoryId = parseInt(categoryId as string);
       if (search) options.search = search as string;
       
-      // Filtros avançados
+      // Filtros avançados - Implementação robusta para preços
       if (minPrice) {
-        const minPriceValue = parseFloat(minPrice as string);
-        console.log(`Convertendo minPrice: ${minPrice} (${typeof minPrice}) para número: ${minPriceValue}`);
-        if (!isNaN(minPriceValue)) {
-          options.minPrice = minPriceValue;
-        } else {
-          console.error(`Não foi possível converter minPrice: ${minPrice} para número`);
+        try {
+          const minPriceValue = parseFloat(minPrice as string);
+          console.log(`Convertendo minPrice: ${minPrice} (${typeof minPrice}) para número: ${minPriceValue}`);
+          if (!isNaN(minPriceValue) && minPriceValue >= 0) {
+            options.minPrice = minPriceValue;
+            console.log(`Filtro de preço mínimo aplicado: ${options.minPrice}`);
+          } else {
+            console.error(`Não foi possível converter minPrice: ${minPrice} para número válido`);
+          }
+        } catch (error) {
+          console.error(`Erro ao processar minPrice: ${error}`);
+          // Não definimos options.minPrice para evitar erros na consulta
         }
       }
       
       if (maxPrice) {
-        const maxPriceValue = parseFloat(maxPrice as string);
-        console.log(`Convertendo maxPrice: ${maxPrice} (${typeof maxPrice}) para número: ${maxPriceValue}`);
-        if (!isNaN(maxPriceValue)) {
-          options.maxPrice = maxPriceValue;
-        } else {
-          console.error(`Não foi possível converter maxPrice: ${maxPrice} para número`);
+        try {
+          const maxPriceValue = parseFloat(maxPrice as string);
+          console.log(`Convertendo maxPrice: ${maxPrice} (${typeof maxPrice}) para número: ${maxPriceValue}`);
+          if (!isNaN(maxPriceValue) && maxPriceValue > 0) {
+            options.maxPrice = maxPriceValue;
+            console.log(`Filtro de preço máximo aplicado: ${options.maxPrice}`);
+          } else {
+            console.error(`Não foi possível converter maxPrice: ${maxPrice} para número válido`);
+          }
+        } catch (error) {
+          console.error(`Erro ao processar maxPrice: ${error}`);
+          // Não definimos options.maxPrice para evitar erros na consulta
         }
+      }
+      
+      // Verificação extra de consistência dos filtros de preço
+      if (options.minPrice !== undefined && options.maxPrice !== undefined) {
+        if (options.minPrice > options.maxPrice) {
+          console.warn(`Filtro de preço inconsistente: mínimo (${options.minPrice}) > máximo (${options.maxPrice}). Ajustando valores...`);
+          // Inverter os valores em caso de inconsistência
+          [options.minPrice, options.maxPrice] = [options.maxPrice, options.minPrice];
+        }
+        console.log(`Filtro de preço final: ${options.minPrice} a ${options.maxPrice}`);
       }
       
       if (rating) {
