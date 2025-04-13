@@ -244,10 +244,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (search) options.search = search as string;
       
       // Filtros avançados
-      if (minPrice) options.minPrice = parseFloat(minPrice as string);
-      if (maxPrice) options.maxPrice = parseFloat(maxPrice as string);
-      if (rating) options.minRating = parseFloat(rating as string);
-      if (brandId) options.brandId = parseInt(brandId as string);
+      if (minPrice) {
+        const minPriceValue = parseFloat(minPrice as string);
+        console.log(`Convertendo minPrice: ${minPrice} (${typeof minPrice}) para número: ${minPriceValue}`);
+        if (!isNaN(minPriceValue)) {
+          options.minPrice = minPriceValue;
+        } else {
+          console.error(`Não foi possível converter minPrice: ${minPrice} para número`);
+        }
+      }
+      
+      if (maxPrice) {
+        const maxPriceValue = parseFloat(maxPrice as string);
+        console.log(`Convertendo maxPrice: ${maxPrice} (${typeof maxPrice}) para número: ${maxPriceValue}`);
+        if (!isNaN(maxPriceValue)) {
+          options.maxPrice = maxPriceValue;
+        } else {
+          console.error(`Não foi possível converter maxPrice: ${maxPrice} para número`);
+        }
+      }
+      
+      if (rating) {
+        const ratingValue = parseFloat(rating as string);
+        if (!isNaN(ratingValue)) {
+          options.minRating = ratingValue;
+        }
+      }
+      
+      if (brandId) {
+        const brandIdValue = parseInt(brandId as string);
+        if (!isNaN(brandIdValue)) {
+          options.brandId = brandIdValue;
+        }
+      }
       
       // Aplicar filtros booleanos com validação explícita
       console.log(`Parâmetro inStock recebido: "${inStock}" (${typeof inStock})`);

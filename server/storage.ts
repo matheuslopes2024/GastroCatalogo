@@ -634,19 +634,39 @@ export class MemStorage implements IStorage {
         // Filtro de preço mínimo
         if (options.minPrice !== undefined) {
           console.log(`Filtrando produtos com preço mínimo de ${options.minPrice}`);
-          productResults = productResults.filter(product => {
-            const price = parseFloat(product.price as any);
-            return !isNaN(price) && price >= options.minPrice!;
-          });
+          const minPriceValue = parseFloat(String(options.minPrice));
+          if (isNaN(minPriceValue)) {
+            console.error(`Valor de preço mínimo inválido: ${options.minPrice} (${typeof options.minPrice})`);
+          } else {
+            console.log(`Aplicando filtro de preço mínimo: ${minPriceValue}`);
+            
+            const beforeCount = productResults.length;
+            productResults = productResults.filter(product => {
+              const price = parseFloat(String(product.price));
+              const result = !isNaN(price) && price >= minPriceValue;
+              return result;
+            });
+            console.log(`Filtro de preço mínimo: ${beforeCount} produtos -> ${productResults.length} produtos`);
+          }
         }
         
         // Filtro de preço máximo
         if (options.maxPrice !== undefined) {
           console.log(`Filtrando produtos com preço máximo de ${options.maxPrice}`);
-          productResults = productResults.filter(product => {
-            const price = parseFloat(product.price as any);
-            return !isNaN(price) && price <= options.maxPrice!;
-          });
+          const maxPriceValue = parseFloat(String(options.maxPrice));
+          if (isNaN(maxPriceValue)) {
+            console.error(`Valor de preço máximo inválido: ${options.maxPrice} (${typeof options.maxPrice})`);
+          } else {
+            console.log(`Aplicando filtro de preço máximo: ${maxPriceValue}`);
+            
+            const beforeCount = productResults.length;
+            productResults = productResults.filter(product => {
+              const price = parseFloat(String(product.price));
+              const result = !isNaN(price) && price <= maxPriceValue;
+              return result;
+            });
+            console.log(`Filtro de preço máximo: ${beforeCount} produtos -> ${productResults.length} produtos`);
+          }
         }
         
         // Filtro de desconto
