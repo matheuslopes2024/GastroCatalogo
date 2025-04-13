@@ -613,9 +613,15 @@ export class MemStorage implements IStorage {
           query = query.where(eq(products.active, options.active));
         }
         
-        // ------ FILTROS PARA PREÇO ------
-        // Nota: Precisaríamos converter os campos de preço para números para fazer estas comparações
-        // Por enquanto, vamos aplicar estes filtros após obter os resultados
+        // Aplicar limite na consulta SQL (para melhor performance)
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+        
+        // Aplicar offset na consulta SQL (para paginação)
+        if (options.offset) {
+          query = query.offset(options.offset);
+        }
       }
       
       // Executar a consulta
@@ -629,7 +635,7 @@ export class MemStorage implements IStorage {
           console.log(`Filtrando produtos com preço mínimo de ${options.minPrice}`);
           productResults = productResults.filter(product => {
             const price = parseFloat(product.price);
-            return price >= options.minPrice!;
+            return !isNaN(price) && price >= options.minPrice!;
           });
         }
         
@@ -638,7 +644,7 @@ export class MemStorage implements IStorage {
           console.log(`Filtrando produtos com preço máximo de ${options.maxPrice}`);
           productResults = productResults.filter(product => {
             const price = parseFloat(product.price);
-            return price <= options.maxPrice!;
+            return !isNaN(price) && price <= options.maxPrice!;
           });
         }
         
@@ -649,7 +655,7 @@ export class MemStorage implements IStorage {
             if (!product.originalPrice) return false;
             const currentPrice = parseFloat(product.price);
             const originalPrice = parseFloat(product.originalPrice);
-            return originalPrice > currentPrice;
+            return !isNaN(currentPrice) && !isNaN(originalPrice) && originalPrice > currentPrice;
           });
         }
         
@@ -659,7 +665,7 @@ export class MemStorage implements IStorage {
           productResults = productResults.filter(product => {
             if (!product.rating) return false;
             const rating = parseFloat(product.rating);
-            return rating >= options.minRating!;
+            return !isNaN(rating) && rating >= options.minRating!;
           });
         }
         
@@ -680,7 +686,7 @@ export class MemStorage implements IStorage {
             let score = 0;
             
             // Pontuação para correspondência no nome
-            if (product.name.toLowerCase().includes(searchTerm)) {
+            if (product.name && product.name.toLowerCase().includes(searchTerm)) {
               score += 10;
               if (product.name.toLowerCase() === searchTerm || 
                   product.name.toLowerCase().startsWith(searchTerm + ' ')) {
@@ -689,7 +695,7 @@ export class MemStorage implements IStorage {
             }
             
             // Pontuação para correspondência na descrição
-            if (product.description.toLowerCase().includes(searchTerm)) {
+            if (product.description && product.description.toLowerCase().includes(searchTerm)) {
               score += 3;
             }
             
@@ -725,8 +731,8 @@ export class MemStorage implements IStorage {
                 break;
               case 'name':
                 return isDesc 
-                  ? b.name.localeCompare(a.name) 
-                  : a.name.localeCompare(b.name);
+                  ? (b.name || '').localeCompare(a.name || '') 
+                  : (a.name || '').localeCompare(b.name || '');
               case 'createdAt':
                 valueA = a.createdAt?.getTime() || 0;
                 valueB = b.createdAt?.getTime() || 0;
@@ -739,17 +745,11 @@ export class MemStorage implements IStorage {
                 return 0;
             }
             
+            if (isNaN(valueA)) valueA = 0;
+            if (isNaN(valueB)) valueB = 0;
+            
             return isDesc ? (valueB - valueA) : (valueA - valueB);
           });
-        }
-        
-        // ------ PAGINAÇÃO ------
-        if (options.offset) {
-          productResults = productResults.slice(options.offset);
-        }
-        
-        if (options.limit) {
-          productResults = productResults.slice(0, options.limit);
         }
       }
       
@@ -759,7 +759,7 @@ export class MemStorage implements IStorage {
       return productResults;
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
-      return [];
+      throw error; // Propagar o erro para que ele seja registrado corretamente
     }
   }
   

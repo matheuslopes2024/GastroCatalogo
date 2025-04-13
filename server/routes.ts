@@ -516,11 +516,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/products/:id", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      console.log(`Iniciando atualização do produto ID: ${id}`);
+      
+      // Buscar o produto no banco de dados diretamente
       const product = await storage.getProduct(id);
       
       if (!product) {
+        console.log(`Produto ID ${id} não encontrado no banco de dados`);
         return res.status(404).json({ message: "Produto não encontrado" });
       }
+      
+      console.log(`Produto encontrado ID: ${id}`, {
+        supplierId: product.supplierId,
+        name: product.name,
+        active: product.active
+      });
       
       // Suppliers can only update their own products
       if (req.user?.role === UserRole.SUPPLIER) {
@@ -528,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const productSupplierId = Number(product.supplierId);
         const userId = Number(req.user.id);
         
-        console.log(`Verificação de permissão de produto:
+        console.log(`Verificação de permissão para atualização de produto:
           - ID do produto: ${id}
           - Fornecedor do produto (supplierId): ${productSupplierId}
           - ID do usuário: ${userId}
@@ -536,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
         
         if (productSupplierId !== userId) {
-          console.log(`Acesso negado - IDs diferentes: ${productSupplierId} !== ${userId}`);
+          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} !== ${userId}`);
           return res.status(403).json({ 
             message: "Sem permissão para editar este produto",
             debug: {
@@ -551,9 +562,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Garantir que o supplierId seja mantido consistente
       let productData = { ...req.body };
       
+      // Remover campos que não devem ser alterados diretamente
+      delete productData.id; // Não permitir alteração do ID
+      
       // Se o supplierId não foi fornecido ou é diferente do original para um fornecedor,
       // mantenha o original ou use o ID do usuário atual
-      if (req.user.role === UserRole.SUPPLIER) {
+      if (req.user?.role === UserRole.SUPPLIER) {
         productData.supplierId = req.user.id;
       } else if (!productData.supplierId) {
         // Se não foi fornecido, manter o original
@@ -561,27 +575,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Dados finais para atualização:", {
-        id: productData.id,
+        productId: id,
         name: productData.name,
-        supplierId: productData.supplierId
+        supplierId: productData.supplierId,
+        preco: productData.price,
+        categoria: productData.categoryId
       });
       
-      const updatedProduct = await storage.updateProduct(id, productData);
-      res.json(updatedProduct);
+      // Realizamos aqui a atualização do produto
+      try {
+        const updatedProduct = await storage.updateProduct(id, productData);
+        
+        if (!updatedProduct) {
+          console.error(`Erro na atualização - produto ID: ${id} não retornou após atualização`);
+          return res.status(500).json({ 
+            message: "Erro ao atualizar produto - falha na atualização",
+            productId: id
+          });
+        }
+        
+        console.log(`Produto ID ${id} atualizado com sucesso:`, {
+          id: updatedProduct.id,
+          name: updatedProduct.name,
+          supplierId: updatedProduct.supplierId
+        });
+        
+        res.json(updatedProduct);
+      } catch (updateError) {
+        console.error("Erro específico ao atualizar produto:", updateError);
+        res.status(500).json({ 
+          message: "Erro ao atualizar dados do produto",
+          error: updateError.message
+        });
+      }
     } catch (error) {
-      console.error("Erro ao atualizar produto:", error);
-      res.status(500).json({ message: "Erro ao atualizar produto" });
+      console.error("Erro ao processar atualização de produto:", error);
+      res.status(500).json({ 
+        message: "Erro ao atualizar produto",
+        error: error.message
+      });
     }
   });
   
   app.delete("/api/products/:id", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      console.log(`Iniciando exclusão lógica do produto ID: ${id}`);
+      
+      // Buscar o produto no banco de dados diretamente
       const product = await storage.getProduct(id);
       
       if (!product) {
+        console.log(`Produto ID ${id} não encontrado no banco de dados`);
         return res.status(404).json({ message: "Produto não encontrado" });
       }
+      
+      console.log(`Produto encontrado ID: ${id}`, {
+        supplierId: product.supplierId,
+        name: product.name,
+        active: product.active
+      });
       
       // Suppliers can only delete their own products
       if (req.user?.role === UserRole.SUPPLIER) {
@@ -618,13 +672,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Desativando produto ID:", id, "do fornecedor:", product.supplierId);
       
-      // Podemos realmente excluir o produto ou apenas marcá-lo como inativo
-      // Neste caso, optamos por marcá-lo como inativo, preservando os dados
-      const deletedProduct = await storage.updateProduct(id, deleteData);
-      res.json(deletedProduct);
+      // Realizamos aqui exclusão lógica do produto (marcar como inativo)
+      try {
+        const deletedProduct = await storage.updateProduct(id, deleteData);
+        
+        if (!deletedProduct) {
+          console.error(`Erro na exclusão lógica - produto ID: ${id} não retornou após atualização`);
+          return res.status(500).json({ 
+            message: "Erro ao excluir produto - falha na atualização",
+            productId: id
+          });
+        }
+        
+        console.log(`Produto ID ${id} desativado com sucesso:`, {
+          id: deletedProduct.id,
+          active: deletedProduct.active,
+          supplierId: deletedProduct.supplierId
+        });
+        
+        res.json(deletedProduct);
+      } catch (updateError) {
+        console.error("Erro específico ao desativar produto:", updateError);
+        res.status(500).json({ 
+          message: "Erro ao atualizar status do produto para inativo",
+          error: updateError.message
+        });
+      }
     } catch (error) {
-      console.error("Erro ao excluir produto:", error);
-      res.status(500).json({ message: "Erro ao excluir produto" });
+      console.error("Erro ao processar exclusão de produto:", error);
+      res.status(500).json({ 
+        message: "Erro ao excluir produto",
+        error: error.message 
+      });
     }
   });
   
