@@ -353,35 +353,49 @@ export default function SupplierDashboard() {
         return [];
       }
       
-      // Processamento seguro dos produtos com validações
-      return dashboardData.topProducts.map(product => {
-        // Verificar se o item é um objeto válido
-        if (!product || typeof product !== 'object') {
-          return null;
-        }
-        
-        // Extrair valores com fallbacks seguros
-        const productId = product.productId || 0;
-        const name = product.name || 'Produto sem nome';
-        const imageUrl = product.imageUrl || null;
-        const totalRevenue = typeof product.totalRevenue === 'number' ? product.totalRevenue : 0;
-        const totalSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
-        
-        // Extrair o supplierId do produto, com valor padrão para o fornecedor atual se não estiver disponível
-        const supplierId = product.supplierId || user?.id || 0;
-        
-        return {
-          productId,
-          product: { 
-            id: productId, 
-            name,
-            supplierId // Adicionar supplierId ao objeto de produto para permitir filtragem por fornecedor
-          },
-          imageUrl,
-          totalValue: totalRevenue,
-          count: totalSales
-        };
-      }).filter(Boolean); // Remover itens nulos ou undefined
+      const currentUserId = Number(user?.id);
+      
+      // Processamento seguro dos produtos com validações e filtragem por fornecedor
+      return dashboardData.topProducts
+        .filter(product => {
+          // Se produto não tiver supplierId definido ou for inválido, não exibir
+          if (!product || typeof product !== 'object') return false;
+          
+          // Verificar se o ID do fornecedor do produto corresponde ao ID do usuário atual
+          const productSupplierId = Number(product.supplierId);
+          
+          if (isNaN(productSupplierId) || productSupplierId !== currentUserId) {
+            // Log de segurança para debug
+            console.log(`[Segurança] Produto ID ${product.productId || 'desconhecido'} (fornecedor ${productSupplierId || 'não definido'}) filtrado - não pertence ao fornecedor atual (${currentUserId})`);
+            return false;
+          }
+          
+          return true;
+        })
+        .map(product => {
+          // Extrair valores com fallbacks seguros
+          const productId = product.productId || 0;
+          const name = product.name || 'Produto sem nome';
+          const imageUrl = product.imageUrl || null;
+          const totalRevenue = typeof product.totalRevenue === 'number' ? product.totalRevenue : 0;
+          const totalSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
+          
+          // Extrair o supplierId do produto, com valor padrão para o fornecedor atual
+          const supplierId = product.supplierId || user?.id || 0;
+          
+          return {
+            productId,
+            product: { 
+              id: productId, 
+              name,
+              supplierId // Adicionar supplierId ao objeto de produto para permitir filtragem por fornecedor
+            },
+            imageUrl,
+            totalValue: totalRevenue,
+            count: totalSales
+          };
+        })
+        .filter(Boolean); // Remover itens nulos ou undefined
     } catch (error) {
       console.error("Erro ao processar dados de desempenho de produtos:", error);
       return [];
@@ -1194,7 +1208,23 @@ export default function SupplierDashboard() {
                         </td>
                       </tr>
                     ) : (
-                      recentSales.slice(0, 10).map((sale) => {
+                      // Filtrar vendas pelo fornecedor atual antes de exibir
+                      recentSales
+                        .filter(sale => {
+                          // Verificar se o ID do fornecedor da venda corresponde ao ID do usuário atual
+                          const saleSupplier = Number(sale.supplierId);
+                          const currentUserId = Number(user?.id);
+                          
+                          // Logar para debug caso necessário
+                          if (saleSupplier !== currentUserId) {
+                            console.log(`[Segurança] Venda ID ${sale.id} (fornecedor ${saleSupplier}) filtrada - não pertence ao fornecedor atual (${currentUserId})`);
+                            return false;
+                          }
+                          
+                          return true;
+                        })
+                        .slice(0, 10)
+                        .map((sale) => {
                         // Garantir que products é um array antes de usar find
                         let product;
                         if (Array.isArray(products)) {
