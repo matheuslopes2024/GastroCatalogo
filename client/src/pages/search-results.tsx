@@ -43,8 +43,8 @@ export default function SearchResults() {
       : undefined
   });
   
-  // Número de itens por página
-  const itemsPerPage = 12;
+  // Número de itens por página - usando um valor alto para mostrar mais produtos
+  const itemsPerPage = 100; // Aumentado de 12 para 100 para mostrar mais produtos na página de busca
   
   // Obter todas as categorias
   const { data: categories } = useQuery<Category[]>({
