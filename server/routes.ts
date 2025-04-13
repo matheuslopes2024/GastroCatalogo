@@ -523,14 +523,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Suppliers can only update their own products
-      if (req.user?.role === UserRole.SUPPLIER && product.supplierId !== req.user.id) {
-        return res.status(403).json({ message: "Sem permissão para editar este produto" });
+      if (req.user?.role === UserRole.SUPPLIER) {
+        // Converter IDs para número para garantir comparação correta
+        const productSupplierId = Number(product.supplierId);
+        const userId = Number(req.user.id);
+        
+        console.log(`Verificação de permissão de produto:
+          - ID do produto: ${id}
+          - Fornecedor do produto: ${productSupplierId}
+          - ID do usuário: ${userId}
+          - Papel do usuário: ${req.user.role}
+        `);
+        
+        if (productSupplierId !== userId) {
+          console.log(`Acesso negado - IDs diferentes: ${productSupplierId} !== ${userId}`);
+          return res.status(403).json({ 
+            message: "Sem permissão para editar este produto",
+            debug: {
+              productSupplierId,
+              userId,
+              productId: id
+            }
+          });
+        }
       }
       
       const updatedProduct = await storage.updateProduct(id, req.body);
       res.json(updatedProduct);
     } catch (error) {
+      console.error("Erro ao atualizar produto:", error);
       res.status(500).json({ message: "Erro ao atualizar produto" });
+    }
+  });
+  
+  app.delete("/api/products/:id", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const product = await storage.getProduct(id);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Suppliers can only delete their own products
+      if (req.user?.role === UserRole.SUPPLIER) {
+        // Converter IDs para número para garantir comparação correta
+        const productSupplierId = Number(product.supplierId);
+        const userId = Number(req.user.id);
+        
+        console.log(`Verificação de permissão para exclusão de produto:
+          - ID do produto: ${id}
+          - Fornecedor do produto: ${productSupplierId}
+          - ID do usuário: ${userId}
+          - Papel do usuário: ${req.user.role}
+        `);
+        
+        if (productSupplierId !== userId) {
+          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} !== ${userId}`);
+          return res.status(403).json({ 
+            message: "Sem permissão para excluir este produto",
+            debug: {
+              productSupplierId,
+              userId,
+              productId: id
+            }
+          });
+        }
+      }
+      
+      // Podemos realmente excluir o produto ou apenas marcá-lo como inativo
+      // Neste caso, optamos por marcá-lo como inativo, preservando os dados
+      const deletedProduct = await storage.updateProduct(id, { active: false });
+      res.json(deletedProduct);
+    } catch (error) {
+      console.error("Erro ao excluir produto:", error);
+      res.status(500).json({ message: "Erro ao excluir produto" });
     }
   });
   
