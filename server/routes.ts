@@ -1343,6 +1343,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Excluir uma comissão específica por produto
+  app.delete("/api/supplier/products/commissions/:id", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const settingId = parseInt(req.params.id, 10);
+      
+      if (isNaN(settingId)) {
+        return res.status(400).json({ error: "ID inválido" });
+      }
+      
+      // Buscar a configuração existente
+      const setting = await storage.getProductCommissionSetting(settingId);
+      
+      if (!setting) {
+        return res.status(404).json({ error: "Configuração não encontrada" });
+      }
+      
+      // Verificar se a configuração pertence ao fornecedor (verificação de segurança)
+      const product = await storage.getProduct(setting.productId);
+      if (!product || product.supplierId !== supplierId) {
+        return res.status(403).json({ error: "Acesso negado a esta configuração" });
+      }
+      
+      // Excluir a configuração
+      const deleted = await storage.deleteProductCommissionSetting(settingId);
+      
+      if (!deleted) {
+        return res.status(500).json({ error: "Erro ao excluir a configuração" });
+      }
+      
+      res.json({
+        success: true,
+        message: "Configuração de comissão excluída com sucesso",
+        productId: product.id,
+        productName: product.name
+      });
+    } catch (error) {
+      console.error("Erro ao excluir comissão por produto:", error);
+      res.status(500).json({ error: "Erro ao excluir comissão por produto" });
+    }
+  });
+  
   // Commission Settings API
   app.get("/api/commission-settings", checkRole([UserRole.ADMIN]), async (req, res) => {
     try {
