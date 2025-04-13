@@ -1892,7 +1892,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    return query;
+    // Executar a consulta para retornar os resultados
+    console.log("Executando consulta de produtos no banco de dados");
+    try {
+      const result = await query;
+      console.log(`Consulta retornou ${result.length} produtos`);
+      return result;
+    } catch (error) {
+      console.error("Erro ao executar consulta de produtos:", error);
+      throw error;
+    }
   }
   
   // Sale methods
@@ -1932,7 +1941,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    return query;
+    // Executar a consulta para retornar os resultados
+    console.log("Executando consulta de vendas no banco de dados");
+    try {
+      const result = await query;
+      console.log(`Consulta retornou ${result.length} vendas`);
+      return result;
+    } catch (error) {
+      console.error("Erro ao executar consulta de vendas:", error);
+      throw error;
+    }
   }
   
   async getProductSales(productId: number): Promise<Sale[]> {
@@ -2058,7 +2076,16 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(faqItems.categoryId, categoryId));
     }
     
-    return query.orderBy(faqItems.sortOrder);
+    // Executar a consulta para retornar os resultados
+    console.log("Executando consulta de itens de FAQ no banco de dados");
+    try {
+      const result = await query.orderBy(faqItems.sortOrder);
+      console.log(`Consulta retornou ${result.length} itens de FAQ`);
+      return result;
+    } catch (error) {
+      console.error("Erro ao executar consulta de itens de FAQ:", error);
+      throw error;
+    }
   }
   
   // Chat Message methods
