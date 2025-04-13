@@ -1,0 +1,87 @@
+at SupplierDashboard (dashboard.tsx:1116:48)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=2cfb98cb:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=2cfb98cb:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=2cfb98cb:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=2cfb98cb:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=2cfb98cb:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=2cfb98cb:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=2cfb98cb:19765:15)
+(anonymous) @ dashboard.tsx:1117
+SupplierDashboard @ dashboard.tsx:1116
+renderWithHooks @ chunk-RPCDYKBN.js?v=2cfb98cb:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=2cfb98cb:14582
+beginWork @ chunk-RPCDYKBN.js?v=2cfb98cb:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=2cfb98cb:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=2cfb98cb:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=2cfb98cb:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=2cfb98cb:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=2cfb98cb:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=2cfb98cb:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=2cfb98cb:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=2cfb98cb:18736
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=2cfb98cb:18879
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=2cfb98cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=2cfb98cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2cfb98cb:555
+flush @ @tanstack_react-query.js?v=2cfb98cb:569
+batch @ @tanstack_react-query.js?v=2cfb98cb:587
+dispatch_fn @ @tanstack_react-query.js?v=2cfb98cb:996
+setData @ @tanstack_react-query.js?v=2cfb98cb:696
+onSuccess @ @tanstack_react-query.js?v=2cfb98cb:897
+resolve @ @tanstack_react-query.js?v=2cfb98cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2cfb98cb:498
+start @ @tanstack_react-query.js?v=2cfb98cb:536
+fetch @ @tanstack_react-query.js?v=2cfb98cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2cfb98cb:2211
+onSubscribe @ @tanstack_react-query.js?v=2cfb98cb:1898
+subscribe @ @tanstack_react-query.js?v=2cfb98cb:24
+(anonymous) @ @tanstack_react-query.js?v=2cfb98cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=2cfb98cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=2cfb98cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=2cfb98cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=2cfb98cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=2cfb98cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=2cfb98cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=2cfb98cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=2cfb98cb:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=2cfb98cb:19416
+commitRoot @ chunk-RPCDYKBN.js?v=2cfb98cb:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=2cfb98cb:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=2cfb98cb:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=2cfb98cb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2cfb98cb:555
+flush @ @tanstack_react-query.js?v=2cfb98cb:569
+batch @ @tanstack_react-query.js?v=2cfb98cb:587
+dispatch_fn @ @tanstack_react-query.js?v=2cfb98cb:996
+setData @ @tanstack_react-query.js?v=2cfb98cb:696
+onSuccess @ @tanstack_react-query.js?v=2cfb98cb:897
+resolve @ @tanstack_react-query.js?v=2cfb98cb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2cfb98cb:498
+start @ @tanstack_react-query.js?v=2cfb98cb:536
+fetch @ @tanstack_react-query.js?v=2cfb98cb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2cfb98cb:2211
+onSubscribe @ @tanstack_react-query.js?v=2cfb98cb:1898
+subscribe @ @tanstack_react-query.js?v=2cfb98cb:24
+(anonymous) @ @tanstack_react-query.js?v=2cfb98cb:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=2cfb98cb:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=2cfb98cb:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=2cfb98cb:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=2cfb98cb:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=2cfb98cb:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=2cfb98cb:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=2cfb98cb:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=2cfb98cb:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=2cfb98cb:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=2cfb98cb:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=2cfb98cb:19432
+commitRoot @ chunk-RPCDYKBN.js?v=2cfb98cb:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=2cfb98cb:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=2cfb98cb:18718
+workLoop @ chunk-RPCDYKBN.js?v=2cfb98cb:197
+flushWork @ chunk-RPCDYKBN.js?v=2cfb98cb:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=2cfb98cb:384Understand this error
+chunk-RPCDYKBN.js?v=2cfb98cb:14032 The above error occurred in the <SupplierDashboard> component:

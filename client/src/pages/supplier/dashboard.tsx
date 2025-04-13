@@ -129,10 +129,27 @@ export default function SupplierDashboard() {
   });
   
   // Fetch recent products
-  const { data: products, isLoading: isLoadingProducts } = useQuery({
+  const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["/api/products", { supplierId: user?.id, limit: 5 }],
     enabled: !!user?.id,
   });
+  
+  // Assegurar que products é sempre um array, mesmo quando a API retorna um objeto
+  const products = useMemo(() => {
+    if (!productsResponse) return [];
+    
+    // Se já for um array, usar diretamente
+    if (Array.isArray(productsResponse)) return productsResponse;
+    
+    // Se for um objeto com propriedade 'data' como array, usar esse array
+    if (productsResponse && typeof productsResponse === 'object' && 
+        productsResponse.data && Array.isArray(productsResponse.data)) {
+      return productsResponse.data;
+    }
+    
+    // Fallback para array vazio
+    return [];
+  }, [productsResponse]);
   
   // Fetch categories to map category names
   const { data: categories } = useQuery({
@@ -1114,7 +1131,13 @@ export default function SupplierDashboard() {
                       </tr>
                     ) : (
                       recentSales.slice(0, 10).map((sale) => {
-                        const product = products?.find(p => p.id === sale.productId);
+                        // Garantir que products é um array antes de usar find
+                        let product;
+                        if (Array.isArray(products)) {
+                          product = products.find(p => p && typeof p === 'object' && p.id === sale.productId);
+                        } else if (products && typeof products === 'object' && Array.isArray(products.data)) {
+                          product = products.data.find(p => p && typeof p === 'object' && p.id === sale.productId);
+                        }
                         return (
                           <tr key={sale.id}>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1205,8 +1228,19 @@ export default function SupplierDashboard() {
                               return [];
                             }
                             
-                            if (!Array.isArray(products) || !Array.isArray(categories)) {
-                              console.log("Dados de produtos ou categorias não disponíveis");
+                            // Verificar e normalizar o formato de products
+                            let productsArray = [];
+                            if (Array.isArray(products)) {
+                              productsArray = products;
+                            } else if (products && typeof products === 'object' && Array.isArray(products.data)) {
+                              productsArray = products.data;
+                            } else {
+                              console.log("Dados de produtos não disponíveis em formato válido");
+                              return [];
+                            }
+                            
+                            if (!Array.isArray(categories)) {
+                              console.log("Dados de categorias não disponíveis");
                               return [];
                             }
                             
@@ -1217,8 +1251,8 @@ export default function SupplierDashboard() {
                                 return acc;
                               }
                               
-                              // Buscar produto com verificação de tipo
-                              const product = products.find(p => p && typeof p === 'object' && p.id === sale.productId);
+                              // Buscar produto com verificação de tipo usando a variável productsArray normalizada
+                              const product = productsArray.find(p => p && typeof p === 'object' && p.id === sale.productId);
                               if (!product || !product.categoryId) return acc;
                               
                               // Buscar categoria com verificação de tipo
