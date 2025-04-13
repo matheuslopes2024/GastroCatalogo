@@ -670,7 +670,7 @@ export default function SupplierCommissions() {
                             alt={item.product.name} 
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://via.placeholder.com/40?text=Produto";
+                              (e.target as HTMLImageElement).src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f1f5f9"/><text x="50%" y="50%" font-family="Arial" font-size="6" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle">Produto</text></svg>`;
                             }}
                           />
                         </div>
