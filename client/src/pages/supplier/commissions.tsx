@@ -491,7 +491,7 @@ export default function SupplierCommissions() {
   });
 
   // Buscar produtos do fornecedor com suas respectivas comissões
-  const { data: productsWithCommissions, isLoading: isLoadingProducts, refetch: productsCommissionsRefetch } = useQuery({
+  const { data: productsWithCommissionsResponse, isLoading: isLoadingProducts, refetch: productsCommissionsRefetch } = useQuery({
     queryKey: ["/api/supplier/products/commissions"],
     queryFn: async () => {
       const res = await fetch("/api/supplier/products/commissions");
@@ -507,6 +507,27 @@ export default function SupplierCommissions() {
     staleTime: 30000, // 30 segundos
     refetchOnWindowFocus: true,
   });
+  
+  // Normaliza o formato dos produtos com comissões para garantir que sempre seja um array
+  const productsWithCommissions = useMemo(() => {
+    if (!productsWithCommissionsResponse) return [];
+    
+    // Se já for um array, usar diretamente
+    if (Array.isArray(productsWithCommissionsResponse)) {
+      return productsWithCommissionsResponse;
+    }
+    
+    // Se for um objeto com propriedade 'data' como array, usar esse array
+    if (productsWithCommissionsResponse && 
+        typeof productsWithCommissionsResponse === 'object' && 
+        'data' in productsWithCommissionsResponse && 
+        Array.isArray(productsWithCommissionsResponse.data)) {
+      return productsWithCommissionsResponse.data;
+    }
+    
+    console.error("Formato inesperado de resposta de produtos com comissões:", productsWithCommissionsResponse);
+    return []; // Fallback para array vazio
+  }, [productsWithCommissionsResponse]);
 
   // Buscar categorias
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
