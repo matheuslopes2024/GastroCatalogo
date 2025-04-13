@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +23,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Search, Filter, CircleCheck, Star, CircleDollarSign, Truck, CalendarCheck, CircleX, ArrowUpDown } from "lucide-react";
 
 // Importando a interface e funções de gerenciamento de filtros
-import { SearchFilters, SortOption, sortOptionLabels, parseSortOption } from "@/types/search-filters";
+import { SearchFilters, SortOption, sortOptionLabels, parseSortOption, hasActiveFilters } from "@/types/search-filters";
 
 interface FilterPanelProps {
   categories?: Category[]; 
