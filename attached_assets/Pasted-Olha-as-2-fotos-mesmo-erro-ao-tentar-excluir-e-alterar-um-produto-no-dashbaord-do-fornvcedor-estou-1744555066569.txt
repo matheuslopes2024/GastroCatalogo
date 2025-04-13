@@ -1,0 +1,37 @@
+Olha as 2 fotos, mesmo erro ao tentar excluir e alterar um produto no dashbaord do fornvcedor, estou logado como supplier e a senha supplier123, no dashboard do fornvcedor, resolva isso, investiga se a api ou banco de dados , backend ou front ve direto
+DELETE https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/products/2 403 (Forbidden)
+apiRequest @ queryClient.ts:35
+mutationFn @ product-management.tsx:310
+fn @ @tanstack_react-query.js?v=2cfb98cb:1189
+run @ @tanstack_react-query.js?v=2cfb98cb:494
+start @ @tanstack_react-query.js?v=2cfb98cb:536
+execute @ @tanstack_react-query.js?v=2cfb98cb:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=2cfb98cb:2630
+(anonymous) @ @tanstack_react-query.js?v=2cfb98cb:3295
+onDeleteConfirm @ product-management.tsx:434
+handleEvent @ chunk-OD433RWB.js?v=2cfb98cb:4
+callCallback2 @ chunk-RPCDYKBN.js?v=2cfb98cb:3674
+queryClient.ts:35
+PATCH https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/products/1 403 (Forbidden)
+apiRequest @ queryClient.ts:35
+mutationFn @ product-management.tsx:260
+await in execute
+onEditSubmit @ product-management.tsx:428
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=2cfb98cb:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=2cfb98cb:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=2cfb98cb:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=2cfb98cb:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=2cfb98cb:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=2cfb98cb:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=2cfb98cb:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=2cfb98cb:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=2cfb98cb:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=2cfb98cb:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=2cfb98cb:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=2cfb98cb:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=2cfb98cb:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=2cfb98cb:5449Understand this error
+product-management.tsx:355 Erro detalhado na exclusão do produto: Error: 403: {"message":"Sem permissão para excluir este produto","debug":{"productSupplierId":null,"userId":6,"productId":2}}
+at throwIfResNotOk (queryClient.ts:6:11)
+at async apiRequest (queryClient.ts:36:3)
