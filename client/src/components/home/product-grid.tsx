@@ -26,8 +26,18 @@ interface Product {
   originalPrice: string | null;
   discount: number | null;
   imageUrl: string;
-  rating: number | null;
-  ratingsCount: number;
+  imageData?: string | null;
+  imageType?: string | null;
+  rating: string | null;
+  ratingsCount?: number;
+  description?: string;
+  categoryId?: number;
+  supplierId?: number;
+  features?: string[] | null;
+  additionalImages?: any[];
+  active?: boolean;
+  additionalCategories?: number[];
+  createdAt?: string | Date;
 }
 
 // Variantes de animação
