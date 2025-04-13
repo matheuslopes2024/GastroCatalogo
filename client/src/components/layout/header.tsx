@@ -47,6 +47,7 @@ import {
 import { UserRole } from "@shared/schema";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { motion } from "framer-motion";
+import { SmartSearchBar } from "@/components/layout/smart-search-bar";
 
 // Efeitos das animações
 const logoVariants = {
@@ -269,23 +270,7 @@ export function Header() {
             initial="hidden"
             animate="visible"
           >
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <Search className="h-4 w-4" />
-            </div>
-            <input
-              type="text"
-              placeholder="Pesquisar equipamentos, utensílios, produtos..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 shadow-sm hover:shadow-md"
-            />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-7 px-2 bg-primary/10 hover:bg-primary/20 text-primary"
-              >
-                Buscar
-              </Button>
-            </div>
+            <SmartSearchBar />
           </motion.div>
 
           {/* Main Navigation - Desktop - Com design elegante e animações */}
