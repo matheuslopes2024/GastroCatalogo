@@ -23,7 +23,8 @@ import { formatCurrency } from "@/lib/utils";
 import { Search, Filter, CircleCheck, Star, CircleDollarSign, Truck, CalendarCheck, CircleX, ArrowUpDown } from "lucide-react";
 
 // Importando a interface e funções de gerenciamento de filtros
-import { SearchFilters, SortOption, sortOptionLabels, parseSortOption, hasActiveFilters } from "@/types/search-filters";
+import type { SearchFilters } from "@/types/search-filters";
+import { SortOption, sortOptionLabels, parseSortOption, hasActiveFilters } from "@/types/search-filters";
 
 interface FilterPanelProps {
   categories?: Category[]; 
@@ -35,6 +36,9 @@ interface FilterPanelProps {
   totalResults?: number;
   loading?: boolean;
 }
+
+// Exportamos o tipo para ser usado na importação em outros componentes
+export type { SearchFilters };
 
 export function FilterPanel({
   categories = [],

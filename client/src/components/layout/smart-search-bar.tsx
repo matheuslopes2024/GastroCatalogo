@@ -58,15 +58,14 @@ export function SmartSearchBar() {
   const { data: searchResults, isLoading } = useQuery<SmartSearchResult[]>({
     queryKey: ["/api/search-suggestions", debouncedSearchTerm],
     enabled: debouncedSearchTerm.length > 1,
-    queryFn: async () => {
+    queryFn: async ({ queryKey }) => {
       try {
-        const res = await apiRequest(
-          "GET", 
-          `/api/search-suggestions?q=${encodeURIComponent(debouncedSearchTerm)}`
-        );
+        const [_, term] = queryKey;
+        const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(term as string)}`);
         
         if (!res.ok) {
-          throw new Error("Erro ao buscar sugestões");
+          console.error("Erro ao buscar sugestões:", res.status);
+          return [];
         }
         
         const data = await res.json();
@@ -75,7 +74,12 @@ export function SmartSearchBar() {
         console.error("Erro ao buscar sugestões de pesquisa:", error);
         return [];
       }
-    }
+    },
+    // Importante: estas configurações previnem rejeições não tratadas
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 60000, // 1 minuto
+    gcTime: 300000, // 5 minutos
   });
 
   // Função para executar a busca
