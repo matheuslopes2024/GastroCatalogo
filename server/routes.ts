@@ -248,8 +248,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (maxPrice) options.maxPrice = parseFloat(maxPrice as string);
       if (rating) options.minRating = parseFloat(rating as string);
       if (brandId) options.brandId = parseInt(brandId as string);
-      if (inStock === 'true') options.inStock = true;
-      if (discount === 'true') options.hasDiscount = true;
+      
+      // Aplicar filtros booleanos com validação explícita
+      console.log(`Parâmetro inStock recebido: "${inStock}" (${typeof inStock})`);
+      if (inStock === 'true' || inStock === true) {
+        options.inStock = true;
+        console.log('Filtro de estoque aplicado: apenas produtos em estoque');
+      }
+      
+      console.log(`Parâmetro discount recebido: "${discount}" (${typeof discount})`);
+      if (discount === 'true' || discount === true) {
+        options.hasDiscount = true;
+        console.log('Filtro de desconto aplicado: apenas produtos com desconto');
+      }
       
       // Opções de ordenação
       if (sortBy && ['price', 'rating', 'createdAt', 'name', 'popularity'].includes(sortBy as string)) {
@@ -281,13 +292,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Categorias adicionais (apenas produtos que estão em todas as categorias especificadas)
       if (additionalCategories) {
         try {
+          console.log(`Processando additionalCategories: ${additionalCategories}, tipo: ${typeof additionalCategories}`);
+          
           if (typeof additionalCategories === 'string') {
             if (additionalCategories.startsWith('[') && additionalCategories.endsWith(']')) {
-              options.additionalCategories = JSON.parse(additionalCategories);
+              // É um array em formato JSON
+              const parsedCategories = JSON.parse(additionalCategories);
+              console.log(`Categorias adicionais parsadas do JSON: ${JSON.stringify(parsedCategories)}`);
+              options.additionalCategories = parsedCategories.map((id: string | number) => 
+                typeof id === 'string' ? parseInt(id) : id
+              );
             } else {
+              // É um único valor
               options.additionalCategories = [parseInt(additionalCategories)];
+              console.log(`Categoria adicional única processada: ${options.additionalCategories}`);
             }
+          } else if (Array.isArray(additionalCategories)) {
+            // Já é um array
+            options.additionalCategories = additionalCategories.map((id: string | number) => 
+              typeof id === 'string' ? parseInt(id) : id
+            );
+            console.log(`Categorias adicionais já como array: ${options.additionalCategories}`);
           }
+          
+          console.log(`Categorias adicionais finais: ${JSON.stringify(options.additionalCategories)}`);
         } catch (err) {
           console.warn("Erro ao processar categorias adicionais:", err);
         }
