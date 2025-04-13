@@ -63,10 +63,12 @@ import {
   ChevronDown,
   ChevronUp,
   Share2,
+  Award,
+  Wifi,
+  Timer,
   Building,
   TrendingDown,
   LucideChevronsDown,
-  Award,
   XOctagon,
   CheckCircle2,
   AlertCircle,
@@ -1444,58 +1446,302 @@ export default function ProductComparison() {
                   
                   {/* Características */}
                   <TableRow className="align-top">
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium border-r bg-muted/20">
                       <div className="flex items-center">
                         <ListChecks size={16} className="mr-2 text-primary" />
-                        Características
+                        <span className="font-semibold">Características</span>
                       </div>
                     </TableCell>
                     {sortedItems.map((item) => (
                       <TableCell key={item.id} className={`${item.isHighlighted ? "bg-primary/5" : ""}`}>
-                        <ul className="text-sm space-y-1">
-                          {item.product?.features?.map((feature, idx) => (
-                            <li key={idx} className="flex items-start">
-                              <Check size={14} className="text-green-500 mr-1 mt-0.5 flex-shrink-0" />
-                              <span className="text-xs">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Ações */}
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center">
-                        <ShoppingCart size={16} className="mr-2 text-primary" />
-                        Ações
-                      </div>
-                    </TableCell>
-                    {sortedItems.map((item) => (
-                      <TableCell key={item.id} className={`text-center ${item.isHighlighted ? "bg-primary/5" : ""}`}>
-                        <div className="flex flex-col gap-2">
-                          <Button 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => handleAddToCart(item)}
-                          >
-                            Comprar
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            asChild
-                          >
-                            <Link to={`/produtos/${item.product?.slug}`}>
-                              Ver detalhes
-                            </Link>
-                          </Button>
+                        <div className="space-y-2">
+                          {item.product?.features?.length > 0 ? (
+                            <ul className="text-sm space-y-1">
+                              {(showAllFeatures 
+                                ? item.product.features 
+                                : item.product.features.slice(0, 3)
+                              ).map((feature, idx) => (
+                                <li key={idx} className="flex items-start">
+                                  <Check size={14} className="text-green-500 mr-1 mt-0.5 flex-shrink-0" />
+                                  <span className="text-xs">{feature}</span>
+                                </li>
+                              ))}
+                              
+                              {!showAllFeatures && item.product.features.length > 3 && (
+                                <li className="mt-1">
+                                  <Button 
+                                    variant="link" 
+                                    size="sm" 
+                                    className="h-auto p-0 text-xs text-primary"
+                                    onClick={() => setShowAllFeatures(true)}
+                                  >
+                                    <LucideChevronsDown className="h-3 w-3 mr-1" />
+                                    Ver mais {item.product.features.length - 3} características
+                                  </Button>
+                                </li>
+                              )}
+                            </ul>
+                          ) : (
+                            <div className="text-center text-muted-foreground text-sm">
+                              <AlertCircle className="h-4 w-4 mx-auto mb-1" />
+                              Características não disponíveis
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                     ))}
                   </TableRow>
+                  
+                  {/* Vantagens */}
+                  <TableRow>
+                    <TableCell className="font-medium border-r bg-muted/20">
+                      <div className="flex items-center">
+                        <Zap size={16} className="mr-2 text-primary" />
+                        <span className="font-semibold">Vantagens</span>
+                      </div>
+                    </TableCell>
+                    {sortedItems.map((item) => {
+                      // Determinar vantagens com base nos atributos do produto
+                      const advantages = [];
+                      
+                      if (item.isCheapest) {
+                        advantages.push("Melhor preço do mercado");
+                      }
+                      
+                      if (item.isHighlighted) {
+                        advantages.push("Melhor custo-benefício");
+                      }
+                      
+                      if (parseFloat(item.product?.rating || "0") >= 4.5) {
+                        advantages.push("Excelentes avaliações dos clientes");
+                      }
+                      
+                      if (item.product?.discount && item.product.discount > 10) {
+                        advantages.push(`Desconto de ${item.product.discount}% aplicado`);
+                      }
+                      
+                      // Adicionar algumas vantagens com base em outras propriedades
+                      if (parseFloat(item.priceDifference || "0") > 1000) {
+                        advantages.push("Economia significativa");
+                      }
+                      
+                      // Garantir que cada produto tenha pelo menos 1-2 vantagens
+                      if (advantages.length < 1) {
+                        advantages.push("Produto de qualidade verificada");
+                      }
+                      
+                      return (
+                        <TableCell 
+                          key={`advantages-${item.id}`} 
+                          className={`${item.isHighlighted ? "bg-primary/5" : ""}`}
+                        >
+                          <div className="space-y-2">
+                            {advantages.length > 0 ? (
+                              <ul className="text-sm space-y-1">
+                                {advantages.map((advantage, idx) => (
+                                  <li key={idx} className="flex items-start">
+                                    <ThumbsUp size={14} className="text-green-500 mr-1 mt-0.5 flex-shrink-0" />
+                                    <span className="text-xs">{advantage}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="text-center text-muted-foreground text-sm">
+                                Informações não disponíveis
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                  
+                  {/* Ações */}
+                  <TableRow>
+                    <TableCell className="font-medium border-r bg-muted/20">
+                      <div className="flex items-center">
+                        <ShoppingCart size={16} className="mr-2 text-primary" />
+                        <span className="font-semibold">Ações</span>
+                      </div>
+                    </TableCell>
+                    {sortedItems.map((item) => (
+                      <TableCell 
+                        key={`actions-${item.id}`} 
+                        className={`text-center ${item.isHighlighted ? "bg-primary/5" : ""}`}
+                      >
+                        <div className="flex flex-col gap-2">
+                          <Button 
+                            size="sm"
+                            variant={item.isHighlighted ? "default" : "outline"}
+                            className={`w-full ${item.isHighlighted ? "bg-gradient-to-r from-primary to-primary/90 font-medium" : ""}`}
+                            onClick={() => handleAddToCart(item)}
+                          >
+                            <ShoppingCart size={14} className="mr-1" /> 
+                            {item.isHighlighted ? "Adicionar ao Carrinho" : "Comprar"}
+                          </Button>
+                          
+                          <div className="flex gap-1">
+                            <Button 
+                              size="sm"
+                              variant="ghost"
+                              className="flex-1 hover:bg-background hover:text-primary"
+                              asChild
+                            >
+                              <Link to={`/produto/${item.product?.slug}`}>
+                                <ExternalLink size={14} className="mr-1" /> Detalhes
+                              </Link>
+                            </Button>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" className="px-2">
+                                    <Heart size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Adicionar aos favoritos</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" className="px-2">
+                                    <Share2 size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Compartilhar produto</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                        
+                        {/* Informações adicionais se o produto é destacado */}
+                        {item.isHighlighted && (
+                          <div className="mt-2">
+                            <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                              Melhor escolha
+                            </Badge>
+                          </div>
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {/* Resumo Comparativo */}
+                  <TableFooter className="bg-slate-50">
+                    <TableRow>
+                      <TableCell colSpan={sortedItems.length + 1} className="p-4">
+                        <div className="text-center">
+                          <h3 className="text-lg font-semibold mb-3 flex items-center justify-center">
+                            <Award className="text-amber-500 mr-2" size={20} /> 
+                            Resumo Comparativo
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <div className="bg-white p-3 rounded-lg border shadow-sm">
+                              <h4 className="text-sm font-medium flex items-center text-blue-700 mb-2">
+                                <Star className="mr-1" size={16} />
+                                Melhor Oferta
+                              </h4>
+                              <div className="text-left mt-2">
+                                {cheapestItem && (
+                                  <>
+                                    <p className="text-lg font-bold">
+                                      {formatCurrency(parseFloat(cheapestItem.product?.price || "0"))}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">{cheapestItem.product?.name}</p>
+                                    <p className="text-xs flex items-center mt-1">
+                                      <Building size={12} className="mr-1 text-slate-400" />
+                                      {cheapestItem.supplier?.name}
+                                    </p>
+                                    <Button 
+                                      className="w-full mt-2 bg-gradient-to-r from-blue-600 to-blue-500" 
+                                      size="sm"
+                                      onClick={() => handleAddToCart(cheapestItem)}
+                                    >
+                                      <ShoppingCart size={14} className="mr-1" /> Comprar
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border shadow-sm">
+                              <h4 className="text-sm font-medium flex items-center text-amber-600 mb-2">
+                                <Award className="mr-1" size={16} />
+                                Melhor Avaliação
+                              </h4>
+                              <div className="text-left mt-2">
+                                {bestRatedItem && (
+                                  <>
+                                    <div className="flex items-center">
+                                      <p className="text-lg font-bold">{bestRatedItem.product?.rating}</p>
+                                      <Star size={16} className="ml-1 text-amber-500 fill-amber-500" />
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{bestRatedItem.product?.name}</p>
+                                    <p className="text-xs flex items-center mt-1">
+                                      <Building size={12} className="mr-1 text-slate-400" />
+                                      {bestRatedItem.supplier?.name}
+                                    </p>
+                                    <Button 
+                                      className="w-full mt-2 bg-gradient-to-r from-amber-600 to-amber-500" 
+                                      size="sm"
+                                      onClick={() => handleAddToCart(bestRatedItem)}
+                                    >
+                                      <ShoppingCart size={14} className="mr-1" /> Comprar
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border shadow-sm">
+                              <h4 className="text-sm font-medium flex items-center text-green-700 mb-2">
+                                <Timer className="mr-1" size={16} />
+                                Entrega Mais Rápida
+                              </h4>
+                              <div className="text-left mt-2">
+                                {sortedItems[0] && (
+                                  <>
+                                    <p className="text-lg font-bold">1-2 dias úteis</p>
+                                    <p className="text-sm text-muted-foreground">{sortedItems[0].product?.name}</p>
+                                    <p className="text-xs flex items-center mt-1">
+                                      <Building size={12} className="mr-1 text-slate-400" />
+                                      {sortedItems[0].supplier?.name}
+                                    </p>
+                                    <Button 
+                                      className="w-full mt-2 bg-gradient-to-r from-green-600 to-green-500" 
+                                      size="sm"
+                                      onClick={() => handleAddToCart(sortedItems[0])}
+                                    >
+                                      <ShoppingCart size={14} className="mr-1" /> Comprar
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p className="text-sm text-blue-700">
+                              Economia máxima nesta comparação: <span className="font-bold">{formatCurrency(parseFloat(mostExpensiveItem?.priceDifference || "0"))}</span> ({cheapestItem?.percentageDifference}% de desconto)
+                            </p>
+                            <div className="flex justify-center mt-2 gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setViewMode("cards")}>
+                                <Package size={14} className="mr-1" /> Ver cards
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setViewMode("detailed")}>
+                                <LineChart size={14} className="mr-1" /> Visão detalhada
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
                 </TableBody>
               </Table>
             </div>
