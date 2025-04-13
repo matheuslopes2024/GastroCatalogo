@@ -243,47 +243,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (categoryId) options.categoryId = parseInt(categoryId as string);
       if (search) options.search = search as string;
       
-      // Filtros avançados - Implementação robusta para preços
-      if (minPrice) {
+      // Filtros avançados - Implementação ultra robusta para preços (Sistema Multicamadas)
+      console.log(`----- INICIALIZANDO SISTEMA AVANÇADO DE FILTRAGEM DE PREÇO -----`);
+      console.log(`Dados recebidos dos parâmetros da URL: minPrice=${minPrice}, maxPrice=${maxPrice}`);
+      
+      // CAMADA 1: VALIDAÇÃO PRELIMINAR E SANITIZAÇÃO DOS DADOS DE ENTRADA
+      let minPriceStr = minPrice ? String(minPrice).trim() : null;
+      let maxPriceStr = maxPrice ? String(maxPrice).trim() : null;
+      
+      // Normalização de strings para garantir formato válido
+      if (minPriceStr) minPriceStr = minPriceStr.replace(/[^\d.,]/g, '').replace(',', '.');
+      if (maxPriceStr) maxPriceStr = maxPriceStr.replace(/[^\d.,]/g, '').replace(',', '.');
+      
+      console.log(`Valores normalizados: minPrice=${minPriceStr}, maxPrice=${maxPriceStr}`);
+      
+      // CAMADA 2: MÚLTIPLAS ESTRATÉGIAS DE CONVERSÃO COM PROTEÇÃO CONTRA ERROS
+      if (minPriceStr) {
         try {
-          const minPriceValue = parseFloat(minPrice as string);
-          console.log(`Convertendo minPrice: ${minPrice} (${typeof minPrice}) para número: ${minPriceValue}`);
+          // Estratégia principal: Conversão direta
+          let minPriceValue = parseFloat(minPriceStr);
+          console.log(`Estratégia 1 - Conversão direta minPrice: ${minPriceStr} → ${minPriceValue} (${isNaN(minPriceValue) ? 'FALHOU' : 'SUCESSO'})`);
+          
+          // Estratégia alternativa: Conversão com tratamento de locale
+          if (isNaN(minPriceValue)) {
+            minPriceStr = minPriceStr.replace(',', '.');
+            minPriceValue = parseFloat(minPriceStr);
+            console.log(`Estratégia 2 - Conversão com troca de vírgula por ponto: ${minPriceStr} → ${minPriceValue} (${isNaN(minPriceValue) ? 'FALHOU' : 'SUCESSO'})`);
+          }
+          
+          // Estratégia de recuperação: Extração de dígitos
+          if (isNaN(minPriceValue)) {
+            const digitsOnly = minPriceStr.replace(/[^\d]/g, '');
+            if (digitsOnly.length > 0) {
+              minPriceValue = parseInt(digitsOnly, 10);
+              console.log(`Estratégia 3 - Extração de dígitos: ${minPriceStr} → ${digitsOnly} → ${minPriceValue} (${isNaN(minPriceValue) ? 'FALHOU' : 'SUCESSO'})`);
+            }
+          }
+          
+          // Validação final com limites de segurança
           if (!isNaN(minPriceValue) && minPriceValue >= 0) {
+            // Limitar a valores razoáveis para evitar overflow
+            minPriceValue = Math.min(minPriceValue, 9999999);
             options.minPrice = minPriceValue;
-            console.log(`Filtro de preço mínimo aplicado: ${options.minPrice}`);
+            console.log(`✅ SUCESSO: Filtro de preço mínimo aplicado: ${options.minPrice}`);
           } else {
-            console.error(`Não foi possível converter minPrice: ${minPrice} para número válido`);
+            console.error(`⚠️ ATENÇÃO: Não foi possível converter minPrice: ${minPrice} para número válido após múltiplas tentativas`);
           }
         } catch (error) {
-          console.error(`Erro ao processar minPrice: ${error}`);
-          // Não definimos options.minPrice para evitar erros na consulta
+          console.error(`❌ ERRO: Exceção ao processar minPrice: ${error}`);
+          // Abordagem defensiva: Se ocorrer erro, não definimos options.minPrice
         }
       }
       
-      if (maxPrice) {
+      if (maxPriceStr) {
         try {
-          const maxPriceValue = parseFloat(maxPrice as string);
-          console.log(`Convertendo maxPrice: ${maxPrice} (${typeof maxPrice}) para número: ${maxPriceValue}`);
+          // Estratégia principal: Conversão direta
+          let maxPriceValue = parseFloat(maxPriceStr);
+          console.log(`Estratégia 1 - Conversão direta maxPrice: ${maxPriceStr} → ${maxPriceValue} (${isNaN(maxPriceValue) ? 'FALHOU' : 'SUCESSO'})`);
+          
+          // Estratégia alternativa: Conversão com tratamento de locale
+          if (isNaN(maxPriceValue)) {
+            maxPriceStr = maxPriceStr.replace(',', '.');
+            maxPriceValue = parseFloat(maxPriceStr);
+            console.log(`Estratégia 2 - Conversão com troca de vírgula por ponto: ${maxPriceStr} → ${maxPriceValue} (${isNaN(maxPriceValue) ? 'FALHOU' : 'SUCESSO'})`);
+          }
+          
+          // Estratégia de recuperação: Extração de dígitos
+          if (isNaN(maxPriceValue)) {
+            const digitsOnly = maxPriceStr.replace(/[^\d]/g, '');
+            if (digitsOnly.length > 0) {
+              maxPriceValue = parseInt(digitsOnly, 10);
+              console.log(`Estratégia 3 - Extração de dígitos: ${maxPriceStr} → ${digitsOnly} → ${maxPriceValue} (${isNaN(maxPriceValue) ? 'FALHOU' : 'SUCESSO'})`);
+            }
+          }
+          
+          // Validação final com limites de segurança
           if (!isNaN(maxPriceValue) && maxPriceValue > 0) {
+            // Limitar a valores razoáveis para evitar overflow
+            maxPriceValue = Math.min(maxPriceValue, 9999999);
             options.maxPrice = maxPriceValue;
-            console.log(`Filtro de preço máximo aplicado: ${options.maxPrice}`);
+            console.log(`✅ SUCESSO: Filtro de preço máximo aplicado: ${options.maxPrice}`);
           } else {
-            console.error(`Não foi possível converter maxPrice: ${maxPrice} para número válido`);
+            console.error(`⚠️ ATENÇÃO: Não foi possível converter maxPrice: ${maxPrice} para número válido após múltiplas tentativas`);
           }
         } catch (error) {
-          console.error(`Erro ao processar maxPrice: ${error}`);
-          // Não definimos options.maxPrice para evitar erros na consulta
+          console.error(`❌ ERRO: Exceção ao processar maxPrice: ${error}`);
+          // Abordagem defensiva: Se ocorrer erro, não definimos options.maxPrice
         }
       }
       
-      // Verificação extra de consistência dos filtros de preço
-      if (options.minPrice !== undefined && options.maxPrice !== undefined) {
-        if (options.minPrice > options.maxPrice) {
-          console.warn(`Filtro de preço inconsistente: mínimo (${options.minPrice}) > máximo (${options.maxPrice}). Ajustando valores...`);
-          // Inverter os valores em caso de inconsistência
-          [options.minPrice, options.maxPrice] = [options.maxPrice, options.minPrice];
+      // CAMADA 3: VERIFICAÇÃO DE CONSISTÊNCIA E FAILSAFE
+      if (options.minPrice !== undefined || options.maxPrice !== undefined) {
+        console.log(`----- VERIFICAÇÃO DE CONSISTÊNCIA DE FILTROS DE PREÇO -----`);
+        
+        // Se apenas um dos valores está definido, configure valores padrão seguros para o outro
+        if (options.minPrice !== undefined && options.maxPrice === undefined) {
+          options.maxPrice = 999999; // Valor máximo padrão muito alto
+          console.log(`Preço máximo não definido, usando valor padrão: ${options.maxPrice}`);
+        } else if (options.maxPrice !== undefined && options.minPrice === undefined) {
+          options.minPrice = 0; // Valor mínimo padrão
+          console.log(`Preço mínimo não definido, usando valor padrão: ${options.minPrice}`);
         }
-        console.log(`Filtro de preço final: ${options.minPrice} a ${options.maxPrice}`);
+        
+        // Verificação de consistência (mínimo <= máximo)
+        if (options.minPrice !== undefined && options.maxPrice !== undefined) {
+          if (options.minPrice > options.maxPrice) {
+            console.warn(`⚠️ Filtro de preço inconsistente: mínimo (${options.minPrice}) > máximo (${options.maxPrice}). Ajustando valores...`);
+            // Inverter os valores em caso de inconsistência
+            [options.minPrice, options.maxPrice] = [options.maxPrice, options.minPrice];
+          }
+          
+          // CAMADA 4: PROTEÇÃO EXTREMA - Garante que os valores são números
+          // Conversão final para garantir que são números e não strings (dupla segurança)
+          options.minPrice = Number(options.minPrice);
+          options.maxPrice = Number(options.maxPrice);
+          
+          // Uma verificação final para garantir que temos números válidos
+          if (isNaN(options.minPrice)) options.minPrice = 0;
+          if (isNaN(options.maxPrice)) options.maxPrice = 999999;
+          
+          console.log(`✅ Filtro de preço final validado: ${options.minPrice} a ${options.maxPrice}`);
+        }
       }
       
       if (rating) {

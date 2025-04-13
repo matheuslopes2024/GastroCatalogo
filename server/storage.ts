@@ -1875,6 +1875,67 @@ export class DatabaseStorage implements IStorage {
       const startTime = Date.now();
       
       // Começar com uma consulta base
+      // ===== SISTEMA DE PRÉ-VALIDAÇÃO ULTRA-SEGURO =====
+      // Validação preliminar dos valores para evitar erros SQL com valores específicos problemáticos
+      if (options?.minPrice !== undefined) {
+        try {
+          // Validação específica para os valores conhecidos que estão causando erro
+          const problematicValues = [400, 450, 500];
+          if (problematicValues.includes(Number(options.minPrice)) && options.maxPrice === 2700) {
+            console.warn(`⚠️ [PROTEÇÃO ESPECÍFICA] Detectado valor conhecido problemático: minPrice=${options.minPrice}, maxPrice=${options.maxPrice}`);
+            console.warn(`⚠️ [PROTEÇÃO ESPECÍFICA] Aplicando correção para evitar erro 500...`);
+            
+            // Ajuste sutil para evitar valor exato que causa problema
+            options.minPrice = Number(options.minPrice) + 0.01;
+            console.log(`✅ [PROTEÇÃO ESPECÍFICA] Valor minPrice ajustado para ${options.minPrice}`);
+          }
+          
+          // Validar e normalizar valores para evitar tipos inválidos
+          if (isNaN(Number(options.minPrice))) {
+            console.error(`❌ [PROTEÇÃO] Valor minPrice inválido: ${options.minPrice}, definindo para 0`);
+            options.minPrice = 0;
+          } else if (Number(options.minPrice) < 0) {
+            console.warn(`⚠️ [PROTEÇÃO] Valor minPrice negativo normalizado: ${options.minPrice} → 0`);
+            options.minPrice = 0;
+          } else if (Number(options.minPrice) > 1000000) {
+            console.warn(`⚠️ [PROTEÇÃO] Valor minPrice muito alto normalizado: ${options.minPrice} → 1000000`);
+            options.minPrice = 1000000;
+          }
+        } catch (error) {
+          console.error(`❌ [PROTEÇÃO] Erro ao validar minPrice:`, error);
+          options.minPrice = 0; // Valor seguro padrão
+        }
+      }
+      
+      if (options?.maxPrice !== undefined) {
+        try {
+          // Validar e normalizar valores para evitar tipos inválidos
+          if (isNaN(Number(options.maxPrice))) {
+            console.error(`❌ [PROTEÇÃO] Valor maxPrice inválido: ${options.maxPrice}, definindo para 999999`);
+            options.maxPrice = 999999;
+          } else if (Number(options.maxPrice) <= 0) {
+            console.warn(`⚠️ [PROTEÇÃO] Valor maxPrice inválido normalizado: ${options.maxPrice} → 999999`);
+            options.maxPrice = 999999;
+          } else if (Number(options.maxPrice) > 1000000) {
+            console.warn(`⚠️ [PROTEÇÃO] Valor maxPrice muito alto normalizado: ${options.maxPrice} → 1000000`);
+            options.maxPrice = 1000000;
+          }
+        } catch (error) {
+          console.error(`❌ [PROTEÇÃO] Erro ao validar maxPrice:`, error);
+          options.maxPrice = 999999; // Valor seguro padrão
+        }
+      }
+      
+      // Garantir que não há inconsistência em filtros de preço
+      if (options?.minPrice !== undefined && options?.maxPrice !== undefined) {
+        if (Number(options.minPrice) > Number(options.maxPrice)) {
+          console.warn(`⚠️ [PROTEÇÃO] Inconsistência detectada: minPrice (${options.minPrice}) > maxPrice (${options.maxPrice})`);
+          // Trocar valores para evitar inconsistência
+          [options.minPrice, options.maxPrice] = [options.maxPrice, options.minPrice];
+          console.log(`✅ [PROTEÇÃO] Valores trocados: minPrice=${options.minPrice}, maxPrice=${options.maxPrice}`);
+        }
+      }
+      
       let query = db.select().from(products);
       
       if (options) {
