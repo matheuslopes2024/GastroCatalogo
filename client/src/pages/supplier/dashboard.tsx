@@ -1197,28 +1197,64 @@ export default function SupplierDashboard() {
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart
-                        data={Object.values(recentSales.reduce((acc, sale) => {
-                          const product = products?.find(p => p.id === sale.productId);
-                          if (!product) return acc;
-                          
-                          const category = categories.find(c => c.id === product.categoryId);
-                          if (!category) return acc;
-                          
-                          const categoryName = category.name;
-                          
-                          if (!acc[categoryName]) {
-                            acc[categoryName] = {
-                              name: categoryName,
-                              value: 0,
-                              count: 0
-                            };
+                        data={(() => {
+                          try {
+                            // Verificar se os arrays necessários existem
+                            if (!Array.isArray(recentSales) || recentSales.length === 0) {
+                              console.log("Sem vendas recentes para exibir no gráfico");
+                              return [];
+                            }
+                            
+                            if (!Array.isArray(products) || !Array.isArray(categories)) {
+                              console.log("Dados de produtos ou categorias não disponíveis");
+                              return [];
+                            }
+                            
+                            // Usar reduce com validações em cada etapa
+                            const categorySales = recentSales.reduce((acc, sale) => {
+                              // Verificar se venda é um objeto válido com propriedades necessárias
+                              if (!sale || typeof sale !== 'object' || !sale.productId || !sale.totalPrice) {
+                                return acc;
+                              }
+                              
+                              // Buscar produto com verificação de tipo
+                              const product = products.find(p => p && typeof p === 'object' && p.id === sale.productId);
+                              if (!product || !product.categoryId) return acc;
+                              
+                              // Buscar categoria com verificação de tipo
+                              const category = categories.find(c => c && typeof c === 'object' && c.id === product.categoryId);
+                              if (!category || !category.name) return acc;
+                              
+                              const categoryName = category.name;
+                              
+                              // Inicializar categoria se não existir
+                              if (!acc[categoryName]) {
+                                acc[categoryName] = {
+                                  name: categoryName,
+                                  value: 0,
+                                  count: 0
+                                };
+                              }
+                              
+                              // Converter valor com segurança
+                              const saleValue = typeof sale.totalPrice === 'string' 
+                                ? parseFloat(sale.totalPrice) || 0 
+                                : Number(sale.totalPrice) || 0;
+                              
+                              // Acumular valores
+                              acc[categoryName].value += saleValue;
+                              acc[categoryName].count += 1;
+                              
+                              return acc;
+                            }, {} as Record<string, { name: string, value: number, count: number }>);
+                            
+                            // Converter para array
+                            return Object.values(categorySales);
+                          } catch (error) {
+                            console.error("Erro ao processar dados para o gráfico de categorias:", error);
+                            return [];
                           }
-                          
-                          acc[categoryName].value += Number(sale.totalPrice);
-                          acc[categoryName].count += 1;
-                          
-                          return acc;
-                        }, {} as Record<string, { name: string, value: number, count: number }>))}
+                        })()}
                         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
