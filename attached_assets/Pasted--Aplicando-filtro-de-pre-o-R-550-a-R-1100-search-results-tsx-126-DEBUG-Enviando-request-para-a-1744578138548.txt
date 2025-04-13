@@ -1,0 +1,38 @@
+✅ Aplicando filtro de preço: R$550 a R$1100
+search-results.tsx:126 [DEBUG] Enviando request para: /api/products?page=1&limit=100&inStock=false&hasDiscount=false&minPrice=550&maxPrice=1100
+filter-panel.tsx:123 ✅ Aplicando filtro de preço: R$650 a R$1100
+search-results.tsx:126 [DEBUG] Enviando request para: /api/products?page=1&limit=100&inStock=false&hasDiscount=false&minPrice=650&maxPrice=1100
+filter-panel.tsx:123 ✅ Aplicando filtro de preço: R$700 a R$1100
+search-results.tsx:126 [DEBUG] Enviando request para: /api/products?page=1&limit=100&inStock=false&hasDiscount=false&minPrice=700&maxPrice=1100
+search-results.tsx:127 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/products?page=1&limit=100&inStock=false&hasDiscount=false&minPrice=250&maxPrice=1100 500 (Internal Server Error)
+queryFn @ search-results.tsx:127
+fetchFn @ @tanstack_react-query.js?v=6df70e91:840
+run @ @tanstack_react-query.js?v=6df70e91:494
+start @ @tanstack_react-query.js?v=6df70e91:536
+fetch @ @tanstack_react-query.js?v=6df70e91:926
+executeFetch_fn @ @tanstack_react-query.js?v=6df70e91:2211
+setOptions @ @tanstack_react-query.js?v=6df70e91:1955
+(anonymous) @ @tanstack_react-query.js?v=6df70e91:3032
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=6df70e91:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=6df70e91:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=6df70e91:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=6df70e91:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=6df70e91:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=6df70e91:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=6df70e91:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=6df70e91:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=6df70e91:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=6df70e91:19432
+commitRoot @ chunk-RPCDYKBN.js?v=6df70e91:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=6df70e91:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=6df70e91:18718
+workLoop @ chunk-RPCDYKBN.js?v=6df70e91:197
+flushWork @ chunk-RPCDYKBN.js?v=6df70e91:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=6df70e91:384Understand this error
+search-results.tsx:127 
+            
+            
+           GET https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/api/products?page=1&limit=100&inStock=false&hasDiscount=false&minPrice=350&maxPrice=1100 500 (Internal Server Error)
