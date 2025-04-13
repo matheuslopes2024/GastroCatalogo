@@ -128,6 +128,8 @@ export default function ProductManagement() {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   
   // Fetch supplier products
+  // O parâmetro supplierId não é mais necessário pois a API já faz a filtragem automaticamente
+  // para fornecedores, mas mantemos para garantir compatibilidade e robustez
   const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["/api/products", { supplierId: user?.id }],
     enabled: !!user?.id,

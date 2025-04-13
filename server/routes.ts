@@ -170,9 +170,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log de diagnóstico com todos os parâmetros recebidos
       console.log("Parâmetros de busca avançada recebidos:", JSON.stringify(req.query, null, 2));
       
+      // Restrição automática por fornecedor se o usuário for um fornecedor
+      // Isso garante que fornecedores só vejam seus próprios produtos
+      if (req.user?.role === UserRole.SUPPLIER) {
+        console.log(`Usuário ${req.user.id} (${req.user.username}) é um fornecedor - restringindo produtos apenas aos seus`);
+        options.supplierId = req.user.id;
+      } else if (supplierId) {
+        // Para outros tipos de usuário, use o filtro de supplierId se fornecido
+        options.supplierId = parseInt(supplierId as string);
+      }
+      
       // Filtros básicos
       if (categoryId) options.categoryId = parseInt(categoryId as string);
-      if (supplierId) options.supplierId = parseInt(supplierId as string);
       if (search) options.search = search as string;
       
       // Filtros avançados
