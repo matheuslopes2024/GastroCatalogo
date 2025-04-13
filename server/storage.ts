@@ -625,185 +625,173 @@ export class MemStorage implements IStorage {
         }
       }
       
-      // Executar a consulta
-      let productResults = await query.execute();
-      console.log(`Consulta inicial retornou ${productResults.length} produtos`);
-      
-      // Aplicar filtros adicionais que não são facilmente expressos em SQL
+      // Aplicar filtros diretamente na consulta SQL (muito mais eficiente)
       if (options) {
-        // Filtro de preço mínimo
+        // Filtro de preço mínimo 
         if (options.minPrice !== undefined) {
-          console.log(`Filtrando produtos com preço mínimo de ${options.minPrice}`);
+          console.log(`Aplicando filtro SQL de preço mínimo: ${options.minPrice}`);
           const minPriceValue = parseFloat(String(options.minPrice));
-          if (isNaN(minPriceValue)) {
-            console.error(`Valor de preço mínimo inválido: ${options.minPrice} (${typeof options.minPrice})`);
+          if (!isNaN(minPriceValue)) {
+            // Aplicar filtro diretamente na consulta SQL
+            query = query.where(sql`CAST(${products.price} AS DECIMAL) >= ${minPriceValue}`);
+            console.log(`Filtro SQL de preço mínimo aplicado: ${minPriceValue}`);
           } else {
-            console.log(`Aplicando filtro de preço mínimo: ${minPriceValue}`);
-            
-            const beforeCount = productResults.length;
-            productResults = productResults.filter(product => {
-              const price = parseFloat(String(product.price));
-              const result = !isNaN(price) && price >= minPriceValue;
-              return result;
-            });
-            console.log(`Filtro de preço mínimo: ${beforeCount} produtos -> ${productResults.length} produtos`);
+            console.error(`Ignorando filtro de preço mínimo - valor inválido: ${options.minPrice}`);
           }
         }
         
         // Filtro de preço máximo
         if (options.maxPrice !== undefined) {
-          console.log(`Filtrando produtos com preço máximo de ${options.maxPrice}`);
+          console.log(`Aplicando filtro SQL de preço máximo: ${options.maxPrice}`);
           const maxPriceValue = parseFloat(String(options.maxPrice));
-          if (isNaN(maxPriceValue)) {
-            console.error(`Valor de preço máximo inválido: ${options.maxPrice} (${typeof options.maxPrice})`);
+          if (!isNaN(maxPriceValue)) {
+            // Aplicar filtro diretamente na consulta SQL
+            query = query.where(sql`CAST(${products.price} AS DECIMAL) <= ${maxPriceValue}`);
+            console.log(`Filtro SQL de preço máximo aplicado: ${maxPriceValue}`);
           } else {
-            console.log(`Aplicando filtro de preço máximo: ${maxPriceValue}`);
-            
-            const beforeCount = productResults.length;
-            productResults = productResults.filter(product => {
-              const price = parseFloat(String(product.price));
-              const result = !isNaN(price) && price <= maxPriceValue;
-              return result;
-            });
-            console.log(`Filtro de preço máximo: ${beforeCount} produtos -> ${productResults.length} produtos`);
+            console.error(`Ignorando filtro de preço máximo - valor inválido: ${options.maxPrice}`);
           }
         }
+      }
+      
+      // Executar a consulta
+      let productResults = await query.execute();
+      console.log(`Consulta SQL retornou ${productResults.length} produtos após aplicar todos os filtros`);
         
-        // Filtro de desconto
-        if (options.hasDiscount === true) {
-          console.log(`Filtrando produtos com desconto ativo`);
-          productResults = productResults.filter(product => {
-            // Verificar primeiro pelo campo discount, que é a forma mais direta
-            if (product.discount && product.discount > 0) return true;
-            
-            // Se não tiver o campo discount, verificar pelos preços
-            if (!product.originalPrice) return false;
-            const currentPrice = parseFloat(product.price as any);
-            const originalPrice = parseFloat(product.originalPrice as any);
-            return !isNaN(currentPrice) && !isNaN(originalPrice) && originalPrice > currentPrice;
-          });
-          console.log(`Após filtro de desconto: ${productResults.length} produtos`);
-        }
-        
-        // Filtro de estoque
-        if (options.inStock === true) {
-          console.log(`Filtrando produtos em estoque`);
-          // Em uma aplicação real, isso consultaria a quantidade em estoque no banco de dados
-          // Vamos usar dados reais dos produtos para simular estoque:
-          productResults = productResults.filter(product => {
-            // 1. Garantir que o produto está ativo (obrigatório para estar em estoque)
-            if (product.active !== true) return false;
-            
-            // 2. Verificar se tem preço válido (obrigatório para estar em estoque)
-            const price = parseFloat(product.price as any);
-            if (isNaN(price) || price <= 0) return false;
-            
-            // 3. Produtos com desconto geralmente são aqueles que se quer escoar inventário
-            if (product.discount) return true;
-            
-            // 4. Produtos com avaliações também tendem a estar em estoque
-            if (product.rating && parseFloat(product.rating as any) > 0) return true;
-            
-            // 5. Caso não tenha desconto ou avaliações, base apenas no preço:
-            // Produtos muito caros podem estar em falta, produtos com preço mais 
-            // acessível tendem a estar disponíveis
-            return price < 5000;
-          });
-          console.log(`Após filtro de estoque: ${productResults.length} produtos`);
-        }
-        
-        // Filtro por avaliação mínima
-        if (options.minRating !== undefined) {
-          console.log(`Filtrando produtos com avaliação mínima de ${options.minRating}`);
-          productResults = productResults.filter(product => {
-            if (!product.rating) return false;
-            const rating = parseFloat(product.rating as any);
-            return !isNaN(rating) && rating >= options.minRating!;
-          });
-        }
-        
-        // Filtro por data de criação
-        if (options.createdAfter) {
-          console.log(`Filtrando produtos criados após ${options.createdAfter.toISOString()}`);
-          productResults = productResults.filter(product => {
-            return product.createdAt && product.createdAt >= options.createdAfter!;
-          });
-        }
-        
-        // Aplicar pesquisa de texto
-        if (options.search && options.search.trim().length > 0) {
-          const searchTerm = options.search.toLowerCase().trim();
-          console.log(`Filtrando produtos pelo termo de busca: "${searchTerm}"`);
+      // Filtro de desconto
+      if (options && options.hasDiscount === true) {
+        console.log(`Filtrando produtos com desconto ativo`);
+        productResults = productResults.filter(product => {
+          // Verificar primeiro pelo campo discount, que é a forma mais direta
+          if (product.discount && product.discount > 0) return true;
           
-          const scoredProducts = productResults.map(product => {
-            let score = 0;
-            
-            // Pontuação para correspondência no nome
-            if (product.name && product.name.toLowerCase().includes(searchTerm)) {
-              score += 10;
-              if (product.name.toLowerCase() === searchTerm || 
-                  product.name.toLowerCase().startsWith(searchTerm + ' ')) {
-                score += 20;
-              }
+          // Se não tiver o campo discount, verificar pelos preços
+          if (!product.originalPrice) return false;
+          const currentPrice = parseFloat(product.price as any);
+          const originalPrice = parseFloat(product.originalPrice as any);
+          return !isNaN(currentPrice) && !isNaN(originalPrice) && originalPrice > currentPrice;
+        });
+        console.log(`Após filtro de desconto: ${productResults.length} produtos`);
+      }
+      
+      // Filtro de estoque
+      if (options && options.inStock === true) {
+        console.log(`Filtrando produtos em estoque`);
+        // Em uma aplicação real, isso consultaria a quantidade em estoque no banco de dados
+        // Vamos usar dados reais dos produtos para simular estoque:
+        productResults = productResults.filter(product => {
+          // 1. Garantir que o produto está ativo (obrigatório para estar em estoque)
+          if (product.active !== true) return false;
+          
+          // 2. Verificar se tem preço válido (obrigatório para estar em estoque)
+          const price = parseFloat(product.price as any);
+          if (isNaN(price) || price <= 0) return false;
+          
+          // 3. Produtos com desconto geralmente são aqueles que se quer escoar inventário
+          if (product.discount) return true;
+          
+          // 4. Produtos com avaliações também tendem a estar em estoque
+          if (product.rating && parseFloat(product.rating as any) > 0) return true;
+          
+          // 5. Caso não tenha desconto ou avaliações, base apenas no preço:
+          // Produtos muito caros podem estar em falta, produtos com preço mais 
+          // acessível tendem a estar disponíveis
+          return price < 5000;
+        });
+        console.log(`Após filtro de estoque: ${productResults.length} produtos`);
+      }
+      
+      // Filtro por avaliação mínima
+      if (options && options.minRating !== undefined) {
+        console.log(`Filtrando produtos com avaliação mínima de ${options.minRating}`);
+        productResults = productResults.filter(product => {
+          if (!product.rating) return false;
+          const rating = parseFloat(product.rating as any);
+          return !isNaN(rating) && rating >= options.minRating!;
+        });
+      }
+      
+      // Filtro por data de criação
+      if (options && options.createdAfter) {
+        console.log(`Filtrando produtos criados após ${options.createdAfter.toISOString()}`);
+        productResults = productResults.filter(product => {
+          return product.createdAt && product.createdAt >= options.createdAfter!;
+        });
+      }
+      
+      // Aplicar pesquisa de texto
+      if (options && options.search && options.search.trim().length > 0) {
+        const searchTerm = options.search.toLowerCase().trim();
+        console.log(`Filtrando produtos pelo termo de busca: "${searchTerm}"`);
+        
+        const scoredProducts = productResults.map(product => {
+          let score = 0;
+          
+          // Pontuação para correspondência no nome
+          if (product.name && product.name.toLowerCase().includes(searchTerm)) {
+            score += 10;
+            if (product.name.toLowerCase() === searchTerm || 
+                product.name.toLowerCase().startsWith(searchTerm + ' ')) {
+              score += 20;
             }
-            
-            // Pontuação para correspondência na descrição
-            if (product.description && product.description.toLowerCase().includes(searchTerm)) {
-              score += 3;
-            }
-            
-            return { product, score };
-          });
+          }
           
-          // Filtrar produtos sem correspondência
-          const matchingProducts = scoredProducts.filter(item => item.score > 0);
+          // Pontuação para correspondência na descrição
+          if (product.description && product.description.toLowerCase().includes(searchTerm)) {
+            score += 3;
+          }
           
-          // Ordenar por relevância
-          matchingProducts.sort((a, b) => b.score - a.score);
-          
-          productResults = matchingProducts.map(item => item.product);
-        }
+          return { product, score };
+        });
         
-        // ------ ORDENAÇÃO ------
-        if (options.sortBy) {
-          console.log(`Ordenando produtos por ${options.sortBy} em ordem ${options.sortDirection || 'asc'}`);
+        // Filtrar produtos sem correspondência
+        const matchingProducts = scoredProducts.filter(item => item.score > 0);
+        
+        // Ordenar por relevância
+        matchingProducts.sort((a, b) => b.score - a.score);
+        
+        productResults = matchingProducts.map(item => item.product);
+      }
+      
+      // ------ ORDENAÇÃO ------
+      if (options && options.sortBy) {
+        console.log(`Ordenando produtos por ${options.sortBy} em ordem ${options.sortDirection || 'asc'}`);
+        
+        const isDesc = options.sortDirection === 'desc';
+        
+        productResults.sort((a, b) => {
+          let valueA, valueB;
           
-          const isDesc = options.sortDirection === 'desc';
+          switch (options.sortBy) {
+            case 'price':
+              valueA = parseFloat(a.price);
+              valueB = parseFloat(b.price);
+              break;
+            case 'rating':
+              valueA = a.rating ? parseFloat(a.rating) : 0;
+              valueB = b.rating ? parseFloat(b.rating) : 0;
+              break;
+            case 'name':
+              return isDesc 
+                ? (b.name || '').localeCompare(a.name || '') 
+                : (a.name || '').localeCompare(b.name || '');
+            case 'createdAt':
+              valueA = a.createdAt?.getTime() || 0;
+              valueB = b.createdAt?.getTime() || 0;
+              break;
+            case 'popularity':
+              valueA = a.ratingsCount || 0;
+              valueB = b.ratingsCount || 0;
+              break;
+            default:
+              return 0;
+          }
           
-          productResults.sort((a, b) => {
-            let valueA, valueB;
-            
-            switch (options.sortBy) {
-              case 'price':
-                valueA = parseFloat(a.price);
-                valueB = parseFloat(b.price);
-                break;
-              case 'rating':
-                valueA = a.rating ? parseFloat(a.rating) : 0;
-                valueB = b.rating ? parseFloat(b.rating) : 0;
-                break;
-              case 'name':
-                return isDesc 
-                  ? (b.name || '').localeCompare(a.name || '') 
-                  : (a.name || '').localeCompare(b.name || '');
-              case 'createdAt':
-                valueA = a.createdAt?.getTime() || 0;
-                valueB = b.createdAt?.getTime() || 0;
-                break;
-              case 'popularity':
-                valueA = a.ratingsCount || 0;
-                valueB = b.ratingsCount || 0;
-                break;
-              default:
-                return 0;
-            }
-            
-            if (isNaN(valueA)) valueA = 0;
-            if (isNaN(valueB)) valueB = 0;
-            
-            return isDesc ? (valueB - valueA) : (valueA - valueB);
-          });
-        }
+          if (isNaN(valueA)) valueA = 0;
+          if (isNaN(valueB)) valueB = 0;
+          
+          return isDesc ? (valueB - valueA) : (valueA - valueB);
+        });
       }
       
       const endTime = Date.now();

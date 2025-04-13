@@ -377,10 +377,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getProducts(options);
       
       // Adicionar meta-informações úteis (contagem total, filtros aplicados)
+      // Obter contagem total sem paginação para meta-informações
+      const totalCount = products.length;
+      
       const response = {
         data: products,
         meta: {
-          totalCount: products.length,
+          totalCount: totalCount,
           appliedFilters: Object.keys(options).filter(k => k !== 'active' && options[k] !== undefined),
           page: page ? parseInt(page as string) : 1,
           pageSize: limit ? parseInt(limit as string) : products.length,
