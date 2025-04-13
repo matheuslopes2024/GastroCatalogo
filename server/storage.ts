@@ -665,16 +665,24 @@ export class MemStorage implements IStorage {
           console.log(`Filtrando produtos em estoque`);
           // Em uma aplicação real, isso consultaria a quantidade em estoque no banco de dados
           // Vamos usar dados reais dos produtos para simular estoque:
-          // - Produtos com preço < 1000 são considerados "em estoque"
-          // - Produtos ativos sempre estão "em estoque"
           productResults = productResults.filter(product => {
-            // Garantir que o produto está ativo
+            // 1. Garantir que o produto está ativo (obrigatório para estar em estoque)
             if (product.active !== true) return false;
             
-            // Verificar se o preço é acessível (usado como proxy para disponibilidade)
+            // 2. Verificar se tem preço válido (obrigatório para estar em estoque)
             const price = parseFloat(product.price as any);
-            // Produtos baratos têm mais chance de estarem em estoque
-            return !isNaN(price) && (price < 1000 || product.id % 3 === 0);
+            if (isNaN(price) || price <= 0) return false;
+            
+            // 3. Produtos com desconto geralmente são aqueles que se quer escoar inventário
+            if (product.discount) return true;
+            
+            // 4. Produtos com avaliações também tendem a estar em estoque
+            if (product.rating && parseFloat(product.rating as any) > 0) return true;
+            
+            // 5. Caso não tenha desconto ou avaliações, base apenas no preço:
+            // Produtos muito caros podem estar em falta, produtos com preço mais 
+            // acessível tendem a estar disponíveis
+            return price < 5000;
           });
           console.log(`Após filtro de estoque: ${productResults.length} produtos`);
         }

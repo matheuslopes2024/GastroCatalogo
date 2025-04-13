@@ -152,11 +152,13 @@ export function queryParamsToFilters(searchParams: URLSearchParams): SearchFilte
   }
   
   if (searchParams.get('inStock')) {
-    filters.inStock = searchParams.get('inStock') === 'true';
+    const inStockValue = searchParams.get('inStock');
+    filters.inStock = inStockValue === 'true' || inStockValue === '1';
   }
   
   if (searchParams.get('hasDiscount')) {
-    filters.hasDiscount = searchParams.get('hasDiscount') === 'true';
+    const discountValue = searchParams.get('hasDiscount');
+    filters.hasDiscount = discountValue === 'true' || discountValue === '1';
   }
   
   if (searchParams.get('supplierId')) {
