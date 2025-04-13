@@ -1147,15 +1147,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Obter todas as comissões por produto para o fornecedor
-  app.get("/api/supplier/products/commissions", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+  // Esta rota foi desativada porque estava duplicada e sobrescrevendo a rota anterior (linha 1025)
+  // que retorna todos os produtos com as respectivas comissões aplicáveis. 
+  // Para evitar conflitos, a rota foi renomeada para /api/supplier/products/commission-settings
+  app.get("/api/supplier/products/commission-settings", checkRole([UserRole.SUPPLIER]), async (req, res) => {
     try {
       const supplierId = req.user!.id;
+      console.log(`Buscando configurações de comissão para o fornecedor ${supplierId}`);
       
       // Buscar as configurações de comissão específicas por produto
       const productCommissions = await storage.getProductCommissionSettings({
         supplierId,
         active: true
       });
+      
+      console.log(`Encontradas ${productCommissions.length} configurações de comissão ativas`);
       
       // Se houver configurações, complementar com informações do produto
       if (productCommissions.length > 0) {
