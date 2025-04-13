@@ -306,7 +306,8 @@ export default function ProductManagement() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("PATCH", `/api/products/${id}`, { active: false });
+      // Usamos a nova rota DELETE agora
+      return apiRequest("DELETE", `/api/products/${id}`);
     },
     onSuccess: (data) => {
       // Invalidar a consulta principal
@@ -332,9 +333,15 @@ export default function ProductManagement() {
           } catch (e) {
             console.error("Erro ao processar resposta de exclusão:", e);
           }
+        }).catch(e => {
+          console.error("Falha ao processar texto da resposta:", e);
+          // Mesmo em caso de erro, invalidamos a query para forçar nova busca
+          queryClient.invalidateQueries({ queryKey: ["/api/products"] });
         });
       } catch (e) {
         console.error("Erro ao ler resposta de exclusão:", e);
+        // Garantir invalidação da query mesmo em caso de erro
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       }
       
       setIsDeleteDialogOpen(false);
@@ -345,6 +352,7 @@ export default function ProductManagement() {
       });
     },
     onError: (error) => {
+      console.error("Erro detalhado na exclusão do produto:", error);
       toast({
         title: "Erro ao excluir produto",
         description: "Ocorreu um erro ao excluir o produto. Por favor, tente novamente.",
