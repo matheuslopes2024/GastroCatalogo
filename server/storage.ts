@@ -653,11 +653,16 @@ export class MemStorage implements IStorage {
         if (options.hasDiscount === true) {
           console.log(`Filtrando produtos com desconto ativo`);
           productResults = productResults.filter(product => {
+            // Verificar primeiro pelo campo discount, que é a forma mais direta
+            if (product.discount && product.discount > 0) return true;
+            
+            // Se não tiver o campo discount, verificar pelos preços
             if (!product.originalPrice) return false;
             const currentPrice = parseFloat(product.price as any);
             const originalPrice = parseFloat(product.originalPrice as any);
             return !isNaN(currentPrice) && !isNaN(originalPrice) && originalPrice > currentPrice;
           });
+          console.log(`Após filtro de desconto: ${productResults.length} produtos`);
         }
         
         // Filtro de estoque
