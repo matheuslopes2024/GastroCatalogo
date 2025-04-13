@@ -71,6 +71,29 @@ export function FilterPanel({
     });
   };
   
+  // Função para processar a alteração do filtro de preço com validação aprimorada
+  const handlePriceFilterChange = (value: [number, number]) => {
+    // Armazena os valores localmente para o componente UI
+    setPriceRange(value);
+    
+    // Validação avançada para garantir valores numéricos positivos em formato correto
+    const minPrice = Math.max(0, value[0]);
+    const maxPrice = Math.max(minPrice + 1, value[1]); // Garantir que maxPrice > minPrice
+    
+    // Armazenar os valores com precisão de 2 casas decimais
+    const formattedMinPrice = parseFloat(minPrice.toFixed(2));
+    const formattedMaxPrice = parseFloat(maxPrice.toFixed(2));
+    
+    console.log(`Atualizando filtro de preço: Min=${formattedMinPrice}, Max=${formattedMaxPrice}`);
+    
+    // Atualizar o filtro com valores validados
+    onFilterChange({
+      ...filters,
+      minPrice: formattedMinPrice,
+      maxPrice: formattedMaxPrice
+    });
+  };
+  
   // Função para formatar os valores de preço
   const formatPriceLabel = (value: number) => {
     return formatCurrency(value);
@@ -163,12 +186,8 @@ export function FilterPanel({
                   step={50}
                   value={priceRange}
                   onValueChange={(value) => {
-                    setPriceRange(value as [number, number]);
-                    onFilterChange({
-                      ...filters,
-                      minPrice: value[0], 
-                      maxPrice: value[1]
-                    });
+                    // Usar a função robusta de processamento de filtro de preço
+                    handlePriceFilterChange(value as [number, number]);
                   }}
                   className="mt-2"
                 />
