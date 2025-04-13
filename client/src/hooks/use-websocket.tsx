@@ -76,13 +76,28 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
       let wsUrl = "";
       
       try {
-        // Verificar se estamos em ambiente Replit
+        // Construir URL segura com verificações de fallback
+        let port = "5000"; // Porta padrão do servidor
+        
+        // Garantir que temos um host válido
         if (currentHost && currentHost.includes("replit")) {
+          // Estamos em ambiente Replit
           wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
-        } else {
-          // Fallback para desenvolvimento local
-          const port = window.location.port || (protocol === "wss:" ? "443" : "80");
+          console.log("[WS] Usando URL Replit:", wsUrl);
+        } else if (window.location.port) {
+          // Estamos em desenvolvimento local com porta específica
+          port = window.location.port;
           wsUrl = `${protocol}//localhost:${port}/ws?token=${token}`;
+          console.log("[WS] Usando URL local com porta:", wsUrl);
+        } else {
+          // Fallback para desenvolvimento local sem porta específica
+          wsUrl = `${protocol}//localhost:${port}/ws?token=${token}`;
+          console.log("[WS] Usando URL local com porta padrão:", wsUrl);
+        }
+        
+        // Verificação final para garantir que temos uma URL válida
+        if (!wsUrl || wsUrl.includes("undefined")) {
+          throw new Error(`URL WebSocket inválida: ${wsUrl}`);
         }
       } catch (urlError) {
         console.error("[WS] Erro ao construir URL do WebSocket:", urlError);
@@ -343,15 +358,32 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
     const pingId = `ping-${Date.now()}`;
     console.log(`[WS:${pingId}] Iniciando pings periódicos`);
     
+    // Verificar imediatamente se a conexão está viva e enviar um ping inicial
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      console.log(`[WS:${pingId}] Enviando ping inicial para verificar conexão`);
+      try {
+        ws.current.send(JSON.stringify({ 
+          type: "ping", 
+          timestamp: new Date().toISOString() 
+        }));
+      } catch (err) {
+        console.error("[WS] Erro ao enviar ping inicial:", err);
+      }
+    }
+    
     const pingInterval = setInterval(() => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         // Adicionar timestamp para tornar cada mensagem única
-        sendMessage({ 
-          type: "ping", 
-          timestamp: new Date().toISOString() 
-        });
+        try {
+          sendMessage({ 
+            type: "ping", 
+            timestamp: new Date().toISOString() 
+          });
+        } catch (pingError) {
+          console.error("[WS] Erro ao enviar ping periódico:", pingError);
+        }
       }
-    }, 30000); // A cada 30 segundos
+    }, 25000); // A cada 25 segundos (ligeiramente mais frequente)
     
     return () => {
       console.log(`[WS:${pingId}] Parando pings periódicos`);
