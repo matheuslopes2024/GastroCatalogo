@@ -266,6 +266,43 @@ export default function SupplierCommissions() {
   const [commissionToDelete, setCommissionToDelete] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   
+  // Função para excluir uma comissão de produto
+  const handleDeleteCommission = async (commissionId: number) => {
+    try {
+      const response = await fetch(`/api/supplier/products/commissions/${commissionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao excluir configuração de comissão");
+      }
+      
+      const result = await response.json();
+      
+      toast({
+        title: "Sucesso",
+        description: result.message || "Configuração de comissão excluída com sucesso",
+        variant: "default",
+      });
+      
+      // Recarregar os dados
+      productsCommissionsRefetch();
+      globalSettingsRefetch();
+      commissionSummaryRefetch();
+      
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao excluir comissão",
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Função para buscar uma comissão específica para edição
   const handleEditCommission = async (commissionId: number) => {
     try {
@@ -393,7 +430,7 @@ export default function SupplierCommissions() {
   });
 
   // Buscar as configurações de comissão aplicáveis a este fornecedor
-  const { data: commissionSettings, isLoading: isLoadingCommissions } = useQuery({
+  const { data: commissionSettings, isLoading: isLoadingCommissions, refetch: globalSettingsRefetch } = useQuery({
     queryKey: ["/api/supplier/commissions"],
     queryFn: async () => {
       const res = await fetch("/api/supplier/commissions");
@@ -405,7 +442,7 @@ export default function SupplierCommissions() {
   });
 
   // Buscar produtos do fornecedor com suas respectivas comissões
-  const { data: productsWithCommissions, isLoading: isLoadingProducts } = useQuery({
+  const { data: productsWithCommissions, isLoading: isLoadingProducts, refetch: productsCommissionsRefetch } = useQuery({
     queryKey: ["/api/supplier/products/commissions"],
     queryFn: async () => {
       const res = await fetch("/api/supplier/products/commissions");
@@ -435,7 +472,7 @@ export default function SupplierCommissions() {
   });
 
   // Buscar resumo de comissões (estatísticas gerais)
-  const { data: commissionSummary, isLoading: isLoadingSummary } = useQuery({
+  const { data: commissionSummary, isLoading: isLoadingSummary, refetch: commissionSummaryRefetch } = useQuery({
     queryKey: ["/api/supplier/commissions/summary"],
     queryFn: async () => {
       const res = await fetch("/api/supplier/commissions/summary");
@@ -751,7 +788,7 @@ export default function SupplierCommissions() {
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction 
                                   className="bg-red-500 hover:bg-red-600"
-                                  onClick={() => handleDeleteCommission(item.commission.settingId)}
+                                  onClick={() => handleDeleteCommission(item.commission.id)}
                                 >
                                   Excluir
                                 </AlertDialogAction>
