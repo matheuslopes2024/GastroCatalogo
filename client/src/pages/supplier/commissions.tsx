@@ -251,6 +251,33 @@ export default function SupplierCommissions() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingCommission, setEditingCommission] = useState<ProductCommissionSetting | null>(null);
   
+  // Função para buscar uma comissão específica para edição
+  const handleEditCommission = async (commissionId: number) => {
+    try {
+      const response = await fetch(`/api/supplier/products/commissions/${commissionId}`);
+      if (!response.ok) {
+        throw new Error("Falha ao buscar detalhes da comissão");
+      }
+      
+      const commissionData = await response.json();
+      setEditingCommission(commissionData);
+      
+      // Buscar o produto relacionado
+      const product = productsWithCommissions.find((item: ProductCommission) => 
+        item.product.id === commissionData.productId
+      )?.product || null;
+      
+      setSelectedProduct(product);
+      setIsDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao buscar comissão",
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Buscar as comissões específicas por produto
   const { data: productCommissions, isLoading: isLoadingProductCommissions } = useQuery({
     queryKey: ["/api/supplier/products/commissions/specific"],
@@ -670,6 +697,19 @@ export default function SupplierCommissions() {
                           Após {formatCurrency(commissionValue.toString())} de comissão
                         </p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {item.commission.type === "specific" && (
+                        <Button
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditCommission(item.commission.settingId)}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
