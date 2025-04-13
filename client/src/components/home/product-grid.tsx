@@ -202,9 +202,23 @@ export function ProductGrid() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await apiRequest('GET', '/api/products');
-        const data = await res.json();
-        setProducts(data.slice(0, 8)); // Limitar a 8 produtos para a grade principal
+        const res = await apiRequest('GET', '/api/products', undefined, {
+          // Garantir que estamos enviando header para indicar que NÃO é dashboard de fornecedor
+          'x-supplier-dashboard': 'false'
+        });
+        const responseData = await res.json();
+        
+        // Lidar com ambos os formatos de resposta (array ou objeto com data)
+        const productsArray = Array.isArray(responseData) 
+          ? responseData 
+          : (responseData.data && Array.isArray(responseData.data)) 
+            ? responseData.data 
+            : [];
+            
+        console.log(`ProductGrid: Buscou ${productsArray.length} produtos no total`);
+        
+        // Limitar a 8 produtos para a grade principal
+        setProducts(productsArray.slice(0, 8));
         setLoading(false);
       } catch (error) {
         console.error('Erro ao buscar produtos:', error);
