@@ -2158,7 +2158,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    return query;
+    // Executar a consulta para retornar os resultados
+    console.log("Executando consulta de mensagens no banco de dados");
+    try {
+      const result = await query;
+      console.log(`Consulta retornou ${result.length} mensagens`);
+      return result;
+    } catch (error) {
+      console.error("Erro ao executar consulta de mensagens:", error);
+      throw error;
+    }
   }
   
   async markMessagesAsRead(messageIds: number[]): Promise<void> {
@@ -2212,18 +2221,38 @@ export class DatabaseStorage implements IStorage {
   
   async getChatConversations(userId: number): Promise<ChatConversation[]> {
     // Vamos usar uma abordagem mais simples com conversão para texto e verificação com LIKE
-    return db
-      .select()
-      .from(chatConversations)
-      .where(sql`${chatConversations.participantIds}::text LIKE '%' || ${userId} || '%'`)
-      .orderBy(desc(chatConversations.lastActivityAt));
+    console.log(`Buscando conversas para o usuário ${userId}`);
+    try {
+      const query = db
+        .select()
+        .from(chatConversations)
+        .where(sql`${chatConversations.participantIds}::text LIKE '%' || ${userId} || '%'`)
+        .orderBy(desc(chatConversations.lastActivityAt));
+        
+      const result = await query;
+      console.log(`Encontradas ${result.length} conversas para o usuário ${userId}`);
+      return result;
+    } catch (error) {
+      console.error(`Erro ao buscar conversas para o usuário ${userId}:`, error);
+      throw error;
+    }
   }
   
   async getAllChatConversations(): Promise<ChatConversation[]> {
-    return db
-      .select()
-      .from(chatConversations)
-      .orderBy(desc(chatConversations.lastActivityAt));
+    console.log("Buscando todas as conversas");
+    try {
+      const query = db
+        .select()
+        .from(chatConversations)
+        .orderBy(desc(chatConversations.lastActivityAt));
+        
+      const result = await query;
+      console.log(`Encontradas ${result.length} conversas no total`);
+      return result;
+    } catch (error) {
+      console.error("Erro ao buscar todas as conversas:", error);
+      throw error;
+    }
   }
   
   async updateChatConversationLastMessage(conversationId: number, message: ChatMessage): Promise<void> {
@@ -2313,7 +2342,15 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    return query.orderBy(commissionSettings.id);
+    console.log("Executando consulta de configurações de comissão");
+    try {
+      const result = await query.orderBy(commissionSettings.id);
+      console.log(`Consulta retornou ${result.length} configurações de comissão`);
+      return result;
+    } catch (error) {
+      console.error("Erro ao executar consulta de configurações de comissão:", error);
+      throw error;
+    }
   }
   
   /**
