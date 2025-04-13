@@ -170,13 +170,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log de diagnóstico com todos os parâmetros recebidos
       console.log("Parâmetros de busca avançada recebidos:", JSON.stringify(req.query, null, 2));
       
-      // Restrição automática por fornecedor se o usuário for um fornecedor
-      // Isso garante que fornecedores só vejam seus próprios produtos
-      if (req.user?.role === UserRole.SUPPLIER) {
-        console.log(`Usuário ${req.user.id} (${req.user.username}) é um fornecedor - restringindo produtos apenas aos seus`);
+      // Detectar se estamos na rota de dashboard de fornecedor
+      const isSupplierDashboard = req.headers.referer?.includes('/supplier/') || req.headers['x-supplier-dashboard'] === 'true';
+      
+      // Restrição automática por fornecedor apenas se for dashboard de fornecedor
+      if (req.user?.role === UserRole.SUPPLIER && isSupplierDashboard) {
+        console.log(`Usuário ${req.user.id} (${req.user.username}) está no dashboard de fornecedor - restringindo produtos apenas aos seus`);
         options.supplierId = req.user.id;
       } else if (supplierId) {
-        // Para outros tipos de usuário, use o filtro de supplierId se fornecido
+        // Para outros casos, use o filtro de supplierId somente se fornecido explicitamente
         options.supplierId = parseInt(supplierId as string);
       }
       
