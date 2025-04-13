@@ -627,29 +627,90 @@ export class MemStorage implements IStorage {
       
       // Aplicar filtros diretamente na consulta SQL (muito mais eficiente)
       if (options) {
-        // Filtro de preço mínimo 
-        if (options.minPrice !== undefined) {
-          console.log(`Aplicando filtro SQL de preço mínimo: ${options.minPrice}`);
-          const minPriceValue = parseFloat(String(options.minPrice));
-          if (!isNaN(minPriceValue)) {
-            // Aplicar filtro diretamente na consulta SQL
-            query = query.where(sql`CAST(${products.price} AS DECIMAL) >= ${minPriceValue}`);
-            console.log(`Filtro SQL de preço mínimo aplicado: ${minPriceValue}`);
+        // Utilitário para garantir que valores de preço sejam tratados corretamente
+        const ensureValidPrice = (price: any): number | null => {
+          // Se for undefined ou null, retornar null
+          if (price === undefined || price === null) return null;
+          
+          // Tentar converter para número
+          let numericValue: number;
+          
+          // Se for string, tentar converter com tratamento de locale
+          if (typeof price === 'string') {
+            // Normalizar formato: remover símbolos de moeda e trocar vírgula por ponto
+            const normalizedStr = price.replace(/[^\d.,]/g, '').replace(',', '.');
+            numericValue = parseFloat(normalizedStr);
           } else {
-            console.error(`Ignorando filtro de preço mínimo - valor inválido: ${options.minPrice}`);
+            // Tentar conversão direta para outros tipos
+            numericValue = parseFloat(String(price));
           }
-        }
+          
+          // Verificar se é um número válido e positivo
+          if (isNaN(numericValue) || numericValue < 0) {
+            console.error(`VALIDAÇÃO DE PREÇO: Valor inválido fornecido: ${price}, tipo: ${typeof price}`);
+            return null;
+          }
+          
+          // Arredondar para 2 casas decimais para evitar problemas com floating point
+          return Math.round(numericValue * 100) / 100;
+        };
         
-        // Filtro de preço máximo
-        if (options.maxPrice !== undefined) {
-          console.log(`Aplicando filtro SQL de preço máximo: ${options.maxPrice}`);
-          const maxPriceValue = parseFloat(String(options.maxPrice));
-          if (!isNaN(maxPriceValue)) {
-            // Aplicar filtro diretamente na consulta SQL
-            query = query.where(sql`CAST(${products.price} AS DECIMAL) <= ${maxPriceValue}`);
-            console.log(`Filtro SQL de preço máximo aplicado: ${maxPriceValue}`);
-          } else {
-            console.error(`Ignorando filtro de preço máximo - valor inválido: ${options.maxPrice}`);
+        // Sistema avançado para filtro de preço usando prepared statements para segurança máxima
+        try {
+          const minPriceValue = ensureValidPrice(options.minPrice);
+          const maxPriceValue = ensureValidPrice(options.maxPrice);
+          
+          console.log(`SISTEMA DE FILTRAGEM DE PREÇO: Processando minPrice=${minPriceValue}, maxPrice=${maxPriceValue}`);
+          
+          // Filtro de preço mínimo com validação robusta
+          if (minPriceValue !== null) {
+            // Usar cast explícito para garantir compatibilidade com diferentes formatos de banco
+            query = query.where(sql`(CASE 
+              WHEN ${products.price} ~ E'^\\\\d+(\\\\.\\\\d+)?$' THEN CAST(${products.price} AS DECIMAL)
+              WHEN ${products.price} ~ E'^\\\\d+,\\\\d+$' THEN CAST(REPLACE(${products.price}, ',', '.') AS DECIMAL)
+              ELSE 0
+            END) >= ${minPriceValue}`);
+            
+            console.log(`SISTEMA DE FILTRAGEM DE PREÇO: Filtro de preço mínimo aplicado: ${minPriceValue}`);
+          }
+          
+          // Filtro de preço máximo com validação robusta
+          if (maxPriceValue !== null) {
+            // Usar cast explícito com tratamento de exceções
+            query = query.where(sql`(CASE 
+              WHEN ${products.price} ~ E'^\\\\d+(\\\\.\\\\d+)?$' THEN CAST(${products.price} AS DECIMAL)
+              WHEN ${products.price} ~ E'^\\\\d+,\\\\d+$' THEN CAST(REPLACE(${products.price}, ',', '.') AS DECIMAL)
+              ELSE 0
+            END) <= ${maxPriceValue}`);
+            
+            console.log(`SISTEMA DE FILTRAGEM DE PREÇO: Filtro de preço máximo aplicado: ${maxPriceValue}`);
+          }
+        } catch (error) {
+          // Capturar quaisquer erros do SQL para evitar falhas na consulta
+          console.error(`SISTEMA DE FILTRAGEM DE PREÇO: Erro ao aplicar filtros de preço:`, error);
+          
+          // Plano B - Implementar filtros de forma alternativa mais básica em caso de falha
+          try {
+            if (options.minPrice !== undefined) {
+              const safeMinPrice = parseFloat(String(options.minPrice));
+              if (!isNaN(safeMinPrice)) {
+                query = query.where(sql`CAST(${products.price} AS TEXT) ~ E'^\\\\d+'`);
+                query = query.where(sql`CAST(${products.price} AS DECIMAL) >= ${safeMinPrice}`);
+                console.log(`PLANO B: Filtro de preço mínimo simplificado aplicado: ${safeMinPrice}`);
+              }
+            }
+            
+            if (options.maxPrice !== undefined) {
+              const safeMaxPrice = parseFloat(String(options.maxPrice));
+              if (!isNaN(safeMaxPrice)) {
+                query = query.where(sql`CAST(${products.price} AS TEXT) ~ E'^\\\\d+'`);
+                query = query.where(sql`CAST(${products.price} AS DECIMAL) <= ${safeMaxPrice}`);
+                console.log(`PLANO B: Filtro de preço máximo simplificado aplicado: ${safeMaxPrice}`);
+              }
+            }
+          } catch (fallbackError) {
+            console.error(`SISTEMA DE FILTRAGEM DE PREÇO: Falha completa no sistema de filtragem:`, fallbackError);
+            // Não aplicar filtros de preço em caso de falha completa
           }
         }
       }
