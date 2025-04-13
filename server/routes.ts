@@ -1300,7 +1300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const supplierId = req.user!.id;
       const settingId = parseInt(req.params.id, 10);
-      const { rate, active } = req.body;
+      const { rate, active, remarks, validUntil } = req.body;
       
       if (isNaN(settingId)) {
         return res.status(400).json({ error: "ID inválido" });
@@ -1327,6 +1327,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData: Partial<ProductCommissionSetting> = {};
       if (rate !== undefined) updateData.rate = rate;
       if (active !== undefined) updateData.active = !!active;
+      if (remarks !== undefined) updateData.remarks = remarks;
+      if (validUntil !== undefined) updateData.validUntil = validUntil;
       
       const updatedSetting = await storage.updateProductCommissionSetting(settingId, updateData);
       
