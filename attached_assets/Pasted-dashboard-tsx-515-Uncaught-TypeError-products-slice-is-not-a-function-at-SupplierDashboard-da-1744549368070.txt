@@ -1,0 +1,25 @@
+dashboard.tsx:515 Uncaught TypeError: products.slice is not a function
+    at SupplierDashboard (dashboard.tsx:515:35)
+
+dashboard.tsx:515 Uncaught TypeError: products.slice is not a function
+    at SupplierDashboard (dashboard.tsx:515:35)
+chunk-RPCDYKBN.js?v=2cfb98cb:14032 The above error occurred in the <SupplierDashboard> component:
+
+    at SupplierDashboard (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/pages/supplier/dashboard.tsx?t=1744549340554:154:20)
+    at Route (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2cfb98cb:323:16)
+    at ProtectedRoute (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2cfb98cb:379:17)
+    at MainRoutes
+    at ChatProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-chat.tsx?t=1744549298430:39:32)
+    at AdminStatusProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-admin-status.tsx?t=1744549298430:21:39)
+    at WebSocketProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-websocket.tsx?t=1744549298430:23:37)
+    at CartProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-cart.tsx:22:32)
+    at AuthProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at App (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.dev/src/App.tsx?t=1744549340554&v=pGVrAGzeMhUI6GEhFJBf6:526:22)
+    at QueryClientProvider (https://898bf2b7-b116-47fa-ab8d-ff87ec15bd15-00-3oc51ohx3pbzw.kirk.replit.d…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2cfb98cb:2805:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+chunk-RPCDYKBN.js?v=2cfb98cb:9129 Uncaught TypeError: products.slice is not a function
+    at SupplierDashboard (dashboard.tsx:515:35)

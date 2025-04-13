@@ -141,16 +141,60 @@ export default function SupplierDashboard() {
   
   // Usar dados do dashboard diretamente da API
   const salesData = useMemo(() => {
-    if (isLoadingDashboard || !dashboardData || !dashboardData.salesChartData) {
+    // Verificação inicial de carregamento e existência dos dados
+    if (isLoadingDashboard || !dashboardData) {
       return [];
     }
     
-    // Transformar dados para o formato esperado pelo gráfico
-    return dashboardData.salesChartData.map(item => ({
-      month: item.date,
-      vendas: item.receita,
-      comissao: item.comissao
-    }));
+    // Verificação explícita se o formato dos dados está correto
+    const chartData = dashboardData.salesChartData;
+    if (!Array.isArray(chartData) || chartData.length === 0) {
+      console.log("Dados de vendas não estão disponíveis ou não estão no formato esperado.");
+      return [];
+    }
+    
+    try {
+      // Transformar dados para o formato esperado pelo gráfico com tratamento de falhas
+      return chartData.map((item, index) => {
+        // Verificar se o item é um objeto válido
+        if (!item || typeof item !== 'object') {
+          console.log(`Item inválido no índice ${index} do chartData`);
+          return {
+            month: `Mês ${index + 1}`,
+            vendas: 0,
+            comissao: 0
+          };
+        }
+        
+        // Extrair valores com fallbacks seguros
+        const date = item.date || `Mês ${index + 1}`;
+        
+        // Converter valores para números com validação
+        let salesValue = 0;
+        let commissionValue = 0;
+        
+        if (item.receita !== undefined && item.receita !== null) {
+          salesValue = typeof item.receita === 'string' 
+            ? parseFloat(item.receita) || 0 
+            : Number(item.receita) || 0;
+        }
+        
+        if (item.comissao !== undefined && item.comissao !== null) {
+          commissionValue = typeof item.comissao === 'string'
+            ? parseFloat(item.comissao) || 0
+            : Number(item.comissao) || 0;
+        }
+        
+        return {
+          month: date,
+          vendas: salesValue,
+          comissao: commissionValue,
+        };
+      }).filter(Boolean); // Remover itens undefined ou null
+    } catch (error) {
+      console.error("Erro ao processar dados do gráfico de vendas:", error);
+      return [];
+    }
   }, [dashboardData, isLoadingDashboard]);
   
   // Extrair métricas do dashboard
@@ -512,28 +556,40 @@ export default function SupplierDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {products.slice(0, 5).map((product) => (
-                          <div key={product.id} className="flex items-center justify-between py-2 border-b">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 mr-3 bg-gray-200 rounded overflow-hidden">
-                                <img
-                                  src={product.imageUrl || "https://via.placeholder.com/40"}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                />
+                        {Array.isArray(products) ? 
+                          // Implementação segura com verificação completa de tipo de dados
+                          products.slice(0, 5).map((product) => (
+                            <div key={product.id} className="flex items-center justify-between py-2 border-b">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 mr-3 bg-gray-200 rounded overflow-hidden">
+                                  <img
+                                    src={product.imageUrl || "https://via.placeholder.com/40"}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // Fallback para imagem padrão em caso de erro
+                                      e.currentTarget.src = "https://via.placeholder.com/40";
+                                      e.currentTarget.onerror = null; // Prevenir loop infinito
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{product.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {formatCurrency(Number(product.price))}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium">{product.name}</p>
-                                <p className="text-sm text-gray-500">
-                                  {formatCurrency(Number(product.price))}
-                                </p>
-                              </div>
+                              <Link href={`/produto/${product.slug}`}>
+                                <Button variant="ghost" size="sm">Ver</Button>
+                              </Link>
                             </div>
-                            <Link href={`/produto/${product.slug}`}>
-                              <Button variant="ghost" size="sm">Ver</Button>
-                            </Link>
+                          ))
+                        : // Renderização de conteúdo vazio com mensagem adequada quando produtos não é um array
+                          <div className="text-center py-4">
+                            <p className="text-gray-500">Carregando lista de produtos...</p>
                           </div>
-                        ))}
+                        }
                       </div>
                     )}
                   </CardContent>
@@ -558,29 +614,50 @@ export default function SupplierDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {dashboardSummary.topProducts.map((item, index) => (
-                          <div key={item?.product?.id || index} className="flex items-center space-x-4">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
-                              #{index + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{item?.product?.name}</p>
-                              <div className="flex items-center text-sm text-gray-500">
-                                <span>{item?.count || 0} vendas</span>
-                                <span className="mx-2">•</span>
-                                <span>{formatCurrency(item?.totalValue || 0)}</span>
+                        {Array.isArray(dashboardSummary.topProducts) ? 
+                          dashboardSummary.topProducts.map((item, index) => {
+                            // Verificações de segurança adicionais para evitar erros
+                            if (!item) return null;
+                            
+                            // Extrair os valores com fallbacks seguros
+                            const productId = item?.product?.id || `produto-${index}`;
+                            const productName = item?.product?.name || `Produto ${index + 1}`;
+                            const salesCount = item?.count || 0;
+                            const totalValue = item?.totalValue || 0;
+                            const percentOfTotal = dashboardSummary.totalSales > 0 
+                              ? (totalValue / dashboardSummary.totalSales * 100) 
+                              : 0;
+                            
+                            return (
+                              <div key={productId} className="flex items-center space-x-4">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
+                                  #{index + 1}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{productName}</p>
+                                  <div className="flex items-center text-sm text-gray-500">
+                                    <span>{salesCount} vendas</span>
+                                    <span className="mx-2">•</span>
+                                    <span>{formatCurrency(totalValue)}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-semibold text-green-600">
+                                    +{percentOfTotal.toFixed(1)}%
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    do total
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-semibold text-green-600">
-                                +{(item?.totalValue / dashboardSummary.totalSales * 100 || 0).toFixed(1)}%
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                do total
-                              </div>
-                            </div>
+                            );
+                          })
+                        : 
+                          // Renderização de fallback quando topProducts não é um array
+                          <div className="text-center py-4">
+                            <p className="text-gray-500">Carregando produtos mais vendidos...</p>
                           </div>
-                        ))}
+                        }
                       </div>
                     )}
                   </CardContent>
