@@ -546,6 +546,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           - Papel do usuário: ${req.user.role}
         `);
         
+        // Debug extra para verificar o tipo de dados
+        console.log("Tipos de dados na comparação:", {
+          productSupplierId: typeof productSupplierId,
+          userId: typeof userId,
+          productSupplierId_valor: productSupplierId,
+          userId_valor: userId
+        });
+        
         if (productSupplierId !== userId) {
           console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} !== ${userId}`);
           return res.status(403).json({ 
@@ -649,6 +657,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           - ID do usuário: ${userId}
           - Papel do usuário: ${req.user.role}
         `);
+        
+        // Debug extra para verificar o tipo de dados
+        console.log("Tipos de dados na comparação:", {
+          productSupplierId: typeof productSupplierId,
+          userId: typeof userId,
+          productSupplierId_valor: productSupplierId,
+          userId_valor: userId
+        });
         
         if (productSupplierId !== userId) {
           console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} !== ${userId}`);
