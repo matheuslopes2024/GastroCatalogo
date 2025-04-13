@@ -2121,11 +2121,28 @@ export class DatabaseStorage implements IStorage {
             if (!isNaN(maxPriceValue)) {
               console.log(`✅ [PREÇO] Valor max_price normalizado: ${maxPriceValue}`);
               
-              // SOLUÇÃO UNIVERSAL: Usar cast() de drizzle para garantir comparação de tipos
-              conditions.push(
-                sql`cast(${products.price} as decimal) <= cast(${maxPriceValue.toString()} as decimal)`
-              );
-              console.log(`✅ [PREÇO] Filtro max_price aplicado com conversão explícita de tipos`);
+              // NOVA SOLUÇÃO UNIVERSAL: Estratégias múltiplas para garantir compatibilidade total
+              try {
+                // Primeiro tenta verificar se o campo price é um número válido antes de comparar
+                conditions.push(
+                  sql`(
+                    -- Estratégia 1: Comparação com validação
+                    (${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND 
+                     ${products.price}::numeric <= ${maxPriceValue}::numeric)
+                    OR
+                    -- Estratégia 2: Conversão de formato brasileiro
+                    (${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND 
+                     REPLACE(${products.price}, ',', '.')::numeric <= ${maxPriceValue}::numeric)
+                  )`
+                );
+                console.log(`✅ [PREÇO] Filtro max_price aplicado com NOVA solução universal multi-estratégia`);
+              } catch (sqlError) {
+                // Fallback para método simplificado - última camada de proteção
+                console.error(`⚠️ [ERRO SQL] Tentando fallback para max_price: ${sqlError}`);
+                conditions.push(
+                  sql`CASE WHEN ${products.price} ~ '^[0-9]' THEN true ELSE false END`
+                );
+              }
             } else {
               console.error(`❌ [PREÇO] Ignorando filtro max_price - valor inválido após normalização`);
             }
@@ -2148,23 +2165,12 @@ export class DatabaseStorage implements IStorage {
           // ===== SEGUNDA ESTRATÉGIA: CONVERSÃO DE TIPOS COM TRATAMENTO ESPECIAL =====
           // Esta abordagem é projetada para lidar com diversos formatos de preço
           
-          // Função auxiliar especial para extrair números de strings
-          conditions.push(sql`
-            CREATE OR REPLACE FUNCTION extract_numeric(text) RETURNS numeric AS $$
-            DECLARE
-              val numeric;
-            BEGIN
-              -- Remove todos os caracteres não numéricos, exceto o ponto decimal
-              val := regexp_replace($1, '[^0-9\.]+', '', 'g');
-              -- Converte para numérico se possível, caso contrário retorna 0
-              BEGIN
-                RETURN val::numeric;
-              EXCEPTION WHEN OTHERS THEN
-                RETURN 0;
-              END;
-            END;
-            $$ LANGUAGE plpgsql;
-          `);
+          // Em vez de criar uma função PostgreSQL (que pode causar problemas de permissão),
+          // vamos usar expressões SQL diretamente para extrair os valores numéricos
+          console.log(`[PREÇO] 🔧 Usando novo método com expressões SQL diretas para converter preços em formato universal`);
+          
+          // Esta abordagem usa expressões SQL padrão para extrair números
+          // em vez de criar funções personalizadas que exigem privilégios elevados
           
           // ===== TERCEIRA ESTRATÉGIA: MÚLTIPLAS ABORDAGENS DE CONVERSÃO =====
           // Para PostgreSQL, aplicar múltiplas estratégias garantindo cobertura completa
@@ -2183,9 +2189,9 @@ export class DatabaseStorage implements IStorage {
                   WHEN ${products.price} ~ '^[0-9]+(,[0-9]+)?$'
                   THEN REPLACE(${products.price}, ',', '.')::numeric
                   
-                  /* Estratégia 3: Tentar extrair números da string */
+                  /* Estratégia 3: Tentar extrair números da string usando função SQL padrão */
                   WHEN ${products.price} ~ '[0-9]'
-                  THEN extract_numeric(${products.price})
+                  THEN CAST(regexp_replace(${products.price}, '[^0-9.]', '', 'g') AS NUMERIC)
                   
                   /* Caso não seja possível converter */
                   ELSE 0 
