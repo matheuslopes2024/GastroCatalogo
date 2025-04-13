@@ -2045,109 +2045,52 @@ export class DatabaseStorage implements IStorage {
         
         // ------ FILTROS DE PREÇO ------
         
-        // Filtro de preço mínimo - implementação UNIVERSAL
-        if (options.minPrice !== undefined) {
-          console.log(`❇️ [PREÇO] Aplicando filtro UNIVERSAL de preço mínimo: "${options.minPrice}" (${typeof options.minPrice})`);
+        // ===== NOVA SOLUÇÃO SIMPLIFICADA PARA FILTRO DE PREÇO =====
+        // Esta solução minimiza expressões SQL complexas que podem causar problemas
+
+        if (options.minPrice !== undefined || options.maxPrice !== undefined) {
+          console.log(`[PREÇO] Aplicando nova implementação simplificada de filtro de preço`);
           
           try {
-            // Tentativa 1: Conversão direta para número
-            let minPriceValue = 0;
+            // Normalizar valores para garantir que são números válidos
+            const minPriceValue = options.minPrice !== undefined ? parseFloat(String(options.minPrice)) : 0;
+            const maxPriceValue = options.maxPrice !== undefined ? parseFloat(String(options.maxPrice)) : 999999;
             
-            if (typeof options.minPrice === 'string') {
-              // Tratar strings em formato brasileiro (com vírgula)
-              let cleanedPrice = options.minPrice.replace(/[^\d.,]/g, '');
-              cleanedPrice = cleanedPrice.replace(',', '.');
-              minPriceValue = parseFloat(cleanedPrice);
-            } else if (typeof options.minPrice === 'number') {
-              minPriceValue = options.minPrice;
-            } else {
-              // Fallback para outros tipos inesperados
-              minPriceValue = parseFloat(String(options.minPrice));
-            }
-            
-            if (!isNaN(minPriceValue)) {
-              console.log(`✅ [PREÇO] Valor min_price normalizado: ${minPriceValue}`);
+            if (!isNaN(minPriceValue) && !isNaN(maxPriceValue)) {
+              console.log(`[PREÇO] Intervalo normalizado: ${minPriceValue} a ${maxPriceValue}`);
               
-              // NOVA SOLUÇÃO UNIVERSAL: Estratégias múltiplas para garantir compatibilidade total
-              try {
-                // Primeiro tenta verificar se o campo price é um número válido antes de comparar
-                conditions.push(
-                  sql`(
-                    -- Estratégia 1: Comparação com validação
-                    (${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND 
-                     ${products.price}::numeric >= ${minPriceValue}::numeric)
-                    OR
-                    -- Estratégia 2: Conversão de formato brasileiro
-                    (${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND 
-                     REPLACE(${products.price}, ',', '.')::numeric >= ${minPriceValue}::numeric)
-                  )`
-                );
-                console.log(`✅ [PREÇO] Filtro min_price aplicado com NOVA solução universal multi-estratégia`);
-              } catch (sqlError) {
-                // Fallback para método simplificado - última camada de proteção
-                console.error(`⚠️ [ERRO SQL] Tentando fallback para min_price: ${sqlError}`);
-                conditions.push(
-                  sql`CASE WHEN ${products.price} ~ '^[0-9]' THEN true ELSE false END`
-                );
-              }
+              // Solução 1: Para preços em formato americano (com ponto)
+              conditions.push(sql`
+                /* Filtro para preços em formato americano (com ponto) */
+                (
+                  ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND
+                  CAST(${products.price} AS FLOAT) >= ${minPriceValue} AND
+                  CAST(${products.price} AS FLOAT) <= ${maxPriceValue}
+                )
+              `);
+              
+              // Solução 2: Para preços em formato brasileiro (com vírgula)
+              conditions.push(sql`
+                /* Filtro para preços em formato brasileiro (com vírgula) */
+                (
+                  ${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND
+                  CAST(REPLACE(${products.price}, ',', '.') AS FLOAT) >= ${minPriceValue} AND
+                  CAST(REPLACE(${products.price}, ',', '.') AS FLOAT) <= ${maxPriceValue}
+                )
+              `);
+              
+              console.log(`[PREÇO] Filtros de preço aplicados com sucesso usando técnica simplificada`);
             } else {
-              console.error(`❌ [PREÇO] Ignorando filtro min_price - valor inválido após normalização`);
+              console.log(`[PREÇO] Valores de intervalo inválidos, usando filtro alternativo`);
+              
+              // Filtro alternativo quando os valores não são números válidos
+              conditions.push(sql`TRUE`); // não filtra por preço neste caso
             }
           } catch (error) {
-            console.error(`❌ [PREÇO] Erro ao processar filtro min_price:`, error);
-          }
-        }
-        
-        // Filtro de preço máximo - implementação UNIVERSAL
-        if (options.maxPrice !== undefined) {
-          console.log(`❇️ [PREÇO] Aplicando filtro UNIVERSAL de preço máximo: "${options.maxPrice}" (${typeof options.maxPrice})`);
-          
-          try {
-            // Tentativa 1: Conversão direta para número
-            let maxPriceValue = 999999;
+            console.error(`[PREÇO] Erro durante aplicação de filtro:`, error);
             
-            if (typeof options.maxPrice === 'string') {
-              // Tratar strings em formato brasileiro (com vírgula)
-              let cleanedPrice = options.maxPrice.replace(/[^\d.,]/g, '');
-              cleanedPrice = cleanedPrice.replace(',', '.');
-              maxPriceValue = parseFloat(cleanedPrice);
-            } else if (typeof options.maxPrice === 'number') {
-              maxPriceValue = options.maxPrice;
-            } else {
-              // Fallback para outros tipos inesperados
-              maxPriceValue = parseFloat(String(options.maxPrice));
-            }
-            
-            if (!isNaN(maxPriceValue)) {
-              console.log(`✅ [PREÇO] Valor max_price normalizado: ${maxPriceValue}`);
-              
-              // NOVA SOLUÇÃO UNIVERSAL: Estratégias múltiplas para garantir compatibilidade total
-              try {
-                // Primeiro tenta verificar se o campo price é um número válido antes de comparar
-                conditions.push(
-                  sql`(
-                    -- Estratégia 1: Comparação com validação
-                    (${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND 
-                     ${products.price}::numeric <= ${maxPriceValue}::numeric)
-                    OR
-                    -- Estratégia 2: Conversão de formato brasileiro
-                    (${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND 
-                     REPLACE(${products.price}, ',', '.')::numeric <= ${maxPriceValue}::numeric)
-                  )`
-                );
-                console.log(`✅ [PREÇO] Filtro max_price aplicado com NOVA solução universal multi-estratégia`);
-              } catch (sqlError) {
-                // Fallback para método simplificado - última camada de proteção
-                console.error(`⚠️ [ERRO SQL] Tentando fallback para max_price: ${sqlError}`);
-                conditions.push(
-                  sql`CASE WHEN ${products.price} ~ '^[0-9]' THEN true ELSE false END`
-                );
-              }
-            } else {
-              console.error(`❌ [PREÇO] Ignorando filtro max_price - valor inválido após normalização`);
-            }
-          } catch (error) {
-            console.error(`❌ [PREÇO] Erro ao processar filtro max_price:`, error);
+            // Garantir que o programa não falhe em caso de erro
+            conditions.push(sql`TRUE`); // não filtra por preço neste caso
           }
         }
         
