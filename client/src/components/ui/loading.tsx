@@ -1,55 +1,33 @@
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function Loading() {
+interface LoadingProps {
+  className?: string;
+  size?: "sm" | "md" | "lg";
+  text?: string;
+}
+
+export function Loading({ className, size = "md", text }: LoadingProps) {
+  const sizeMap = {
+    sm: "h-4 w-4",
+    md: "h-8 w-8",
+    lg: "h-12 w-12"
+  };
+
   return (
-    <div className="flex justify-center items-center p-4">
-      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    <div className={cn("flex flex-col items-center justify-center py-6", className)}>
+      <Loader2 className={cn("animate-spin text-primary", sizeMap[size])} />
+      {text && <p className="mt-2 text-sm text-gray-500">{text}</p>}
     </div>
   );
 }
 
-export function FullPageLoading() {
+// Componente para exibir um indicador de carregamento em tela cheia
+export function FullPageLoading({ text = "Carregando..." }: { text?: string }) {
   return (
-    <div className="flex justify-center items-center min-h-screen">
-      <Loader2 className="h-10 w-10 animate-spin text-primary" />
-    </div>
-  );
-}
-
-export function ComparisonSkeleton() {
-  return (
-    <div className="space-y-8">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
-          <div className="bg-gray-50 p-3 border-b border-gray-200">
-            <div className="h-6 w-1/3 bg-gray-200 rounded animate-pulse mb-2"></div>
-            <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-          
-          <div className="divide-y divide-gray-100">
-            {[1, 2, 3].map((j) => (
-              <div key={j} className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-6 w-1/2 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-1/3 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-8 w-full bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-8 w-full bg-gray-200 rounded animate-pulse"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-50">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <p className="mt-4 text-gray-600 font-medium">{text}</p>
     </div>
   );
 }
