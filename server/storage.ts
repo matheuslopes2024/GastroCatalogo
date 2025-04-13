@@ -384,7 +384,7 @@ export class MemStorage implements IStorage {
   // Product methods
   async getProduct(id: number): Promise<Product | undefined> {
     try {
-      const [product] = await db.select().from(products).where(eq(products.id, id));
+      const [product] = await db.select().from(products).where(eq(products.id, id)).execute();
       return product;
     } catch (error) {
       console.error("Erro ao buscar produto:", error);
@@ -444,7 +444,8 @@ export class MemStorage implements IStorage {
         .update(products)
         .set(productData)
         .where(eq(products.id, id))
-        .returning();
+        .returning()
+        .execute();
       
       console.log(`Produto ${id} atualizado com sucesso:`, updatedProduct);
       return updatedProduct;
