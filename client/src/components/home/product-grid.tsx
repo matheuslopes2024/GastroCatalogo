@@ -231,6 +231,10 @@ export function ProductGrid() {
           }
         );
         
+        if (!res.ok) {
+          throw new Error(`Erro na requisição: ${res.status} ${res.statusText}`);
+        }
+        
         const responseData = await res.json();
         console.log('ProductGrid: Resposta da API:', responseData);
         
@@ -246,12 +250,12 @@ export function ProductGrid() {
         
         // Verificar se temos os produtos específicos que estamos procurando
         // Usando toLowerCase() para garantir que a pesquisa não seja sensível a maiúsculas/minúsculas
-        const hasMessiProduct = productsArray.some(p => p.name.toLowerCase().includes('messi'));
-        const hasCR7Product = productsArray.some(p => p.name.toLowerCase().includes('cr7'));
+        const hasMessiProduct = productsArray.some(p => p.name && p.name.toLowerCase().includes('messi'));
+        const hasCR7Product = productsArray.some(p => p.name && p.name.toLowerCase().includes('cr7'));
         
         // Encontrar e logar os produtos específicos para diagnóstico
-        const messiProducts = productsArray.filter(p => p.name.toLowerCase().includes('messi'));
-        const cr7Products = productsArray.filter(p => p.name.toLowerCase().includes('cr7'));
+        const messiProducts = productsArray.filter(p => p.name && p.name.toLowerCase().includes('messi'));
+        const cr7Products = productsArray.filter(p => p.name && p.name.toLowerCase().includes('cr7'));
         
         console.log(`ProductGrid: Produtos específicos: MESSI=${hasMessiProduct} (${messiProducts.length} encontrados), CR7=${hasCR7Product} (${cr7Products.length} encontrados)`);
         if (messiProducts.length > 0) {
@@ -265,12 +269,18 @@ export function ProductGrid() {
         setProducts(productsArray); // Removida a limitação para mostrar mais produtos
         setLoading(false);
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error);
+        console.error('Erro ao buscar produtos destacados:', error);
+        // Garantir que temos algum feedback visual para o usuário
+        setProducts([]);
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchProducts().catch(error => {
+      console.error('Erro não tratado ao buscar produtos:', error);
+      setProducts([]);
+      setLoading(false);
+    });
   }, []);
 
   if (loading) {
