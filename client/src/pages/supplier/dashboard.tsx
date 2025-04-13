@@ -128,10 +128,25 @@ export default function SupplierDashboard() {
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
-  // Fetch recent products
+  // Fetch recent products - garantir que sejam apenas os produtos do fornecedor logado
   const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["/api/products", { supplierId: user?.id, limit: 5 }],
-    enabled: !!user?.id,
+    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
+    // Log detalhado para depuração
+    onSuccess: (data) => {
+      console.log(`Produtos carregados para fornecedor ID ${user?.id}:`, 
+        Array.isArray(data) ? data.length : 
+        (data?.data?.length || 0)
+      );
+    },
+    onError: (error) => {
+      console.error("Erro ao carregar produtos do fornecedor:", error);
+      toast({
+        title: "Erro ao carregar produtos",
+        description: "Não foi possível carregar seus produtos. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
   });
   
   // Assegurar que products é sempre um array, mesmo quando a API retorna um objeto
@@ -695,8 +710,21 @@ export default function SupplierDashboard() {
                     ) : (
                       <div className="space-y-2">
                         {Array.isArray(products) ? 
-                          // Implementação segura com verificação completa de tipo de dados
-                          products.slice(0, 5).map((product) => (
+                          // Garantir que apenas produtos do fornecedor atual sejam mostrados
+                          products
+                            .filter(product => {
+                              const productSupplierId = Number(product.supplierId);
+                              const currentUserId = Number(user?.id);
+                              const belongsToCurrentSupplier = productSupplierId === currentUserId;
+                              
+                              // Log para debug e transparência
+                              if (!belongsToCurrentSupplier) {
+                                console.log(`[Segurança] Produto ${product.id} (fornecedor ${productSupplierId}) filtrado - não pertence ao fornecedor atual (${currentUserId})`);
+                              }
+                              
+                              return belongsToCurrentSupplier;
+                            })
+                            .slice(0, 5).map((product) => (
                             <div key={product.id} className="flex items-center justify-between py-2 border-b">
                               <div className="flex items-center">
                                 <div className="w-10 h-10 mr-3 bg-gray-200 rounded overflow-hidden">
@@ -712,7 +740,12 @@ export default function SupplierDashboard() {
                                   />
                                 </div>
                                 <div>
-                                  <p className="font-medium">{product.name}</p>
+                                  <p className="font-medium">
+                                    {product.name}
+                                    <span className="ml-1 text-xs text-gray-400">
+                                      (ID: {product.id})
+                                    </span>
+                                  </p>
                                   <p className="text-sm text-gray-500">
                                     {formatCurrency(Number(product.price))}
                                   </p>
@@ -753,7 +786,23 @@ export default function SupplierDashboard() {
                     ) : (
                       <div className="space-y-4">
                         {Array.isArray(dashboardSummary.topProducts) ? 
-                          dashboardSummary.topProducts.map((item, index) => {
+                          // Filtrar para garantir que apenas produtos do fornecedor atual sejam mostrados
+                          dashboardSummary.topProducts
+                            .filter(item => {
+                              if (!item || !item.product) return false;
+                              
+                              const productSupplierId = Number(item.product.supplierId);
+                              const currentUserId = Number(user?.id);
+                              const belongsToCurrentSupplier = productSupplierId === currentUserId;
+                              
+                              // Log para debug e transparência
+                              if (!belongsToCurrentSupplier) {
+                                console.log(`[Segurança] Top produto ${item.product.id} (fornecedor ${productSupplierId}) filtrado - não pertence ao fornecedor atual (${currentUserId})`);
+                              }
+                              
+                              return belongsToCurrentSupplier;
+                            })
+                            .map((item, index) => {
                             // Verificações de segurança adicionais para evitar erros
                             if (!item) return null;
                             
