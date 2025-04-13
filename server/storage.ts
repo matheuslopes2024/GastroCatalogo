@@ -383,7 +383,13 @@ export class MemStorage implements IStorage {
   
   // Product methods
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    try {
+      const [product] = await db.select().from(products).where(eq(products.id, id));
+      return product;
+    } catch (error) {
+      console.error("Erro ao buscar produto:", error);
+      return undefined;
+    }
   }
   
   async getProductBySlug(slug: string): Promise<Product | undefined> {
@@ -430,12 +436,22 @@ export class MemStorage implements IStorage {
   }
   
   async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
-    const product = await this.getProduct(id);
-    if (!product) return undefined;
-    
-    const updatedProduct = { ...product, ...productData };
-    this.products.set(id, updatedProduct);
-    return updatedProduct;
+    try {
+      const product = await this.getProduct(id);
+      if (!product) return undefined;
+      
+      const [updatedProduct] = await db
+        .update(products)
+        .set(productData)
+        .where(eq(products.id, id))
+        .returning();
+      
+      console.log(`Produto ${id} atualizado com sucesso:`, updatedProduct);
+      return updatedProduct;
+    } catch (error) {
+      console.error("Erro ao atualizar produto:", error);
+      return undefined;
+    }
   }
   
   // Método específico para buscar produtos por fornecedor com opções avançadas
