@@ -586,7 +586,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Suppliers can only delete their own products
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
-        // Correção: usar supplierId em vez de supplier_id para corresponder ao modelo do produto
         const productSupplierId = Number(product.supplierId);
         const userId = Number(req.user.id);
         
@@ -610,9 +609,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Garantir que estamos mantendo o supplierId consistente na operação de exclusão lógica
+      // (importante para manter a consistência de dados)
+      const deleteData = { 
+        active: false,
+        supplierId: product.supplierId // Mantenha o ID do fornecedor original
+      };
+      
+      console.log("Desativando produto ID:", id, "do fornecedor:", product.supplierId);
+      
       // Podemos realmente excluir o produto ou apenas marcá-lo como inativo
       // Neste caso, optamos por marcá-lo como inativo, preservando os dados
-      const deletedProduct = await storage.updateProduct(id, { active: false });
+      const deletedProduct = await storage.updateProduct(id, deleteData);
       res.json(deletedProduct);
     } catch (error) {
       console.error("Erro ao excluir produto:", error);
