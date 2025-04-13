@@ -306,17 +306,66 @@ export default function SupplierCommissions() {
   // Função para buscar uma comissão específica para edição
   const handleEditCommission = async (commissionId: number) => {
     try {
-      const response = await fetch(`/api/supplier/products/commissions/${commissionId}`);
-      if (!response.ok) {
-        throw new Error("Falha ao buscar detalhes da comissão");
-      }
+      console.log(`Buscando comissão com ID ${commissionId} para edição`);
       
-      const commissionData = await response.json();
-      setEditingCommission(commissionData);
+      // Usar try/catch específico para a requisição de busca da comissão
+      try {
+        const response = await fetch(`/api/supplier/products/commissions/${commissionId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          console.warn(`Resposta não ok do endpoint: ${response.status} ${response.statusText}`);
+          
+          // Mesmo se a resposta não for OK, tentamos extrair o corpo da resposta
+          // pois nosso endpoint pode retornar dados mesmo em casos de erro
+          const errorBody = await response.json().catch(() => null);
+          console.log("Corpo da resposta de erro:", errorBody);
+          
+          // Se não conseguimos extrair o corpo da resposta ou o corpo não contém dados úteis
+          if (!errorBody || errorBody.error) {
+            throw new Error(errorBody?.error || "Falha ao buscar detalhes da comissão");
+          }
+          
+          // Se temos dados mesmo com status não-OK, usamos esses dados
+          setEditingCommission(errorBody);
+        } else {
+          const commissionData = await response.json();
+          console.log("Dados da comissão recebidos:", commissionData);
+          setEditingCommission(commissionData);
+        }
+      } catch (fetchError) {
+        console.error("Erro ao buscar comissão:", fetchError);
+        
+        // Se ocorrer um erro na busca, criamos comissão temporária com dados básicos
+        // Isso garante que o modal de edição ainda abra mesmo em caso de erro na API
+        const fallbackCommission = {
+          id: commissionId,
+          productId: null,
+          rate: "0",
+          active: true,
+          remarks: "",
+          validUntil: null,
+          createdAt: new Date()
+        };
+        
+        setEditingCommission(fallbackCommission);
+        
+        // Notificamos o usuário que estamos usando dados temporários
+        toast({
+          title: "Atenção",
+          description: "Usando dados temporários para edição. Alguns campos podem estar vazios.",
+          variant: "warning"
+        });
+      }
       
       // Buscar o produto relacionado
       const product = productsWithCommissions.find((item: ProductCommission) => 
-        item.product.id === commissionData.productId
+        item.commission.settingId === commissionId
       )?.product || null;
       
       setSelectedProduct(product);
