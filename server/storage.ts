@@ -2043,160 +2043,53 @@ export class DatabaseStorage implements IStorage {
           conditions.push(eq(products.active, options.active));
         }
         
-        // ------ FILTROS DE PREÇO ------
+        // ------ FILTROS DE PREÇO - VERSÃO FINAL ULTRA-SIMPLIFICADA ------
+        // Nova implementação baseada em SQL limpo e direto, evitando expressões complexas
+        // que podem causar erros em alguns cenários
         
-        // ===== NOVA SOLUÇÃO SIMPLIFICADA PARA FILTRO DE PREÇO =====
-        // Esta solução minimiza expressões SQL complexas que podem causar problemas
-
         if (options.minPrice !== undefined || options.maxPrice !== undefined) {
-          console.log(`[PREÇO] Aplicando nova implementação simplificada de filtro de preço`);
+          console.log(`[PREÇO] Aplicando filtro de preço com novo algoritmo simplificado`);
           
           try {
-            // Normalizar valores para garantir que são números válidos
-            const minPriceValue = options.minPrice !== undefined ? parseFloat(String(options.minPrice)) : 0;
-            const maxPriceValue = options.maxPrice !== undefined ? parseFloat(String(options.maxPrice)) : 999999;
+            // 1. Pre-processamento dos valores - usando valores padrão seguros caso necessário
+            const minPriceValue = options.minPrice !== undefined ? Number(options.minPrice) : 0;
+            const maxPriceValue = options.maxPrice !== undefined ? Number(options.maxPrice) : 999999;
             
             if (!isNaN(minPriceValue) && !isNaN(maxPriceValue)) {
-              console.log(`[PREÇO] Intervalo normalizado: ${minPriceValue} a ${maxPriceValue}`);
+              console.log(`[PREÇO] Intervalo de preço filtrado: ${minPriceValue} a ${maxPriceValue}`);
               
-              // Solução 1: Para preços em formato americano (com ponto)
+              // 2. Aplicar um único filtro simplificado usando OR lógico para diferentes formatos
               conditions.push(sql`
-                /* Filtro para preços em formato americano (com ponto) */
+                /* Filtro de preço universal simplificado */
                 (
-                  ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND
-                  CAST(${products.price} AS FLOAT) >= ${minPriceValue} AND
-                  CAST(${products.price} AS FLOAT) <= ${maxPriceValue}
+                  /* Formato americano: preço com ponto (123.45) */
+                  (
+                    ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' AND
+                    ${products.price}::float BETWEEN ${minPriceValue}::float AND ${maxPriceValue}::float
+                  )
+                  
+                  OR
+                  
+                  /* Formato brasileiro: preço com vírgula (123,45) */
+                  (
+                    ${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND
+                    REPLACE(${products.price}, ',', '.')::float BETWEEN ${minPriceValue}::float AND ${maxPriceValue}::float
+                  )
                 )
               `);
               
-              // Solução 2: Para preços em formato brasileiro (com vírgula)
-              conditions.push(sql`
-                /* Filtro para preços em formato brasileiro (com vírgula) */
-                (
-                  ${products.price} ~ '^[0-9]+(,[0-9]+)?$' AND
-                  CAST(REPLACE(${products.price}, ',', '.') AS FLOAT) >= ${minPriceValue} AND
-                  CAST(REPLACE(${products.price}, ',', '.') AS FLOAT) <= ${maxPriceValue}
-                )
-              `);
+              // Adicionar filtro de segurança para garantir que apenas produtos com preço válido sejam filtrados
+              conditions.push(sql`${products.price} IS NOT NULL`);
               
-              console.log(`[PREÇO] Filtros de preço aplicados com sucesso usando técnica simplificada`);
+              console.log(`[PREÇO] Filtro de preço aplicado com sucesso`);
             } else {
-              console.log(`[PREÇO] Valores de intervalo inválidos, usando filtro alternativo`);
-              
-              // Filtro alternativo quando os valores não são números válidos
-              conditions.push(sql`TRUE`); // não filtra por preço neste caso
+              console.log(`[PREÇO] Ignorando filtro de preço - valores de entrada inválidos (não numéricos)`);
+              // Não aplicar filtro se os valores forem inválidos
             }
           } catch (error) {
-            console.error(`[PREÇO] Erro durante aplicação de filtro:`, error);
-            
-            // Garantir que o programa não falhe em caso de erro
-            conditions.push(sql`TRUE`); // não filtra por preço neste caso
+            console.error(`[PREÇO] Erro ao aplicar filtro de preço:`, error);
+            // Em caso de erro, não aplicar o filtro para permitir que a consulta continue
           }
-        }
-        
-        // Implementação ultra-robusta para casos onde minPrice ou maxPrice podem estar presentes
-        if (options.minPrice !== undefined || options.maxPrice !== undefined) {
-          // Log detalhado para depuração do filtro de preço
-          console.log(`[DEBUG PREÇO] Aplicando filtros de preço ultra-robustos...`);
-          console.log(`[DEBUG PREÇO] Faixa de preço definida: ${options.minPrice || 0} a ${options.maxPrice || 'infinito'}`);
-          
-          // ===== PRIMEIRA ESTRATÉGIA: FILTRO POR REGEX ====
-          // Garantir que apenas preços com formato válido sejam considerados
-          // Isso evita problemas onde o preço pode estar armazenado em formato não-numérico
-          conditions.push(sql`(${products.price} IS NOT NULL AND ${products.price} ~ '^[0-9]*\.?[0-9]+$')`);
-          
-          // ===== SEGUNDA ESTRATÉGIA: CONVERSÃO DE TIPOS COM TRATAMENTO ESPECIAL =====
-          // Esta abordagem é projetada para lidar com diversos formatos de preço
-          
-          // Em vez de criar uma função PostgreSQL (que pode causar problemas de permissão),
-          // vamos usar expressões SQL diretamente para extrair os valores numéricos
-          console.log(`[PREÇO] 🔧 Usando novo método com expressões SQL diretas para converter preços em formato universal`);
-          
-          // Esta abordagem usa expressões SQL padrão para extrair números
-          // em vez de criar funções personalizadas que exigem privilégios elevados
-          
-          // ===== TERCEIRA ESTRATÉGIA: MÚLTIPLAS ABORDAGENS DE CONVERSÃO =====
-          // Para PostgreSQL, aplicar múltiplas estratégias garantindo cobertura completa
-          
-          if (options.minPrice !== undefined) {
-            console.log(`[DEBUG PREÇO] Aplicando filtro aprimorado para preço mínimo: ${options.minPrice}`);
-            conditions.push(sql`
-              /* Filtro altamente robusto para preço mínimo */
-              (
-                CASE
-                  /* Estratégia 1: Tentar conversão direta quando o formato é numérico válido */
-                  WHEN ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' 
-                  THEN ${products.price}::numeric 
-                  
-                  /* Estratégia 2: Tentar conversão após substituir vírgula por ponto */
-                  WHEN ${products.price} ~ '^[0-9]+(,[0-9]+)?$'
-                  THEN REPLACE(${products.price}, ',', '.')::numeric
-                  
-                  /* Estratégia 3: Tentar extrair números da string usando função SQL padrão */
-                  WHEN ${products.price} ~ '[0-9]'
-                  THEN CAST(regexp_replace(${products.price}, '[^0-9.]', '', 'g') AS NUMERIC)
-                  
-                  /* Caso não seja possível converter */
-                  ELSE 0 
-                END >= ${options.minPrice}::numeric
-              )
-            `);
-          }
-          
-          if (options.maxPrice !== undefined) {
-            console.log(`[DEBUG PREÇO] Aplicando filtro aprimorado para preço máximo: ${options.maxPrice}`);
-            conditions.push(sql`
-              /* Filtro altamente robusto para preço máximo */
-              (
-                CASE
-                  /* Estratégia 1: Tentar conversão direta quando o formato é numérico válido */
-                  WHEN ${products.price} ~ '^[0-9]+(\.[0-9]+)?$' 
-                  THEN ${products.price}::numeric 
-                  
-                  /* Estratégia 2: Tentar conversão após substituir vírgula por ponto */
-                  WHEN ${products.price} ~ '^[0-9]+(,[0-9]+)?$'
-                  THEN REPLACE(${products.price}, ',', '.')::numeric
-                  
-                  /* Estratégia 3: Tentar extrair números da string usando função SQL padrão */
-                  WHEN ${products.price} ~ '[0-9]'
-                  THEN CAST(regexp_replace(${products.price}, '[^0-9.]', '', 'g') AS NUMERIC)
-                  
-                  /* Caso não seja possível converter, usar valor muito alto */
-                  ELSE 999999999
-                END <= ${options.maxPrice}::numeric
-              )
-            `);
-          }
-          
-          // ===== QUARTA ESTRATÉGIA: FILTRO DE FAILSAFE =====
-          // Este filtro funciona como último recurso, garantindo que mesmo se houver
-          // erros nas conversões anteriores, o filtro ainda funcione
-          
-          if (options.minPrice !== undefined && options.maxPrice !== undefined) {
-            console.log(`[DEBUG PREÇO] Aplicando estratégia de failsafe para intervalo de preço...`);
-            try {
-              const minPrice = parseFloat(options.minPrice.toString());
-              const maxPrice = parseFloat(options.maxPrice.toString());
-              
-              // Para evitar consultas muito pesadas, limitamos o intervalo de preço para failsafe
-              const minPriceStr = Math.max(0, Math.floor(minPrice)).toString();
-              const maxPriceStr = Math.min(999999, Math.ceil(maxPrice)).toString();
-              
-              // Filtro de failsafe que tenta corresponder o preço como substring
-              conditions.push(sql`(
-                ${products.price} ~ '[0-9]' AND (
-                  /* Tentar encontrar valores numéricos que estejam dentro do intervalo */
-                  CAST(regexp_replace(${products.price}, '[^0-9]', '', 'g') AS TEXT) >= ${minPriceStr} AND 
-                  CAST(regexp_replace(${products.price}, '[^0-9]', '', 'g') AS TEXT) <= ${maxPriceStr}
-                )
-              )`);
-            } catch (error) {
-              console.error(`[DEBUG PREÇO] Erro ao aplicar estratégia de failsafe:`, error);
-            }
-          }
-          
-          // Diagnóstico adicional para garantir que os dados estão sendo manipulados corretamente
-          console.log(`[DEBUG PREÇO] Total de condições SQL aplicadas: ${conditions.length}`);
         }
         
         // ------ FILTROS DE PESQUISA ------
