@@ -554,8 +554,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId_valor: userId
         });
         
-        if (productSupplierId !== userId) {
-          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} !== ${userId}`);
+        // Verificar se os números são realmente iguais
+        if (Number(productSupplierId) !== Number(userId)) {
+          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} (${typeof productSupplierId}) !== ${userId} (${typeof userId})`);
           return res.status(403).json({ 
             message: "Sem permissão para editar este produto",
             debug: {
@@ -666,8 +667,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId_valor: userId
         });
         
-        if (productSupplierId !== userId) {
-          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} !== ${userId}`);
+        // Verificar se os números são realmente iguais
+        if (Number(productSupplierId) !== Number(userId)) {
+          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} (${typeof productSupplierId}) !== ${userId} (${typeof userId})`);
           return res.status(403).json({ 
             message: "Sem permissão para excluir este produto",
             debug: {
