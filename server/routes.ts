@@ -888,32 +888,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
+      // 1. Validação e preparação dos dados
       console.log("Iniciando processo de criação de produto");
       console.log("Dados recebidos:", JSON.stringify(req.body, null, 2));
       
-      const validatedData = insertProductSchema.parse(req.body);
-      console.log("Dados validados com sucesso pelo Zod");
+      // Verificações manuais preliminares para mensagens de erro mais específicas
+      if (!req.body.name || typeof req.body.name !== 'string' || req.body.name.trim().length < 3) {
+        console.error("Nome de produto inválido:", req.body.name);
+        return res.status(400).json({ 
+          message: "O nome do produto deve ter pelo menos 3 caracteres",
+          field: "name"
+        });
+      }
       
-      // If user is a supplier, force supplierId to be their user ID
+      if (!req.body.description || typeof req.body.description !== 'string' || req.body.description.trim().length < 10) {
+        console.error("Descrição de produto inválida:", req.body.description);
+        return res.status(400).json({ 
+          message: "A descrição do produto deve ter pelo menos 10 caracteres",
+          field: "description"
+        });
+      }
+      
+      if (!req.body.categoryId || isNaN(Number(req.body.categoryId)) || Number(req.body.categoryId) <= 0) {
+        console.error("Categoria de produto inválida:", req.body.categoryId);
+        return res.status(400).json({ 
+          message: "A categoria do produto é obrigatória e deve ser um número válido",
+          field: "categoryId"
+        });
+      }
+      
+      if (!req.body.price || isNaN(Number(req.body.price)) || Number(req.body.price) <= 0) {
+        console.error("Preço de produto inválido:", req.body.price);
+        return res.status(400).json({ 
+          message: "O preço do produto deve ser um número positivo válido",
+          field: "price"
+        });
+      }
+      
+      // Validar com o schema Zod
+      try {
+        var validatedData = insertProductSchema.parse(req.body);
+        console.log("Dados validados com sucesso pelo Zod");
+      } catch (zodError) {
+        if (zodError instanceof z.ZodError) {
+          console.log("Erro de validação Zod:", JSON.stringify(zodError.errors, null, 2));
+          return res.status(400).json({ 
+            message: "Dados inválidos para criação do produto", 
+            errors: zodError.errors 
+          });
+        }
+        throw zodError; // Se não for um erro Zod, propagar para o handler geral
+      }
+      
+      // 2. Tratamento da identificação do fornecedor
       if (req.user?.role === UserRole.SUPPLIER) {
         validatedData.supplierId = req.user.id;
         console.log(`Definindo supplierId para o ID do fornecedor: ${req.user.id}`);
+      } else if (!validatedData.supplierId) {
+        console.error("ID do fornecedor não fornecido e usuário não é fornecedor");
+        return res.status(400).json({ 
+          message: "ID do fornecedor é obrigatório",
+          field: "supplierId"
+        });
       }
       
-      console.log("Enviando dados para storage.createProduct:", JSON.stringify(validatedData, null, 2));
-      const product = await storage.createProduct(validatedData);
-      console.log("Produto criado com sucesso:", JSON.stringify(product, null, 2));
+      // 3. Validação das categorias adicionais
+      if (validatedData.additionalCategories) {
+        if (!Array.isArray(validatedData.additionalCategories)) {
+          console.warn("Convertendo additionalCategories para array");
+          validatedData.additionalCategories = [validatedData.additionalCategories].filter(Boolean);
+        }
+        
+        // Verificar se as categorias adicionais são válidas
+        const invalidCategories = (validatedData.additionalCategories || []).filter(
+          catId => !catId || isNaN(Number(catId)) || Number(catId) <= 0
+        );
+        
+        if (invalidCategories.length > 0) {
+          console.error("Categorias adicionais inválidas:", invalidCategories);
+          validatedData.additionalCategories = (validatedData.additionalCategories || []).filter(
+            catId => catId && !isNaN(Number(catId)) && Number(catId) > 0
+          );
+          console.log("Categorias adicionais filtradas:", validatedData.additionalCategories);
+        }
+      }
       
+      // 4. Tratamento da imagem
+      if (!validatedData.imageUrl && !validatedData.imageData) {
+        console.log("Nenhuma imagem fornecida, usando placeholder");
+        validatedData.imageUrl = "https://via.placeholder.com/400x300?text=Produto";
+      }
+      
+      // 5. Criar produto no banco de dados
+      console.log("Enviando dados para storage.createProduct:", JSON.stringify(validatedData, null, 2));
+      try {
+        var product = await storage.createProduct(validatedData);
+        console.log("Produto criado com sucesso:", JSON.stringify(product, null, 2));
+      } catch (dbError: any) {
+        if (dbError.message?.includes("duplicada") || dbError.message?.includes("duplicate")) {
+          return res.status(409).json({ 
+            message: "Já existe um produto com este nome ou slug",
+            field: "name"
+          });
+        }
+        if (dbError.message?.includes("chave estrangeira") || dbError.message?.includes("foreign key")) {
+          return res.status(400).json({ 
+            message: "Referência inválida. Verifique se a categoria e o fornecedor existem.",
+            field: dbError.message.includes("categoryId") ? "categoryId" : "supplierId"
+          });
+        }
+        throw dbError; // Se não for um erro conhecido, propagar para o handler geral
+      }
+      
+      // 6. Responder com sucesso
       res.status(201).json(product);
-    } catch (error) {
+    } catch (error: any) {
+      // 7. Tratamento de erros genéricos
       console.error("Erro detalhado ao criar produto:", error);
       
-      if (error instanceof z.ZodError) {
-        console.log("Erro de validação Zod:", JSON.stringify(error.errors, null, 2));
-        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
-      }
+      // Determinar o código de status HTTP apropriado
+      const statusCode = error.status || 500;
       
-      res.status(500).json({ message: "Erro ao criar produto" });
+      // Enviar uma resposta de erro detalhada com código de status apropriado
+      res.status(statusCode).json({ 
+        message: error.message || "Erro ao criar produto",
+        errorCode: error.code || "UNKNOWN_ERROR",
+        status: statusCode
+      });
     }
   });
   

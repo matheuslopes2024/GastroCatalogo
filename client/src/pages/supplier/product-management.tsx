@@ -355,11 +355,30 @@ export default function ProductManagement() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      // Usamos a nova rota DELETE agora
-      return apiRequest("DELETE", `/api/products/${id}`);
+      console.log("Iniciando mutação de exclusão do produto ID:", id);
+      
+      if (!id || isNaN(id) || id <= 0) {
+        throw new Error("ID de produto inválido para exclusão");
+      }
+      
+      // Tentativa de exclusão com tratamento de erros aprimorado
+      try {
+        const response = await apiRequest("DELETE", `/api/products/${id}`);
+        
+        if (!response.ok) {
+          // Tentar extrair a mensagem de erro da resposta
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Erro ao excluir produto (${response.status})`);
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Erro na requisição de exclusão:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
-      // Invalidar a consulta principal
+      // Invalidar a consulta principal imediatamente para garantir dados atualizados
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       
       // Atualizar a interface em tempo real removendo o produto desativado
@@ -381,6 +400,8 @@ export default function ProductManagement() {
             }
           } catch (e) {
             console.error("Erro ao processar resposta de exclusão:", e);
+            // Em caso de erro ao processar a resposta, garantir atualização dos dados
+            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
           }
         }).catch(e => {
           console.error("Falha ao processar texto da resposta:", e);
@@ -397,16 +418,21 @@ export default function ProductManagement() {
       setDeletingProduct(null);
       toast({
         title: "Produto excluído",
-        description: "O produto foi excluído com sucesso",
+        description: "O produto foi desativado com sucesso e não será mais exibido nas buscas",
+        duration: 5000,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Erro detalhado na exclusão do produto:", error);
       toast({
         title: "Erro ao excluir produto",
-        description: "Ocorreu um erro ao excluir o produto. Por favor, tente novamente.",
+        description: error.message || "Ocorreu um erro ao excluir o produto. Por favor, tente novamente.",
         variant: "destructive",
+        duration: 5000,
       });
+      
+      // Manter o diálogo aberto em caso de erro para que o usuário possa tentar novamente
+      // ou fechar manualmente
     },
   });
   
@@ -512,29 +538,99 @@ export default function ProductManagement() {
     
     console.log("Enviando dados de edição:", data);
     
-    // Versão completa do produto para edição
-    const productData = {
-      id: editingProduct.id,
-      name: data.name,
-      description: data.description,
-      slug: editingProduct.slug,
-      categoryId: data.categoryId,
-      additionalCategories: data.additionalCategories || [], // Adicionando categorias adicionais
-      supplierId: data.supplierId || user?.id,
-      price: data.price ? data.price.toString() : "0",
-      imageUrl: data.imageUrl,
-      active: true,
-      features: [],
-      discount: data.discount,
-      originalPrice: data.originalPrice,
-      imageData: data.imageData,
-      imageType: data.imageType,
-      rating: editingProduct.rating,
-      ratingsCount: editingProduct.ratingsCount || 0
-    };
-    
-    console.log("Dados simplificados para edição:", productData);
-    updateProductMutation.mutate(productData as ProductFormValues & { id: number });
+    try {
+      // Validações adicionais antes de submeter o formulário de edição
+      if (!data.name || data.name.trim().length < 3) {
+        toast({
+          title: "Nome inválido",
+          description: "O nome do produto deve ter pelo menos 3 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.description || data.description.trim().length < 10) {
+        toast({
+          title: "Descrição inválida",
+          description: "A descrição do produto deve ter pelo menos 10 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.categoryId) {
+        toast({
+          title: "Categoria obrigatória",
+          description: "Selecione uma categoria principal para o produto",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.price || isNaN(Number(data.price)) || Number(data.price) <= 0) {
+        toast({
+          title: "Preço inválido",
+          description: "O preço do produto deve ser um número positivo",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Certifique-se de que o supplierId esteja definido
+      const supplierId = data.supplierId || user?.id;
+      if (!supplierId) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Não foi possível identificar o fornecedor. Tente fazer login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Extrair features do formulário, que vem como string
+      let features: string[] = [];
+      if (typeof data.features === 'string' && data.features.trim().length > 0) {
+        features = data.features.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+      } else if (Array.isArray(data.features)) {
+        features = data.features;
+      }
+      
+      // Versão completa do produto para edição com validações aprimoradas
+      const productData = {
+        id: editingProduct.id,
+        name: data.name.trim(),
+        description: data.description.trim(),
+        slug: editingProduct.slug,
+        categoryId: data.categoryId,
+        additionalCategories: Array.isArray(data.additionalCategories) ? data.additionalCategories : [],
+        supplierId: supplierId,
+        price: data.price ? data.price.toString() : "0",
+        imageUrl: data.imageUrl || editingProduct.imageUrl,
+        active: true,
+        features: features,
+        discount: data.discount || null,
+        originalPrice: data.originalPrice || null,
+        imageData: data.imageData || null,
+        imageType: data.imageType || null,
+        rating: editingProduct.rating,
+        ratingsCount: editingProduct.ratingsCount || 0,
+        stockQuantity: editingProduct.stockQuantity || 0,
+        stockStatus: editingProduct.stockStatus || "in_stock",
+        stockAlert: editingProduct.stockAlert || 5
+      };
+      
+      console.log("Dados completos para edição:", productData);
+      updateProductMutation.mutate(productData as ProductFormValues & { id: number });
+    } catch (error) {
+      console.error("Erro na validação do formulário de edição:", error);
+      toast({
+        title: "Erro na validação",
+        description: "Ocorreu um erro ao processar os dados do formulário. Verifique todos os campos.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Handler for confirming product deletion
