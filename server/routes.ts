@@ -79,6 +79,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Dashboard de resumo para a página inicial - dados dinâmicos para o hero
+  app.get("/api/home/dashboard", async (req, res) => {
+    try {
+      // Obter estatísticas básicas
+      const productsCount = await storage.getProductsCount();
+      const suppliersCount = await storage.getSuppliersCount();
+      const categoriesCount = await storage.getCategoriesCount();
+      
+      // Buscar contagem de vendas e usuários
+      const sales = await storage.getSales({});
+      const usersCount = await storage.getUsersCount({ role: UserRole.USER });
+      
+      // Calcular a economia média entre os grupos de produtos
+      const productGroups = await storage.getProductGroups();
+      let totalSavingsPercent = 0;
+      let groupsWithData = 0;
+      
+      productGroups.forEach(group => {
+        if (group.minPrice && group.maxPrice) {
+          const minPrice = parseFloat(group.minPrice);
+          const maxPrice = parseFloat(group.maxPrice);
+          
+          if (maxPrice > 0) {
+            const savingsPercent = ((maxPrice - minPrice) / maxPrice) * 100;
+            totalSavingsPercent += savingsPercent;
+            groupsWithData++;
+          }
+        }
+      });
+      
+      const averageSavingsPercent = groupsWithData > 0 
+        ? Math.round(totalSavingsPercent / groupsWithData) 
+        : 0;
+      
+      // Buscar os produtos mais populares/visualizados
+      const products = await storage.getProducts({});
+      const sortedProducts = products
+        .sort((a, b) => {
+          // Se o produto tiver um campo views definido, usamos ele, caso contrário, classificamos por ID
+          const viewsA = a.views || 0;
+          const viewsB = b.views || 0;
+          return viewsB - viewsA;
+        })
+        .slice(0, 5);
+      
+      // Buscar os grupos de produtos mais populares para comparação
+      const topProductGroups = productGroups
+        .filter(group => group.productsCount > 0)
+        .sort((a, b) => b.productsCount - a.productsCount)
+        .slice(0, 5);
+      
+      // Calcular economia total estimada em todos os grupos de produtos
+      let totalPotentialSavings = 0;
+      
+      productGroups.forEach(group => {
+        if (group.minPrice && group.maxPrice) {
+          const minPrice = parseFloat(group.minPrice);
+          const maxPrice = parseFloat(group.maxPrice);
+          const savingPerUnit = maxPrice - minPrice;
+          
+          // Estimativa de quantas unidades podem ter sido economizadas (baseado na popularidade)
+          const estimatedUnits = group.productsCount;
+          totalPotentialSavings += savingPerUnit * estimatedUnits;
+        }
+      });
+      
+      // Arredondar para o milhar mais próximo para facilitar a visualização
+      totalPotentialSavings = Math.round(totalPotentialSavings / 1000) * 1000;
+      
+      // Gerar insights dinâmicos para o hero
+      const insights = [
+        {
+          id: 1, 
+          text: `Economia de até ${averageSavingsPercent}% em equipamentos gastronômicos`,
+          value: `${averageSavingsPercent}%`,
+          type: "percent"
+        },
+        {
+          id: 2,
+          text: `${suppliersCount} fornecedores verificados em nossa plataforma`,
+          value: suppliersCount,
+          type: "count"
+        },
+        {
+          id: 3,
+          text: `Mais de ${productsCount} produtos disponíveis para comparação`,
+          value: productsCount,
+          type: "count"
+        },
+        {
+          id: 4,
+          text: `Potencial de economia de R$ ${(totalPotentialSavings / 1000000).toFixed(1)} milhões`,
+          value: totalPotentialSavings,
+          type: "currency"
+        }
+      ];
+      
+      // Buscar os grupos mais populares de comparação com seus itens
+      const popularComparisonGroups = await Promise.all(
+        topProductGroups.map(async (group) => {
+          // Obter itens deste grupo com informações básicas
+          const items = await storage.getProductGroupItems(group.id, {});
+          return {
+            id: group.id,
+            name: group.name,
+            displayName: group.displayName || group.name,
+            slug: group.slug,
+            minPrice: group.minPrice,
+            maxPrice: group.maxPrice,
+            itemsCount: items.length,
+            savingsPercent: group.maxPrice && group.minPrice 
+              ? Math.round(((parseFloat(group.maxPrice) - parseFloat(group.minPrice)) / parseFloat(group.maxPrice)) * 100) 
+              : 0
+          };
+        })
+      );
+      
+      res.json({
+        stats: {
+          productsCount,
+          suppliersCount,
+          categoriesCount,
+          usersCount,
+          salesCount: sales.length,
+          averageSavingsPercent
+        },
+        topProducts: sortedProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          price: p.price,
+          imageUrl: p.imageUrl,
+          rating: p.rating
+        })),
+        topComparisonGroups: popularComparisonGroups,
+        insights
+      });
+    } catch (error) {
+      console.error("Erro ao carregar dashboard da página inicial:", error);
+      res.status(500).json({ message: "Erro ao carregar dados para o dashboard" });
+    }
+  });
+  
   app.get("/api/categories/:idOrSlug", async (req, res) => {
     try {
       const idOrSlug = req.params.idOrSlug;
