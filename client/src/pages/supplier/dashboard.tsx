@@ -80,6 +80,10 @@ function SupplierSidebar() {
           <Package className="mr-2 h-5 w-5" />
           Meus Produtos
         </Link>
+        <Link href="/fornecedor/estoque" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
+          <Boxes className="mr-2 h-5 w-5" />
+          Gestão de Estoque
+        </Link>
         <Link href="/fornecedor/vendas" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
           <DollarSign className="mr-2 h-5 w-5" />
           Vendas e Comissões
@@ -593,7 +597,7 @@ export default function SupplierDashboard() {
               </div>
               
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <Card>
                   <CardContent className="pt-6 pb-6">
                     <div className="flex flex-col items-center text-center">
@@ -607,6 +611,44 @@ export default function SupplierDashboard() {
                       <Link href="/fornecedor/produtos/novo">
                         <Button variant="outline" className="w-full">
                           Cadastrar
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-3 bg-amber-100 rounded-full mb-4">
+                        <AlertTriangle className="h-6 w-6 text-amber-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Alertas de Estoque</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Visualize produtos com estoque baixo ou crítico
+                      </p>
+                      <Link href="/fornecedor/produtos?filter=low-stock">
+                        <Button variant="outline" className="w-full">
+                          Ver Alertas
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-3 bg-green-100 rounded-full mb-4">
+                        <Boxes className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Gerenciar Estoque</h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Atualização em massa de quantidades e alertas
+                      </p>
+                      <Link href="/fornecedor/estoque">
+                        <Button variant="outline" className="w-full">
+                          Gerenciar
                         </Button>
                       </Link>
                     </div>
