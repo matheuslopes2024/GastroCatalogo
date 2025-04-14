@@ -21,12 +21,6 @@ import {
 import { eq, and, or, like, ne } from "drizzle-orm";
 import bodyParser from "body-parser";
 import multer from "multer";
-import { 
-  getProductCertifications, 
-  getProductReviews, 
-  getComparableProductDetails, 
-  getProductComparisonStats 
-} from './controllers/productController';
 
 // Inicialização do Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
@@ -76,149 +70,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(categories);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar categorias" });
-    }
-  });
-  
-  // Dashboard de resumo para a página inicial - dados dinâmicos para o hero
-  app.get("/api/home/dashboard", async (req, res) => {
-    try {
-      // Obter estatísticas básicas
-      const productsCount = await storage.getProductsCount();
-      const suppliersCount = await storage.getSuppliersCount();
-      const categoriesCount = await storage.getCategoriesCount();
-      
-      // Buscar contagem de vendas e usuários
-      const sales = await storage.getSales({});
-      const usersCount = await storage.getUsersCount({ role: UserRole.USER });
-      
-      // Calcular a economia média entre os grupos de produtos
-      const productGroups = await storage.getProductGroups();
-      let totalSavingsPercent = 0;
-      let groupsWithData = 0;
-      
-      productGroups.forEach(group => {
-        if (group.minPrice && group.maxPrice) {
-          const minPrice = parseFloat(group.minPrice);
-          const maxPrice = parseFloat(group.maxPrice);
-          
-          if (maxPrice > 0) {
-            const savingsPercent = ((maxPrice - minPrice) / maxPrice) * 100;
-            totalSavingsPercent += savingsPercent;
-            groupsWithData++;
-          }
-        }
-      });
-      
-      const averageSavingsPercent = groupsWithData > 0 
-        ? Math.round(totalSavingsPercent / groupsWithData) 
-        : 0;
-      
-      // Buscar os produtos mais populares/visualizados
-      const products = await storage.getProducts({});
-      const sortedProducts = products
-        .sort((a, b) => {
-          // Se o produto tiver um campo views definido, usamos ele, caso contrário, classificamos por ID
-          const viewsA = a.views || 0;
-          const viewsB = b.views || 0;
-          return viewsB - viewsA;
-        })
-        .slice(0, 5);
-      
-      // Buscar os grupos de produtos mais populares para comparação
-      const topProductGroups = productGroups
-        .filter(group => group.productsCount > 0)
-        .sort((a, b) => b.productsCount - a.productsCount)
-        .slice(0, 5);
-      
-      // Calcular economia total estimada em todos os grupos de produtos
-      let totalPotentialSavings = 0;
-      
-      productGroups.forEach(group => {
-        if (group.minPrice && group.maxPrice) {
-          const minPrice = parseFloat(group.minPrice);
-          const maxPrice = parseFloat(group.maxPrice);
-          const savingPerUnit = maxPrice - minPrice;
-          
-          // Estimativa de quantas unidades podem ter sido economizadas (baseado na popularidade)
-          const estimatedUnits = group.productsCount;
-          totalPotentialSavings += savingPerUnit * estimatedUnits;
-        }
-      });
-      
-      // Arredondar para o milhar mais próximo para facilitar a visualização
-      totalPotentialSavings = Math.round(totalPotentialSavings / 1000) * 1000;
-      
-      // Gerar insights dinâmicos para o hero
-      const insights = [
-        {
-          id: 1, 
-          text: `Economia de até ${averageSavingsPercent}% em equipamentos gastronômicos`,
-          value: `${averageSavingsPercent}%`,
-          type: "percent"
-        },
-        {
-          id: 2,
-          text: `${suppliersCount} fornecedores verificados em nossa plataforma`,
-          value: suppliersCount,
-          type: "count"
-        },
-        {
-          id: 3,
-          text: `Mais de ${productsCount} produtos disponíveis para comparação`,
-          value: productsCount,
-          type: "count"
-        },
-        {
-          id: 4,
-          text: `Potencial de economia de R$ ${(totalPotentialSavings / 1000000).toFixed(1)} milhões`,
-          value: totalPotentialSavings,
-          type: "currency"
-        }
-      ];
-      
-      // Buscar os grupos mais populares de comparação com seus itens
-      const popularComparisonGroups = await Promise.all(
-        topProductGroups.map(async (group) => {
-          // Obter itens deste grupo com informações básicas
-          const items = await storage.getProductGroupItems(group.id, {});
-          return {
-            id: group.id,
-            name: group.name,
-            displayName: group.displayName || group.name,
-            slug: group.slug,
-            minPrice: group.minPrice,
-            maxPrice: group.maxPrice,
-            itemsCount: items.length,
-            savingsPercent: group.maxPrice && group.minPrice 
-              ? Math.round(((parseFloat(group.maxPrice) - parseFloat(group.minPrice)) / parseFloat(group.maxPrice)) * 100) 
-              : 0
-          };
-        })
-      );
-      
-      res.json({
-        stats: {
-          productsCount,
-          suppliersCount,
-          categoriesCount,
-          usersCount,
-          salesCount: sales.length,
-          averageSavingsPercent
-        },
-        topProducts: sortedProducts.map(p => ({
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          price: p.price,
-          imageUrl: p.imageUrl,
-          rating: p.rating
-        })),
-        topComparisonGroups: popularComparisonGroups,
-        insights
-      });
-    } catch (error) {
-      console.error("Erro ao carregar dashboard da página inicial:", error);
-      res.status(500).json({ message: "Erro ao carregar dados para o dashboard" });
     }
   });
   
@@ -888,133 +739,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
-      // 1. Validação e preparação dos dados
-      console.log("Iniciando processo de criação de produto");
-      console.log("Dados recebidos:", JSON.stringify(req.body, null, 2));
+      const validatedData = insertProductSchema.parse(req.body);
       
-      // Verificações manuais preliminares para mensagens de erro mais específicas
-      if (!req.body.name || typeof req.body.name !== 'string' || req.body.name.trim().length < 3) {
-        console.error("Nome de produto inválido:", req.body.name);
-        return res.status(400).json({ 
-          message: "O nome do produto deve ter pelo menos 3 caracteres",
-          field: "name"
-        });
-      }
-      
-      if (!req.body.description || typeof req.body.description !== 'string' || req.body.description.trim().length < 10) {
-        console.error("Descrição de produto inválida:", req.body.description);
-        return res.status(400).json({ 
-          message: "A descrição do produto deve ter pelo menos 10 caracteres",
-          field: "description"
-        });
-      }
-      
-      if (!req.body.categoryId || isNaN(Number(req.body.categoryId)) || Number(req.body.categoryId) <= 0) {
-        console.error("Categoria de produto inválida:", req.body.categoryId);
-        return res.status(400).json({ 
-          message: "A categoria do produto é obrigatória e deve ser um número válido",
-          field: "categoryId"
-        });
-      }
-      
-      if (!req.body.price || isNaN(Number(req.body.price)) || Number(req.body.price) <= 0) {
-        console.error("Preço de produto inválido:", req.body.price);
-        return res.status(400).json({ 
-          message: "O preço do produto deve ser um número positivo válido",
-          field: "price"
-        });
-      }
-      
-      // Validar com o schema Zod
-      try {
-        var validatedData = insertProductSchema.parse(req.body);
-        console.log("Dados validados com sucesso pelo Zod");
-      } catch (zodError) {
-        if (zodError instanceof z.ZodError) {
-          console.log("Erro de validação Zod:", JSON.stringify(zodError.errors, null, 2));
-          return res.status(400).json({ 
-            message: "Dados inválidos para criação do produto", 
-            errors: zodError.errors 
-          });
-        }
-        throw zodError; // Se não for um erro Zod, propagar para o handler geral
-      }
-      
-      // 2. Tratamento da identificação do fornecedor
+      // If user is a supplier, force supplierId to be their user ID
       if (req.user?.role === UserRole.SUPPLIER) {
         validatedData.supplierId = req.user.id;
-        console.log(`Definindo supplierId para o ID do fornecedor: ${req.user.id}`);
-      } else if (!validatedData.supplierId) {
-        console.error("ID do fornecedor não fornecido e usuário não é fornecedor");
-        return res.status(400).json({ 
-          message: "ID do fornecedor é obrigatório",
-          field: "supplierId"
-        });
       }
       
-      // 3. Validação das categorias adicionais
-      if (validatedData.additionalCategories) {
-        if (!Array.isArray(validatedData.additionalCategories)) {
-          console.warn("Convertendo additionalCategories para array");
-          validatedData.additionalCategories = [validatedData.additionalCategories].filter(Boolean);
-        }
-        
-        // Verificar se as categorias adicionais são válidas
-        const invalidCategories = (validatedData.additionalCategories || []).filter(
-          catId => !catId || isNaN(Number(catId)) || Number(catId) <= 0
-        );
-        
-        if (invalidCategories.length > 0) {
-          console.error("Categorias adicionais inválidas:", invalidCategories);
-          validatedData.additionalCategories = (validatedData.additionalCategories || []).filter(
-            catId => catId && !isNaN(Number(catId)) && Number(catId) > 0
-          );
-          console.log("Categorias adicionais filtradas:", validatedData.additionalCategories);
-        }
-      }
-      
-      // 4. Tratamento da imagem
-      if (!validatedData.imageUrl && !validatedData.imageData) {
-        console.log("Nenhuma imagem fornecida, usando placeholder");
-        validatedData.imageUrl = "https://via.placeholder.com/400x300?text=Produto";
-      }
-      
-      // 5. Criar produto no banco de dados
-      console.log("Enviando dados para storage.createProduct:", JSON.stringify(validatedData, null, 2));
-      try {
-        var product = await storage.createProduct(validatedData);
-        console.log("Produto criado com sucesso:", JSON.stringify(product, null, 2));
-      } catch (dbError: any) {
-        if (dbError.message?.includes("duplicada") || dbError.message?.includes("duplicate")) {
-          return res.status(409).json({ 
-            message: "Já existe um produto com este nome ou slug",
-            field: "name"
-          });
-        }
-        if (dbError.message?.includes("chave estrangeira") || dbError.message?.includes("foreign key")) {
-          return res.status(400).json({ 
-            message: "Referência inválida. Verifique se a categoria e o fornecedor existem.",
-            field: dbError.message.includes("categoryId") ? "categoryId" : "supplierId"
-          });
-        }
-        throw dbError; // Se não for um erro conhecido, propagar para o handler geral
-      }
-      
-      // 6. Responder com sucesso
+      const product = await storage.createProduct(validatedData);
       res.status(201).json(product);
-    } catch (error: any) {
-      // 7. Tratamento de erros genéricos
-      console.error("Erro detalhado ao criar produto:", error);
-      
-      // Determinar o código de status HTTP apropriado
-      const statusCode = error.status || 500;
-      
-      // Enviar uma resposta de erro detalhada com código de status apropriado
-      res.status(statusCode).json({ 
-        message: error.message || "Erro ao criar produto",
-        errorCode: error.code || "UNKNOWN_ERROR",
-        status: statusCode
-      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar produto" });
     }
   });
   
@@ -1024,25 +762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Iniciando atualização do produto ID: ${id}`);
       
-      // 1. Validações preliminares
-      if (isNaN(id) || id <= 0) {
-        console.error(`ID de produto inválido: ${req.params.id}`);
-        return res.status(400).json({ 
-          message: "ID de produto inválido", 
-          field: "id"
-        });
-      }
-      
-      // 2. Buscar o produto existente
-      try {
-        var product = await storage.getProduct(id);
-      } catch (queryError: any) {
-        console.error(`Erro ao buscar produto ID ${id}:`, queryError);
-        return res.status(500).json({ 
-          message: "Erro ao acessar os dados do produto", 
-          errorCode: "DB_QUERY_ERROR"
-        });
-      }
+      // Buscar o produto no banco de dados diretamente
+      const product = await storage.getProduct(id);
       
       if (!product) {
         console.log(`Produto ID ${id} não encontrado no banco de dados`);
@@ -1055,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: product.active
       });
       
-      // 3. Verificação de permissão (fornecedor só pode editar seus próprios produtos)
+      // Suppliers can only update their own products
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
         const productSupplierId = Number(product.supplierId);
@@ -1068,74 +789,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           - Papel do usuário: ${req.user.role}
         `);
         
+        // Debug extra para verificar o tipo de dados
+        console.log("Tipos de dados na comparação:", {
+          productSupplierId: typeof productSupplierId,
+          userId: typeof userId,
+          productSupplierId_valor: productSupplierId,
+          userId_valor: userId
+        });
+        
         // Verificar se os números são realmente iguais
-        if (productSupplierId !== userId) {
-          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} !== ${userId}`);
+        if (Number(productSupplierId) !== Number(userId)) {
+          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} (${typeof productSupplierId}) !== ${userId} (${typeof userId})`);
           return res.status(403).json({ 
-            message: "Sem permissão para editar este produto", 
-            field: "supplierId"
+            message: "Sem permissão para editar este produto",
+            debug: {
+              productSupplierId,
+              userId,
+              productId: id
+            }
           });
         }
       }
       
-      // 4. Validação dos dados de entrada
-      // Verificações manuais específicas
-      if (req.body.name && (typeof req.body.name !== 'string' || req.body.name.trim().length < 3)) {
-        console.error("Nome de produto inválido:", req.body.name);
-        return res.status(400).json({ 
-          message: "O nome do produto deve ter pelo menos 3 caracteres",
-          field: "name"
-        });
-      }
-      
-      if (req.body.description && (typeof req.body.description !== 'string' || req.body.description.trim().length < 10)) {
-        console.error("Descrição de produto inválida:", req.body.description);
-        return res.status(400).json({ 
-          message: "A descrição do produto deve ter pelo menos 10 caracteres",
-          field: "description"
-        });
-      }
-      
-      if (req.body.categoryId && (isNaN(Number(req.body.categoryId)) || Number(req.body.categoryId) <= 0)) {
-        console.error("Categoria de produto inválida:", req.body.categoryId);
-        return res.status(400).json({ 
-          message: "A categoria do produto deve ser um número válido",
-          field: "categoryId"
-        });
-      }
-      
-      if (req.body.price && (isNaN(Number(req.body.price)) || Number(req.body.price) <= 0)) {
-        console.error("Preço de produto inválido:", req.body.price);
-        return res.status(400).json({ 
-          message: "O preço do produto deve ser um número positivo válido",
-          field: "price"
-        });
-      }
-      
-      // 5. Preparar dados para atualização
+      // Garantir que o supplierId seja mantido consistente
       let productData = { ...req.body };
       
-      // Campos que não devem ser alterados diretamente
+      // Remover campos que não devem ser alterados diretamente
       delete productData.id; // Não permitir alteração do ID
       
-      // Manipular categorias adicionais
-      if (productData.additionalCategories) {
-        if (!Array.isArray(productData.additionalCategories)) {
-          console.warn("Convertendo additionalCategories para array");
-          productData.additionalCategories = [productData.additionalCategories].filter(Boolean);
-        }
-        
-        // Filtrar categorias inválidas
-        productData.additionalCategories = productData.additionalCategories.filter(
-          (catId: any) => catId && !isNaN(Number(catId)) && Number(catId) > 0
-        );
-        
-        console.log("Categorias adicionais processadas:", productData.additionalCategories);
-      }
-      
-      // 6. Tratamento do fornecedor
+      // Se o supplierId não foi fornecido ou é diferente do original para um fornecedor,
+      // mantenha o original ou use o ID do usuário atual
       if (req.user?.role === UserRole.SUPPLIER) {
-        // Fornecedor só pode usar seu próprio ID
         productData.supplierId = req.user.id;
       } else if (!productData.supplierId) {
         // Se não foi fornecido, manter o original
@@ -1150,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categoria: productData.categoryId
       });
       
-      // 7. Executar a atualização
+      // Realizamos aqui a atualização do produto
       try {
         const updatedProduct = await storage.updateProduct(id, productData);
         
@@ -1168,42 +852,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           supplierId: updatedProduct.supplierId
         });
         
-        // 8. Retornar resposta de sucesso
         res.json(updatedProduct);
-      } catch (updateError: any) {
-        // 9. Tratamento de erros específicos
+      } catch (updateError) {
         console.error("Erro específico ao atualizar produto:", updateError);
-        
-        if (updateError.message?.includes("duplicada") || updateError.message?.includes("duplicate")) {
-          return res.status(409).json({ 
-            message: "Já existe um produto com este nome ou slug",
-            field: "name"
-          });
-        }
-        
-        if (updateError.message?.includes("chave estrangeira") || updateError.message?.includes("foreign key")) {
-          return res.status(400).json({ 
-            message: "Referência inválida. Verifique se a categoria e o fornecedor existem.",
-            field: updateError.message.includes("categoryId") ? "categoryId" : "supplierId"
-          });
-        }
-        
-        const statusCode = updateError.status || 500;
-        res.status(statusCode).json({ 
-          message: updateError.message || "Erro ao atualizar dados do produto",
-          errorCode: updateError.code || "UPDATE_ERROR",
-          field: updateError.field
+        res.status(500).json({ 
+          message: "Erro ao atualizar dados do produto",
+          error: updateError.message
         });
       }
-    } catch (error: any) {
-      // 10. Tratamento de erros genéricos
+    } catch (error) {
       console.error("Erro ao processar atualização de produto:", error);
-      
-      const statusCode = error.status || 500;
-      res.status(statusCode).json({ 
-        message: error.message || "Erro ao atualizar produto",
-        errorCode: error.code || "UNKNOWN_ERROR",
-        status: statusCode
+      res.status(500).json({ 
+        message: "Erro ao atualizar produto",
+        error: error.message
       });
     }
   });
@@ -1214,25 +875,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Iniciando exclusão lógica do produto ID: ${id}`);
       
-      // 1. Validações preliminares
-      if (isNaN(id) || id <= 0) {
-        console.error(`ID de produto inválido: ${req.params.id}`);
-        return res.status(400).json({ 
-          message: "ID de produto inválido", 
-          field: "id"
-        });
-      }
-      
-      // 2. Buscar o produto existente
-      try {
-        var product = await storage.getProduct(id);
-      } catch (queryError: any) {
-        console.error(`Erro ao buscar produto ID ${id}:`, queryError);
-        return res.status(500).json({ 
-          message: "Erro ao acessar os dados do produto", 
-          errorCode: "DB_QUERY_ERROR"
-        });
-      }
+      // Buscar o produto no banco de dados diretamente
+      const product = await storage.getProduct(id);
       
       if (!product) {
         console.log(`Produto ID ${id} não encontrado no banco de dados`);
@@ -1245,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: product.active
       });
       
-      // 3. Verificação de permissão (fornecedor só pode excluir seus próprios produtos)
+      // Suppliers can only delete their own products
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
         const productSupplierId = Number(product.supplierId);
@@ -1258,32 +902,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           - Papel do usuário: ${req.user.role}
         `);
         
+        // Debug extra para verificar o tipo de dados
+        console.log("Tipos de dados na comparação:", {
+          productSupplierId: typeof productSupplierId,
+          userId: typeof userId,
+          productSupplierId_valor: productSupplierId,
+          userId_valor: userId
+        });
+        
         // Verificar se os números são realmente iguais
-        if (productSupplierId !== userId) {
-          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} !== ${userId}`);
+        if (Number(productSupplierId) !== Number(userId)) {
+          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} (${typeof productSupplierId}) !== ${userId} (${typeof userId})`);
           return res.status(403).json({ 
-            message: "Sem permissão para excluir este produto", 
-            field: "supplierId"
+            message: "Sem permissão para excluir este produto",
+            debug: {
+              productSupplierId,
+              userId,
+              productId: id
+            }
           });
         }
       }
       
-      // 4. Verificar dependências antes da exclusão
-      try {
-        // Aqui poderíamos verificar se o produto está em pedidos, orçamentos, etc.
-        // Por exemplo:
-        // const hasOrders = await storage.checkProductHasOrders(id);
-        // if (hasOrders) {
-        //   return res.status(409).json({ 
-        //     message: "Não é possível excluir um produto que já possui pedidos", 
-        //     field: "id"
-        //   });
-        // }
-      } catch (dependencyError: any) {
-        console.error("Erro ao verificar dependências do produto:", dependencyError);
-      }
-      
-      // 5. Preparar dados para exclusão lógica
+      // Garantir que estamos mantendo o supplierId consistente na operação de exclusão lógica
+      // (importante para manter a consistência de dados)
       const deleteData = { 
         active: false,
         supplierId: product.supplierId // Mantenha o ID do fornecedor original
@@ -1291,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Desativando produto ID:", id, "do fornecedor:", product.supplierId);
       
-      // 6. Executar a exclusão lógica
+      // Realizamos aqui exclusão lógica do produto (marcar como inativo)
       try {
         const deletedProduct = await storage.updateProduct(id, deleteData);
         
@@ -1309,34 +951,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           supplierId: deletedProduct.supplierId
         });
         
-        // 7. Registrar a operação de exclusão em log para auditoria
-        console.log(`[AUDIT] Produto ID ${id} desativado pelo usuário ${req.user?.id} (${req.user?.role}) em ${new Date().toISOString()}`);
-        
-        // 8. Responder com sucesso
-        res.json({
-          ...deletedProduct,
-          message: "Produto desativado com sucesso"
-        });
-      } catch (updateError: any) {
-        // 9. Tratamento de erros específicos
+        res.json(deletedProduct);
+      } catch (updateError) {
         console.error("Erro específico ao desativar produto:", updateError);
-        
-        const statusCode = updateError.status || 500;
-        res.status(statusCode).json({ 
-          message: updateError.message || "Erro ao atualizar status do produto para inativo",
-          errorCode: updateError.code || "DELETE_ERROR",
-          field: updateError.field || "active"
+        res.status(500).json({ 
+          message: "Erro ao atualizar status do produto para inativo",
+          error: updateError.message
         });
       }
-    } catch (error: any) {
-      // 10. Tratamento de erros genéricos
+    } catch (error) {
       console.error("Erro ao processar exclusão de produto:", error);
-      
-      const statusCode = error.status || 500;
-      res.status(statusCode).json({ 
-        message: error.message || "Erro ao excluir produto",
-        errorCode: error.code || "UNKNOWN_ERROR",
-        status: statusCode
+      res.status(500).json({ 
+        message: "Erro ao excluir produto",
+        error: error.message 
       });
     }
   });
@@ -1865,145 +1492,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para dashboard do fornecedor - produtos mais visualizados
-  // API para obter produtos com estoque baixo
-  app.get("/api/supplier/low-stock-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
-    try {
-      const supplierId = req.user!.id;
-      
-      // Buscar todos os produtos do fornecedor
-      const products = await storage.getProductsBySupplier(supplierId);
-      
-      // Filtrar produtos com estoque baixo
-      const lowStockProducts = products.filter(product => {
-        // Verificar se o produto tem quantidade de estoque definida
-        if (product.stockQuantity === undefined || product.stockQuantity === null) {
-          return false;
-        }
-        
-        // Verificar se o produto tem um limite de alerta definido
-        const alertThreshold = product.stockAlert || 5; // Valor padrão: 5
-        
-        // Produto está com estoque baixo se a quantidade for menor ou igual ao limite
-        return product.stockQuantity <= alertThreshold;
-      });
-      
-      res.json(lowStockProducts);
-    } catch (error) {
-      console.error("Erro ao buscar produtos com estoque baixo:", error);
-      res.status(500).json({ message: "Erro ao buscar produtos com estoque baixo" });
-    }
-  });
-
-  // API para atualização em massa de produtos
-  app.post("/api/supplier/batch-update-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
-    try {
-      const supplierId = req.user!.id;
-      const { updates } = req.body;
-      
-      if (!Array.isArray(updates) || updates.length === 0) {
-        return res.status(400).json({ message: "Nenhuma atualização válida fornecida" });
-      }
-      
-      // Validar se todos os produtos pertencem ao fornecedor
-      const productIds = updates.map(update => update.id);
-      const products = await storage.getProductsByIds(productIds);
-      
-      // Filtrar apenas os produtos que pertencem ao fornecedor atual
-      const validProducts = products.filter(product => product.supplierId === supplierId);
-      const validProductIds = validProducts.map(p => p.id);
-      
-      // Verificar se há tentativa de acessar produtos de outros fornecedores
-      if (validProductIds.length !== productIds.length) {
-        console.warn(`Tentativa de atualizar produtos de outros fornecedores detectada. Usuário ID ${supplierId}`);
-        return res.status(403).json({ 
-          message: "Alguns produtos não puderam ser atualizados devido a permissões insuficientes",
-          updatedCount: 0
-        });
-      }
-      
-      // Executar as atualizações
-      const results = await Promise.all(
-        updates.map(async (update) => {
-          try {
-            // Garantir que não estamos alterando o supplierId
-            delete update.supplierId;
-            
-            // Atualizar o produto
-            return await storage.updateProduct(update.id, update);
-          } catch (error) {
-            console.error(`Erro ao atualizar produto ID ${update.id}:`, error);
-            return null;
-          }
-        })
-      );
-      
-      // Filtrar apenas as atualizações bem-sucedidas
-      const successfulUpdates = results.filter(Boolean);
-      
-      res.json({
-        message: `${successfulUpdates.length} produtos atualizados com sucesso`,
-        updatedCount: successfulUpdates.length,
-        updatedProducts: successfulUpdates
-      });
-    } catch (error) {
-      console.error("Erro ao processar atualização em massa de produtos:", error);
-      res.status(500).json({ message: "Erro ao processar atualização em massa de produtos" });
-    }
-  });
-
-  // API para atualizar quantidade em estoque
-  app.patch("/api/supplier/update-stock/:productId", checkRole([UserRole.SUPPLIER]), async (req, res) => {
-    try {
-      const supplierId = req.user!.id;
-      const productId = parseInt(req.params.productId);
-      const { stockQuantity, stockStatus, stockAlert } = req.body;
-      
-      // Verificar se o produto existe e pertence ao fornecedor
-      const product = await storage.getProductById(productId);
-      
-      if (!product) {
-        return res.status(404).json({ message: "Produto não encontrado" });
-      }
-      
-      if (product.supplierId !== supplierId) {
-        return res.status(403).json({ message: "Você não tem permissão para atualizar este produto" });
-      }
-      
-      // Preparar os dados de atualização
-      const updateData: Partial<Product> = {};
-      
-      if (stockQuantity !== undefined) {
-        updateData.stockQuantity = stockQuantity;
-        
-        // Atualizar automaticamente o status de estoque com base na quantidade
-        if (stockQuantity <= 0) {
-          updateData.stockStatus = "out_of_stock";
-        } else if (stockQuantity <= (product.stockAlert || 5)) {
-          updateData.stockStatus = "low_stock";
-        } else {
-          updateData.stockStatus = "in_stock";
-        }
-      }
-      
-      // Se um status específico foi fornecido, sobrescrever o calculado automaticamente
-      if (stockStatus !== undefined) {
-        updateData.stockStatus = stockStatus;
-      }
-      
-      if (stockAlert !== undefined) {
-        updateData.stockAlert = stockAlert;
-      }
-      
-      // Atualizar o produto
-      const updatedProduct = await storage.updateProduct(productId, updateData);
-      
-      res.json(updatedProduct);
-    } catch (error) {
-      console.error("Erro ao atualizar estoque do produto:", error);
-      res.status(500).json({ message: "Erro ao atualizar estoque do produto" });
-    }
-  });
-
   app.get("/api/supplier/dashboard/top-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
     try {
       const supplierId = req.user!.id;
@@ -4687,20 +4175,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao marcar mensagens como lidas" });
     }
   });
-  
-  // Novas APIs para o Sistema de Comparação de Produtos
-  
-  // Obter certificações de um produto
-  app.get("/api/products/:productId/certifications", getProductCertifications);
-  
-  // Obter avaliações de um produto
-  app.get("/api/products/:productId/reviews", getProductReviews);
-  
-  // Obter detalhes técnicos de produtos comparáveis
-  app.get("/api/product-groups/:groupId/comparable-details", getComparableProductDetails);
-  
-  // Obter estatísticas de economia para comparação
-  app.get("/api/product-groups/:groupId/comparison-stats", getProductComparisonStats);
   
   return httpServer;
 }

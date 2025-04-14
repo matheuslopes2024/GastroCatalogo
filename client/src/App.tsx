@@ -35,7 +35,6 @@ import ChatAdminPage from "@/pages/admin/chat-admin";
 import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierProductManagement from "@/pages/supplier/product-management";
 import SupplierSales from "@/pages/supplier/sales";
-import SupplierEstoque from "@/pages/supplier/estoque";
 
 // Existing pages
 import CategoriesPage from "@/pages/categories-page";
@@ -177,11 +176,6 @@ const MainRoutes = memo(function MainRoutes() {
                 })))}
               </Suspense>
             )}
-            allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
-          />
-          <ProtectedRoute 
-            path="/fornecedor/estoque" 
-            component={SupplierEstoque}
             allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
           />
           

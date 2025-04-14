@@ -38,12 +38,6 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   getUsers(role?: string): Promise<User[]>;
-  getUsersCount(options?: { role?: string }): Promise<number>;
-  
-  // Dashboard methods
-  getProductsCount(): Promise<number>;
-  getSuppliersCount(): Promise<number>;
-  getCategoriesCount(): Promise<number>;
   
   // Supplier specific methods
   getSupplierProductsCount(supplierId: number): Promise<number>;
@@ -58,7 +52,6 @@ export interface IStorage {
   
   // Product methods
   getProduct(id: number): Promise<Product | undefined>;
-  getProductById(id: number): Promise<Product | undefined>; // Alias para getProduct
   getProductBySlug(slug: string): Promise<Product | undefined>;
   getProductBySupplier(baseProductId: number, supplierId: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
@@ -1866,104 +1859,24 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    try {
-      console.log("INICIO - Criando produto", JSON.stringify(insertProduct, null, 2));
-      
-      // Validação de dados essenciais antes de inserir
-      if (!insertProduct.name) {
-        console.error("Nome do produto não fornecido!");
-        throw new Error("Nome do produto é obrigatório");
-      }
-      
-      if (!insertProduct.slug) {
-        console.error("Slug do produto não fornecido!");
-        throw new Error("Slug do produto é obrigatório");
-      }
-      
-      if (!insertProduct.categoryId) {
-        console.error("Categoria do produto não fornecida!");
-        throw new Error("Categoria do produto é obrigatória");
-      }
-      
-      if (!insertProduct.supplierId) {
-        console.error("Fornecedor do produto não fornecido!");
-        throw new Error("Fornecedor do produto é obrigatório");
-      }
-      
-      if (!insertProduct.price) {
-        console.error("Preço do produto não fornecido!");
-        throw new Error("Preço do produto é obrigatório");
-      }
-      
-      // Verificar se já existe um produto com o mesmo slug
-      const existingProduct = await this.getProductBySlug(insertProduct.slug);
-      if (existingProduct) {
-        console.warn(`Produto com slug '${insertProduct.slug}' já existe!`);
-        // Gerar um slug único adicionando um sufixo
-        const timestamp = Date.now().toString().slice(-6);
-        insertProduct.slug = `${insertProduct.slug}-${timestamp}`;
-        console.log(`Novo slug gerado: ${insertProduct.slug}`);
-      }
-      
-      // Garantir que campos de array estejam inicializados corretamente
-      if (!insertProduct.additionalCategories) {
-        insertProduct.additionalCategories = [];
-      }
-      
-      // Garantir que campos opcionais estejam com valores padrão
-      const productToInsert = {
+    const [product] = await db
+      .insert(products)
+      .values({
         ...insertProduct,
         rating: "0",
-        ratingsCount: 0,
-        active: insertProduct.active !== undefined ? insertProduct.active : true,
-        stockQuantity: insertProduct.stockQuantity || 0,
-        stockStatus: insertProduct.stockStatus || "in_stock",
-        stockAlert: insertProduct.stockAlert || 5
-      };
-      
-      console.log("Inserindo produto no banco de dados:", JSON.stringify(productToInsert, null, 2));
-      
-      // Inserir o produto no banco de dados
-      const [product] = await db
-        .insert(products)
-        .values(productToInsert)
-        .returning();
-      
-      console.log("Produto criado com sucesso:", JSON.stringify(product, null, 2));
-      
-      // Atualizar contagem de produtos na categoria
-      try {
-        const category = await this.getCategory(product.categoryId);
-        if (category) {
-          console.log(`Atualizando contador da categoria ${category.name} (ID: ${category.id})`);
-          await this.updateCategory(category.id, { 
-            productsCount: category.productsCount + 1 
-          });
-          console.log(`Contador da categoria atualizado para ${category.productsCount + 1}`);
-        }
-      } catch (categoryError) {
-        console.error("Erro ao atualizar contador da categoria:", categoryError);
-        // Não vamos falhar a operação de criação se a atualização da categoria falhar
-      }
-      
-      return product;
-    } catch (error) {
-      console.error("ERRO DETALHADO na criação do produto:", error);
-      
-      // Analisar o erro para fornecer mensagens mais específicas
-      if (error.code === '23505') {
-        console.error("Erro de chave duplicada:", error.detail);
-        throw new Error(`Erro de duplicação: ${error.detail}`);
-      }
-      
-      if (error.code === '23503') {
-        console.error("Erro de violação de chave estrangeira:", error.detail);
-        throw new Error(`Referência inválida: ${error.detail}`);
-      }
-      
-      // Repassar o erro original
-      throw error;
+        ratingsCount: 0
+      })
+      .returning();
+    
+    // Atualizar contagem de produtos na categoria
+    const category = await this.getCategory(product.categoryId);
+    if (category) {
+      await this.updateCategory(category.id, { 
+        productsCount: category.productsCount + 1 
+      });
     }
+    
+    return product;
   }
   
   async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
@@ -4058,62 +3971,6 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(categories.id, Array.from(categoryIds)));
     
     return foundCategories;
-  }
-
-  // Métodos para dashboard da página inicial
-  async getProductsCount(): Promise<number> {
-    try {
-      const result = await db.select({ count: sql`count(*)` })
-        .from(products)
-        .where(eq(products.active, true));
-      return parseInt(result[0].count.toString());
-    } catch (error) {
-      console.error("Erro ao contar produtos ativos:", error);
-      return 0;
-    }
-  }
-  
-  async getSuppliersCount(): Promise<number> {
-    try {
-      const result = await db.select({ count: sql`count(*)` })
-        .from(users)
-        .where(and(
-          eq(users.role, 'supplier'),
-          eq(users.active, true)
-        ));
-      return parseInt(result[0].count.toString());
-    } catch (error) {
-      console.error("Erro ao contar fornecedores ativos:", error);
-      return 0;
-    }
-  }
-  
-  async getCategoriesCount(): Promise<number> {
-    try {
-      const result = await db.select({ count: sql`count(*)` }).from(categories);
-      return parseInt(result[0].count.toString());
-    } catch (error) {
-      console.error("Erro ao contar categorias:", error);
-      return 0;
-    }
-  }
-  
-  async getUsersCount(options?: { role?: string }): Promise<number> {
-    try {
-      let query = db.select({ count: sql`count(*)` })
-        .from(users)
-        .where(eq(users.active, true));
-      
-      if (options?.role) {
-        query = query.where(eq(users.role, options.role));
-      }
-      
-      const result = await query;
-      return parseInt(result[0].count.toString());
-    } catch (error) {
-      console.error("Erro ao contar usuários:", error);
-      return 0;
-    }
   }
 }
 

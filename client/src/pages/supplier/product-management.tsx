@@ -104,14 +104,6 @@ const productFormSchema = z.object({
   price: z.string().or(z.number()).pipe(
     z.coerce.number().min(0, "Preço deve ser maior que zero")
   ),
-  // Quantidade em estoque - necessário para criação de produtos
-  stockQuantity: z.number().int().min(0, "A quantidade em estoque deve ser um número inteiro positivo")
-    .or(z.string().pipe(z.coerce.number().int()))
-    .default(0),
-  stockAlert: z.number().int().min(0, "O alerta de estoque deve ser um número inteiro positivo")
-    .or(z.string().pipe(z.coerce.number().int()))
-    .default(0)
-    .optional(),
   discount: z.number().nullable().optional(),
   originalPrice: z.string().nullable().optional(),
   features: z.string().optional().transform(val => 
@@ -175,8 +167,6 @@ export default function ProductManagement() {
       categoryId: undefined,
       supplierId: user?.id,
       price: "",
-      stockQuantity: 0, // Adicionado campo de estoque
-      stockAlert: 5, // Adicionado alerta de estoque
       discount: null,
       originalPrice: null,
       features: "",
@@ -196,8 +186,6 @@ export default function ProductManagement() {
       categoryId: undefined,
       supplierId: user?.id,
       price: "",
-      stockQuantity: 0, // Adicionado campo de estoque
-      stockAlert: 5, // Adicionado alerta de estoque
       discount: null,
       originalPrice: null,
       features: "",
@@ -270,46 +258,8 @@ export default function ProductManagement() {
   // Update product mutation
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues & { id: number }) => {
-      console.log("Iniciando mutação de atualização de produto:", data);
-      
-      // Validações adicionais antes de enviar a requisição
-      if (!data.id) {
-        throw new Error("ID do produto não especificado");
-      }
-      
-      if (!data.name || data.name.trim().length < 3) {
-        throw new Error("Nome do produto inválido. Deve ter pelo menos 3 caracteres.");
-      }
-      
-      if (!data.description || data.description.trim().length < 10) {
-        throw new Error("Descrição inválida. Deve ter pelo menos 10 caracteres.");
-      }
-      
-      if (!data.categoryId) {
-        throw new Error("Categoria principal é obrigatória.");
-      }
-      
-      if (!data.price || isNaN(Number(data.price)) || Number(data.price) <= 0) {
-        throw new Error("Preço inválido. Deve ser um número positivo.");
-      }
-      
       const { id, ...productData } = data;
-      
-      // Enviar solicitação com tratamento de erros melhorado
-      try {
-        const response = await apiRequest("PATCH", `/api/products/${id}`, productData);
-        
-        if (!response.ok) {
-          // Tentar extrair a mensagem de erro da resposta
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `Erro ao atualizar produto (${response.status})`);
-        }
-        
-        return response;
-      } catch (error) {
-        console.error("Erro na requisição de atualização:", error);
-        throw error;
-      }
+      return apiRequest("PATCH", `/api/products/${id}`, productData);
     },
     onSuccess: (data) => {
       // Invalidar a consulta de produtos para atualização
@@ -333,18 +283,10 @@ export default function ProductManagement() {
             }
           } catch (e) {
             console.error("Erro ao processar resposta de atualização:", e);
-            // Mesmo em caso de erro, garantir que a query seja invalidada
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
           }
-        }).catch(e => {
-          console.error("Erro ao ler resposta de atualização:", e);
-          // Garantir que a query seja invalidada mesmo com erro ao ler o texto
-          queryClient.invalidateQueries({ queryKey: ["/api/products"] });
         });
       } catch (e) {
         console.error("Erro ao ler resposta de atualização:", e);
-        // Garantir que a query seja invalidada em caso de qualquer erro
-        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       }
       
       setIsEditDialogOpen(false);
@@ -354,11 +296,10 @@ export default function ProductManagement() {
         description: "O produto foi atualizado com sucesso",
       });
     },
-    onError: (error: Error) => {
-      console.error("Erro detalhado na atualização do produto:", error);
+    onError: (error) => {
       toast({
         title: "Erro ao atualizar produto",
-        description: error.message || "Ocorreu um erro ao atualizar o produto. Por favor, tente novamente.",
+        description: "Ocorreu um erro ao atualizar o produto. Por favor, tente novamente.",
         variant: "destructive",
       });
     },
@@ -367,30 +308,11 @@ export default function ProductManagement() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      console.log("Iniciando mutação de exclusão do produto ID:", id);
-      
-      if (!id || isNaN(id) || id <= 0) {
-        throw new Error("ID de produto inválido para exclusão");
-      }
-      
-      // Tentativa de exclusão com tratamento de erros aprimorado
-      try {
-        const response = await apiRequest("DELETE", `/api/products/${id}`);
-        
-        if (!response.ok) {
-          // Tentar extrair a mensagem de erro da resposta
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `Erro ao excluir produto (${response.status})`);
-        }
-        
-        return response;
-      } catch (error) {
-        console.error("Erro na requisição de exclusão:", error);
-        throw error;
-      }
+      // Usamos a nova rota DELETE agora
+      return apiRequest("DELETE", `/api/products/${id}`);
     },
     onSuccess: (data) => {
-      // Invalidar a consulta principal imediatamente para garantir dados atualizados
+      // Invalidar a consulta principal
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       
       // Atualizar a interface em tempo real removendo o produto desativado
@@ -412,8 +334,6 @@ export default function ProductManagement() {
             }
           } catch (e) {
             console.error("Erro ao processar resposta de exclusão:", e);
-            // Em caso de erro ao processar a resposta, garantir atualização dos dados
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
           }
         }).catch(e => {
           console.error("Falha ao processar texto da resposta:", e);
@@ -430,21 +350,16 @@ export default function ProductManagement() {
       setDeletingProduct(null);
       toast({
         title: "Produto excluído",
-        description: "O produto foi desativado com sucesso e não será mais exibido nas buscas",
-        duration: 5000,
+        description: "O produto foi excluído com sucesso",
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       console.error("Erro detalhado na exclusão do produto:", error);
       toast({
         title: "Erro ao excluir produto",
-        description: error.message || "Ocorreu um erro ao excluir o produto. Por favor, tente novamente.",
+        description: "Ocorreu um erro ao excluir o produto. Por favor, tente novamente.",
         variant: "destructive",
-        duration: 5000,
       });
-      
-      // Manter o diálogo aberto em caso de erro para que o usuário possa tentar novamente
-      // ou fechar manualmente
     },
   });
   
@@ -452,116 +367,36 @@ export default function ProductManagement() {
   const onSubmit = (data: ProductFormValues) => {
     console.log("Enviando dados do formulário:", data);
     
-    try {
-      // Validações adicionais antes de submeter o formulário
-      if (!data.name || data.name.trim().length < 3) {
-        toast({
-          title: "Nome inválido",
-          description: "O nome do produto deve ter pelo menos 3 caracteres",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!data.description || data.description.trim().length < 10) {
-        toast({
-          title: "Descrição inválida",
-          description: "A descrição do produto deve ter pelo menos 10 caracteres",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!data.categoryId) {
-        toast({
-          title: "Categoria obrigatória",
-          description: "Selecione uma categoria principal para o produto",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!data.price || isNaN(Number(data.price)) || Number(data.price) <= 0) {
-        toast({
-          title: "Preço inválido",
-          description: "O preço do produto deve ser um número positivo",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Certifique-se de que o supplierId esteja definido
-      if (!data.supplierId && user) {
-        data.supplierId = user.id;
-      }
-      
-      if (!data.supplierId) {
-        toast({
-          title: "Erro de autenticação",
-          description: "Não foi possível identificar o fornecedor. Tente fazer login novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Validação da quantidade em estoque
-      if (data.stockQuantity === undefined || data.stockQuantity === null) {
-        toast({
-          title: "Quantidade em estoque obrigatória",
-          description: "Por favor, informe a quantidade em estoque disponível.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Validar que a quantidade em estoque é um número positivo
-      if (isNaN(Number(data.stockQuantity)) || Number(data.stockQuantity) < 0) {
-        toast({
-          title: "Quantidade em estoque inválida",
-          description: "A quantidade em estoque deve ser um número não negativo.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Gerar um slug único baseado no nome do produto e timestamp para evitar duplicações
-      const timestamp = Date.now().toString().slice(-6);
-      const baseSlug = generateSlug(data.name);
-      const slug = `${baseSlug}-${timestamp}`;
-      
-      // Versão completa do produto com todas as propriedades necessárias
-      const productData = {
-        name: data.name.trim(),
-        description: data.description.trim(),
-        slug,
-        categoryId: data.categoryId,
-        additionalCategories: Array.isArray(data.additionalCategories) ? data.additionalCategories : [], 
-        supplierId: data.supplierId || user?.id,
-        price: data.price ? data.price.toString() : "0",
-        imageUrl: data.imageUrl || "https://via.placeholder.com/400x300?text=Produto",
-        active: true,
-        features: Array.isArray(data.features) ? data.features : [],
-        discount: data.discount || null,
-        originalPrice: data.originalPrice || null,
-        imageData: data.imageData || null,
-        imageType: data.imageType || null,
-        stockQuantity: 0,
-        stockStatus: "in_stock",
-        stockAlert: 5,
-        rating: "0",
-        ratingsCount: 0
-      };
-      
-      console.log("Dados completos para envio:", productData);
-      createProductMutation.mutate(productData as ProductFormValues);
-    } catch (error) {
-      console.error("Erro na validação do formulário:", error);
-      toast({
-        title: "Erro na validação",
-        description: "Ocorreu um erro ao processar os dados do formulário. Verifique todos os campos.",
-        variant: "destructive",
-      });
+    // Certifique-se de que o supplierId esteja definido
+    if (!data.supplierId && user) {
+      data.supplierId = user.id;
     }
+    
+    // Garanta que todos os campos obrigatórios estejam presentes
+    const slug = generateSlug(data.name);
+    
+    // Versão completa do produto com todas as propriedades necessárias
+    const productData = {
+      name: data.name,
+      description: data.description,
+      slug,
+      categoryId: data.categoryId,
+      additionalCategories: data.additionalCategories || [], // Adicionando categorias adicionais
+      supplierId: data.supplierId || user?.id,
+      price: data.price ? data.price.toString() : "0",
+      imageUrl: data.imageUrl,
+      active: true,
+      features: [],
+      discount: data.discount,
+      originalPrice: data.originalPrice,
+      imageData: data.imageData,
+      imageType: data.imageType,
+      rating: null,
+      ratingsCount: 0
+    };
+    
+    console.log("Dados simplificados para envio:", productData);
+    createProductMutation.mutate(productData as ProductFormValues);
   };
   
   // Handler for submitting the edit product form
@@ -570,99 +405,29 @@ export default function ProductManagement() {
     
     console.log("Enviando dados de edição:", data);
     
-    try {
-      // Validações adicionais antes de submeter o formulário de edição
-      if (!data.name || data.name.trim().length < 3) {
-        toast({
-          title: "Nome inválido",
-          description: "O nome do produto deve ter pelo menos 3 caracteres",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!data.description || data.description.trim().length < 10) {
-        toast({
-          title: "Descrição inválida",
-          description: "A descrição do produto deve ter pelo menos 10 caracteres",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!data.categoryId) {
-        toast({
-          title: "Categoria obrigatória",
-          description: "Selecione uma categoria principal para o produto",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!data.price || isNaN(Number(data.price)) || Number(data.price) <= 0) {
-        toast({
-          title: "Preço inválido",
-          description: "O preço do produto deve ser um número positivo",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Certifique-se de que o supplierId esteja definido
-      const supplierId = data.supplierId || user?.id;
-      if (!supplierId) {
-        toast({
-          title: "Erro de autenticação",
-          description: "Não foi possível identificar o fornecedor. Tente fazer login novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Extrair features do formulário, que vem como string
-      let features: string[] = [];
-      if (typeof data.features === 'string' && data.features.trim().length > 0) {
-        features = data.features.split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0);
-      } else if (Array.isArray(data.features)) {
-        features = data.features;
-      }
-      
-      // Versão completa do produto para edição com validações aprimoradas
-      const productData = {
-        id: editingProduct.id,
-        name: data.name.trim(),
-        description: data.description.trim(),
-        slug: editingProduct.slug,
-        categoryId: data.categoryId,
-        additionalCategories: Array.isArray(data.additionalCategories) ? data.additionalCategories : [],
-        supplierId: supplierId,
-        price: data.price ? data.price.toString() : "0",
-        imageUrl: data.imageUrl || editingProduct.imageUrl,
-        active: true,
-        features: features,
-        discount: data.discount || null,
-        originalPrice: data.originalPrice || null,
-        imageData: data.imageData || null,
-        imageType: data.imageType || null,
-        rating: editingProduct.rating,
-        ratingsCount: editingProduct.ratingsCount || 0,
-        stockQuantity: editingProduct.stockQuantity || 0,
-        stockStatus: editingProduct.stockStatus || "in_stock",
-        stockAlert: editingProduct.stockAlert || 5
-      };
-      
-      console.log("Dados completos para edição:", productData);
-      updateProductMutation.mutate(productData as ProductFormValues & { id: number });
-    } catch (error) {
-      console.error("Erro na validação do formulário de edição:", error);
-      toast({
-        title: "Erro na validação",
-        description: "Ocorreu um erro ao processar os dados do formulário. Verifique todos os campos.",
-        variant: "destructive",
-      });
-    }
+    // Versão completa do produto para edição
+    const productData = {
+      id: editingProduct.id,
+      name: data.name,
+      description: data.description,
+      slug: editingProduct.slug,
+      categoryId: data.categoryId,
+      additionalCategories: data.additionalCategories || [], // Adicionando categorias adicionais
+      supplierId: data.supplierId || user?.id,
+      price: data.price ? data.price.toString() : "0",
+      imageUrl: data.imageUrl,
+      active: true,
+      features: [],
+      discount: data.discount,
+      originalPrice: data.originalPrice,
+      imageData: data.imageData,
+      imageType: data.imageType,
+      rating: editingProduct.rating,
+      ratingsCount: editingProduct.ratingsCount || 0
+    };
+    
+    console.log("Dados simplificados para edição:", productData);
+    updateProductMutation.mutate(productData as ProductFormValues & { id: number });
   };
   
   // Handler for confirming product deletion
@@ -987,41 +752,6 @@ export default function ProductManagement() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="stockQuantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantidade em Estoque</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" placeholder="100" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Quantidade disponível no estoque
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="stockAlert"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Alerta de Estoque</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" placeholder="5" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Receba alertas quando o estoque estiver abaixo deste valor
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
               <FormField
                 control={form.control}
                 name="description"
@@ -1209,41 +939,6 @@ export default function ProductManagement() {
                       <FormControl>
                         <Input type="number" step="0.01" min="0" placeholder="1999.99" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={editForm.control}
-                  name="stockQuantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantidade em Estoque</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" placeholder="100" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Quantidade disponível no estoque
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="stockAlert"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Alerta de Estoque</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" placeholder="5" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Receba alertas quando o estoque estiver abaixo deste valor
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
