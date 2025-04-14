@@ -800,7 +800,7 @@ export default function ProductComparison() {
                             {(showAllFeatures ? item?.product?.features : item?.product?.features?.slice(0, 5))?.map((feature, idx) => (
                               <li key={idx} className="flex items-start">
                                 <Check size={14} className="mr-1 text-green-500 mt-1 flex-shrink-0" />
-                                <span>{feature}</span>
+                                <span><strong>{feature.name}:</strong> {feature.value}</span>
                               </li>
                             ))}
                           </ul>
@@ -1022,7 +1022,7 @@ export default function ProductComparison() {
                         {item.product?.features?.map((feature, index) => (
                           <li key={index} className="flex items-start">
                             <Check size={16} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>{feature}</span>
+                            <span><strong>{feature.name}:</strong> {feature.value}</span>
                           </li>
                         ))}
                       </ul>
@@ -1034,7 +1034,7 @@ export default function ProductComparison() {
                   {item.product?.features?.slice(0, 3).map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <Check size={16} className="mr-1 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
+                      <span><strong>{feature.name}:</strong> {feature.value}</span>
                     </li>
                   ))}
                 </ul>
@@ -1177,7 +1177,7 @@ export default function ProductComparison() {
                         {item.product?.features?.slice(0, 2).map((feature, idx) => (
                           <div key={idx} className="flex items-start">
                             <Check size={14} className="text-green-500 mr-1 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs">{feature}</span>
+                            <span className="text-xs"><strong>{feature.name}:</strong> {feature.value}</span>
                           </div>
                         ))}
                         {(item.product?.features?.length || 0) > 2 && (
@@ -1194,7 +1194,7 @@ export default function ProductComparison() {
                                   {item.product?.features?.slice(2).map((feature, idx) => (
                                     <div key={idx} className="flex items-start">
                                       <Check size={14} className="text-green-500 mr-1 mt-0.5" />
-                                      <span className="text-xs">{feature}</span>
+                                      <span className="text-xs"><strong>{feature.name}:</strong> {feature.value}</span>
                                     </div>
                                   ))}
                                 </div>
