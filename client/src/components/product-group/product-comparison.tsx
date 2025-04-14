@@ -118,7 +118,7 @@ interface Product {
   rating: string | null;
   ratingsCount: number;
   imageUrl: string | null;
-  features: string[] | null;
+  features: ProductFeature[] | null;
   supplierId: number;
   categoryId: number;
 }
@@ -634,7 +634,7 @@ export default function ProductComparison() {
                     </TableCell>
                     <TableCell className={visibleColumns.includes("features") ? "max-w-[200px]" : "hidden"}>
                       <div className="text-sm truncate">
-                        {item.product?.features?.[0] || "-"}
+                        {item.product?.features?.[0]?.name}: {item.product?.features?.[0]?.value || "-"}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
