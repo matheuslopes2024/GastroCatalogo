@@ -21,6 +21,12 @@ import {
 import { eq, and, or, like, ne } from "drizzle-orm";
 import bodyParser from "body-parser";
 import multer from "multer";
+import { 
+  getProductCertifications, 
+  getProductReviews, 
+  getComparableProductDetails, 
+  getProductComparisonStats 
+} from './controllers/productController';
 
 // Inicialização do Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
