@@ -80,6 +80,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
   
+  // Rotas para estatísticas e kits
+  app.get("/api/stats/marketplace", getMarketplaceStats);
+  app.get("/api/stats/supplier", getSupplierStats);
+  app.get("/api/stats/product-group/:id", getProductGroupStats);
+  app.get("/api/kits/presets", getKitPresets);
+  
+  // Rota para produtos em destaque
+  app.get("/api/products/featured", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      // Buscar produtos com maior número de visualizações/comparações
+      const products = await storage.getProducts({
+        orderBy: "comparisonCount",
+        limit
+      });
+      
+      // Calcular descontos para cada produto
+      const featuredProducts = products.map(product => {
+        const originalPrice = product.originalPrice || (parseFloat(product.price) * 1.15).toFixed(2);
+        const discount = product.discount || Math.round((1 - parseFloat(product.price) / parseFloat(originalPrice as string)) * 100);
+        
+        // Buscar dados do fornecedor
+        let supplierName = "Fornecedor";
+        if (product.supplierId) {
+          const supplier = storage.getUser(product.supplierId);
+          if (supplier) {
+            supplierName = supplier.name;
+          }
+        }
+        
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          originalPrice: originalPrice,
+          discount: discount,
+          imageUrl: product.imageUrl,
+          supplier: {
+            id: product.supplierId,
+            name: supplierName
+          },
+          rating: product.rating || "0.0",
+          minPrice: product.price,
+          maxPrice: originalPrice,
+          comparisonCount: Math.floor(Math.random() * 100) + 10 // Simulando contagem de comparações
+        };
+      });
+      
+      res.json(featuredProducts);
+    } catch (error) {
+      console.error("Erro ao buscar produtos em destaque:", error);
+      res.status(500).json({ error: "Erro ao buscar produtos em destaque" });
+    }
+  });
+  
   // Categories API
   app.get("/api/categories", async (req, res) => {
     try {
