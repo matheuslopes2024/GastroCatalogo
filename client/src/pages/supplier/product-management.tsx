@@ -985,6 +985,41 @@ export default function ProductManagement() {
                 />
               </div>
               
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="stockQuantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade em Estoque</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" placeholder="100" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Quantidade disponível no estoque
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="stockAlert"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alerta de Estoque</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" placeholder="5" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Receba alertas quando o estoque estiver abaixo deste valor
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
               <FormField
                 control={form.control}
                 name="description"
@@ -1172,6 +1207,41 @@ export default function ProductManagement() {
                       <FormControl>
                         <Input type="number" step="0.01" min="0" placeholder="1999.99" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="stockQuantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade em Estoque</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" placeholder="100" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Quantidade disponível no estoque
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="stockAlert"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alerta de Estoque</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" placeholder="5" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Receba alertas quando o estoque estiver abaixo deste valor
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
