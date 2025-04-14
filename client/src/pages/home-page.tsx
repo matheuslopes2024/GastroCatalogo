@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
 import { motion } from "framer-motion";
 
-// Importando os componentes da página inicial
+// Importando os novos componentes com animações
+import { AnimatedHero } from "@/components/home/animated-hero";
 import { FeaturedCarousel } from "@/components/home/featured-carousel";
 import { CategoryCards } from "@/components/home/category-cards";
 import { ProductGrid } from "@/components/home/product-grid";
@@ -16,7 +17,6 @@ import { BenefitsSection } from "@/components/home/benefits-section";
 import { TestimonialsCarousel } from "@/components/home/testimonials-carousel";
 import { StatsSection } from "@/components/home/stats-section";
 import { ComparisonSection } from "@/components/home/comparison-section";
-import { InteractiveBanner } from "@/components/home/interactive-banner";
 
 // Componente de divisor visual
 const Divider = () => (
@@ -109,8 +109,8 @@ export default function HomePage() {
       <Header />
       
       <main className="flex-grow">
-        {/* Banner interativo com dados dinâmicos */}
-        <InteractiveBanner />
+        {/* Hero Section Animado */}
+        <AnimatedHero />
         
         <CategoryNav />
         
@@ -120,6 +120,71 @@ export default function HomePage() {
         </div>
         
         <Divider />
+        
+        {/* Banner de destaque para comparação */}
+        <div className="container mx-auto px-4 py-8">
+          <motion.div 
+            className="bg-gradient-to-r from-primary/90 to-primary/70 rounded-xl p-6 text-white shadow-lg"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="md:w-7/12">
+                <h2 className="text-2xl md:text-3xl font-bold mb-3">Compare produtos e economize até 30%</h2>
+                <p className="mb-4">
+                  Nossa ferramenta exclusiva de comparação de equipamentos permite que você encontre 
+                  a melhor oferta entre diversos fornecedores em poucos segundos.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/product-groups/forno-combinado-10-gns">
+                    <Button className="bg-white text-primary hover:bg-white/90">
+                      <BarChart2 className="mr-2 h-4 w-4" />
+                      Comparar Fornos Combinados
+                    </Button>
+                  </Link>
+                  <Link href="/product-groups/refrigerador-comercial-4-portas">
+                    <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
+                      Ver Refrigeradores
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="md:w-5/12 flex justify-center">
+                <div className="flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-lg p-5 w-full max-w-xs">
+                  <div className="space-y-4 w-full">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        <span className="font-medium">Melhor preço</span>
+                      </div>
+                      <span className="font-bold">R$ 12.990,00</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                        <span className="font-medium">Preço médio</span>
+                      </div>
+                      <span>R$ 15.750,00</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                        <span className="font-medium">Preço máximo</span>
+                      </div>
+                      <span>R$ 17.990,00</span>
+                    </div>
+                    <div className="pt-2 mt-2 border-t border-white/30 flex justify-between">
+                      <span className="font-medium">Economia:</span>
+                      <span className="font-bold text-green-300">R$ 5.000,00 (28%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
         
         {/* Categorias com Cards 3D */}
         <div className="container mx-auto px-4">
