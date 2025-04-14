@@ -168,12 +168,20 @@ export function ComparisonSection() {
                 </div>
                 
                 <div className="p-4 md:p-6 pt-0">
-                  <Link href={`/comparar/${group.id}`}>
-                    <Button className="w-full">
-                      <Search className="mr-2 h-4 w-4" />
-                      Comparar Opções
-                    </Button>
-                  </Link>
+                  <div className="flex flex-col space-y-2">
+                    <Link href={`/comparar/${group.slug}`}>
+                      <Button className="w-full">
+                        <Search className="mr-2 h-4 w-4" />
+                        Comparar Opções
+                      </Button>
+                    </Link>
+                    <Link href={`/product-groups/${group.slug}`}>
+                      <Button variant="outline" className="w-full text-xs">
+                        <BarChart2 className="mr-2 h-3 w-3" />
+                        Ver Comparação Detalhada
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </Card>
             </motion.div>

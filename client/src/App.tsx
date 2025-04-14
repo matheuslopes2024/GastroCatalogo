@@ -97,6 +97,8 @@ const MainRoutes = memo(function MainRoutes() {
             </Suspense>
           </Route>
           <Route path="/comparar/:slug" component={ProductComparisonPage} />
+          <Route path="/product-groups/:slug" component={ProductComparisonPage} />
+          <Route path="/grupo-produtos/:slug" component={ProductComparisonPage} />
           <Route path="/checkout" component={Checkout} />
           <Route path="/carrinho" component={CartPage} />
           <Route path="/categorias" component={CategoriesPage} />
