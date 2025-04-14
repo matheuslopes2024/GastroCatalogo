@@ -4182,5 +4182,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Novas APIs para o Sistema de Comparação de Produtos
+  
+  // Obter certificações de um produto
+  app.get("/api/products/:productId/certifications", getProductCertifications);
+  
+  // Obter avaliações de um produto
+  app.get("/api/products/:productId/reviews", getProductReviews);
+  
+  // Obter detalhes técnicos de produtos comparáveis
+  app.get("/api/product-groups/:groupId/comparable-details", getComparableProductDetails);
+  
+  // Obter estatísticas de economia para comparação
+  app.get("/api/product-groups/:groupId/comparison-stats", getProductComparisonStats);
+  
   return httpServer;
 }

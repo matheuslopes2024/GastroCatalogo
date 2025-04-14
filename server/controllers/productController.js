@@ -1,8 +1,8 @@
-const { db } = require('../db');
-const { sql } = require('drizzle-orm');
+import { db } from '../db';
+import { sql } from 'drizzle-orm';
 
 // Obter certificações de um produto
-async function getProductCertifications(req, res) {
+export async function getProductCertifications(req, res) {
   try {
     const { productId } = req.params;
     
@@ -22,7 +22,7 @@ async function getProductCertifications(req, res) {
 }
 
 // Obter avaliações de um produto
-async function getProductReviews(req, res) {
+export async function getProductReviews(req, res) {
   try {
     const { productId } = req.params;
     
@@ -56,7 +56,7 @@ async function getProductReviews(req, res) {
 }
 
 // Obter detalhes técnicos de produtos comparáveis
-async function getComparableProductDetails(req, res) {
+export async function getComparableProductDetails(req, res) {
   try {
     const { groupId } = req.params;
     
@@ -97,7 +97,7 @@ async function getComparableProductDetails(req, res) {
 }
 
 // Obter estatísticas de economia para comparação
-async function getProductComparisonStats(req, res) {
+export async function getProductComparisonStats(req, res) {
   try {
     const { groupId } = req.params;
     
@@ -126,9 +126,4 @@ async function getProductComparisonStats(req, res) {
   }
 }
 
-module.exports = {
-  getProductCertifications,
-  getProductReviews,
-  getComparableProductDetails,
-  getProductComparisonStats
-};
+// Exportações já feitas individualmente com 'export' antes de cada função
