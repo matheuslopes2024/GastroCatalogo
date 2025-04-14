@@ -48,7 +48,10 @@ import {
   Edit,
   Calendar,
   Paperclip, 
-  Send
+  Send,
+  AlertTriangle,
+  Boxes,
+  RefreshCw
 } from "lucide-react";
 import {
   AreaChart,

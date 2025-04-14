@@ -58,6 +58,7 @@ export interface IStorage {
   
   // Product methods
   getProduct(id: number): Promise<Product | undefined>;
+  getProductById(id: number): Promise<Product | undefined>; // Alias para getProduct
   getProductBySlug(slug: string): Promise<Product | undefined>;
   getProductBySupplier(baseProductId: number, supplierId: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
