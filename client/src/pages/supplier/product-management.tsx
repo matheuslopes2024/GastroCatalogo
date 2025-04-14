@@ -175,7 +175,7 @@ export default function ProductManagement() {
       categoryId: undefined,
       supplierId: user?.id,
       price: "",
-      stock_quantity: 0, // Adicionado campo de estoque
+      stockQuantity: 0, // Adicionado campo de estoque
       stockAlert: 5, // Adicionado alerta de estoque
       discount: null,
       originalPrice: null,
@@ -196,7 +196,7 @@ export default function ProductManagement() {
       categoryId: undefined,
       supplierId: user?.id,
       price: "",
-      stock_quantity: 0, // Adicionado campo de estoque
+      stockQuantity: 0, // Adicionado campo de estoque
       stockAlert: 5, // Adicionado alerta de estoque
       discount: null,
       originalPrice: null,
@@ -505,7 +505,7 @@ export default function ProductManagement() {
       }
       
       // Validação da quantidade em estoque
-      if (data.stock_quantity === undefined || data.stock_quantity === null) {
+      if (data.stockQuantity === undefined || data.stockQuantity === null) {
         toast({
           title: "Quantidade em estoque obrigatória",
           description: "Por favor, informe a quantidade em estoque disponível.",
@@ -515,7 +515,7 @@ export default function ProductManagement() {
       }
       
       // Validar que a quantidade em estoque é um número positivo
-      if (isNaN(Number(data.stock_quantity)) || Number(data.stock_quantity) < 0) {
+      if (isNaN(Number(data.stockQuantity)) || Number(data.stockQuantity) < 0) {
         toast({
           title: "Quantidade em estoque inválida",
           description: "A quantidade em estoque deve ser um número não negativo.",
