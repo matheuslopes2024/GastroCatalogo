@@ -8,8 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
 import { motion } from "framer-motion";
 
-// Importando os novos componentes com animações
-import { AnimatedHero } from "@/components/home/animated-hero";
+// Importando os componentes da página inicial
 import { FeaturedCarousel } from "@/components/home/featured-carousel";
 import { CategoryCards } from "@/components/home/category-cards";
 import { ProductGrid } from "@/components/home/product-grid";
@@ -110,8 +109,8 @@ export default function HomePage() {
       <Header />
       
       <main className="flex-grow">
-        {/* Hero Section Animado */}
-        <AnimatedHero />
+        {/* Banner interativo com dados dinâmicos */}
+        <InteractiveBanner />
         
         <CategoryNav />
         
@@ -121,9 +120,6 @@ export default function HomePage() {
         </div>
         
         <Divider />
-        
-        {/* Banner interativo com dados dinâmicos */}
-        <InteractiveBanner />
         
         {/* Categorias com Cards 3D */}
         <div className="container mx-auto px-4">
