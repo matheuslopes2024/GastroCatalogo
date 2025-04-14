@@ -888,19 +888,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
+      console.log("Iniciando processo de criação de produto");
+      console.log("Dados recebidos:", JSON.stringify(req.body, null, 2));
+      
       const validatedData = insertProductSchema.parse(req.body);
+      console.log("Dados validados com sucesso pelo Zod");
       
       // If user is a supplier, force supplierId to be their user ID
       if (req.user?.role === UserRole.SUPPLIER) {
         validatedData.supplierId = req.user.id;
+        console.log(`Definindo supplierId para o ID do fornecedor: ${req.user.id}`);
       }
       
+      console.log("Enviando dados para storage.createProduct:", JSON.stringify(validatedData, null, 2));
       const product = await storage.createProduct(validatedData);
+      console.log("Produto criado com sucesso:", JSON.stringify(product, null, 2));
+      
       res.status(201).json(product);
     } catch (error) {
+      console.error("Erro detalhado ao criar produto:", error);
+      
       if (error instanceof z.ZodError) {
+        console.log("Erro de validação Zod:", JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
       }
+      
       res.status(500).json({ message: "Erro ao criar produto" });
     }
   });
