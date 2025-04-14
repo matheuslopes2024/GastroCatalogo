@@ -258,8 +258,46 @@ export default function ProductManagement() {
   // Update product mutation
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues & { id: number }) => {
+      console.log("Iniciando mutação de atualização de produto:", data);
+      
+      // Validações adicionais antes de enviar a requisição
+      if (!data.id) {
+        throw new Error("ID do produto não especificado");
+      }
+      
+      if (!data.name || data.name.trim().length < 3) {
+        throw new Error("Nome do produto inválido. Deve ter pelo menos 3 caracteres.");
+      }
+      
+      if (!data.description || data.description.trim().length < 10) {
+        throw new Error("Descrição inválida. Deve ter pelo menos 10 caracteres.");
+      }
+      
+      if (!data.categoryId) {
+        throw new Error("Categoria principal é obrigatória.");
+      }
+      
+      if (!data.price || isNaN(Number(data.price)) || Number(data.price) <= 0) {
+        throw new Error("Preço inválido. Deve ser um número positivo.");
+      }
+      
       const { id, ...productData } = data;
-      return apiRequest("PATCH", `/api/products/${id}`, productData);
+      
+      // Enviar solicitação com tratamento de erros melhorado
+      try {
+        const response = await apiRequest("PATCH", `/api/products/${id}`, productData);
+        
+        if (!response.ok) {
+          // Tentar extrair a mensagem de erro da resposta
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Erro ao atualizar produto (${response.status})`);
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Erro na requisição de atualização:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       // Invalidar a consulta de produtos para atualização
@@ -283,10 +321,18 @@ export default function ProductManagement() {
             }
           } catch (e) {
             console.error("Erro ao processar resposta de atualização:", e);
+            // Mesmo em caso de erro, garantir que a query seja invalidada
+            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
           }
+        }).catch(e => {
+          console.error("Erro ao ler resposta de atualização:", e);
+          // Garantir que a query seja invalidada mesmo com erro ao ler o texto
+          queryClient.invalidateQueries({ queryKey: ["/api/products"] });
         });
       } catch (e) {
         console.error("Erro ao ler resposta de atualização:", e);
+        // Garantir que a query seja invalidada em caso de qualquer erro
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       }
       
       setIsEditDialogOpen(false);
@@ -296,10 +342,11 @@ export default function ProductManagement() {
         description: "O produto foi atualizado com sucesso",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error("Erro detalhado na atualização do produto:", error);
       toast({
         title: "Erro ao atualizar produto",
-        description: "Ocorreu um erro ao atualizar o produto. Por favor, tente novamente.",
+        description: error.message || "Ocorreu um erro ao atualizar o produto. Por favor, tente novamente.",
         variant: "destructive",
       });
     },
@@ -367,36 +414,96 @@ export default function ProductManagement() {
   const onSubmit = (data: ProductFormValues) => {
     console.log("Enviando dados do formulário:", data);
     
-    // Certifique-se de que o supplierId esteja definido
-    if (!data.supplierId && user) {
-      data.supplierId = user.id;
+    try {
+      // Validações adicionais antes de submeter o formulário
+      if (!data.name || data.name.trim().length < 3) {
+        toast({
+          title: "Nome inválido",
+          description: "O nome do produto deve ter pelo menos 3 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.description || data.description.trim().length < 10) {
+        toast({
+          title: "Descrição inválida",
+          description: "A descrição do produto deve ter pelo menos 10 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.categoryId) {
+        toast({
+          title: "Categoria obrigatória",
+          description: "Selecione uma categoria principal para o produto",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data.price || isNaN(Number(data.price)) || Number(data.price) <= 0) {
+        toast({
+          title: "Preço inválido",
+          description: "O preço do produto deve ser um número positivo",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Certifique-se de que o supplierId esteja definido
+      if (!data.supplierId && user) {
+        data.supplierId = user.id;
+      }
+      
+      if (!data.supplierId) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Não foi possível identificar o fornecedor. Tente fazer login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Gerar um slug único baseado no nome do produto e timestamp para evitar duplicações
+      const timestamp = Date.now().toString().slice(-6);
+      const baseSlug = generateSlug(data.name);
+      const slug = `${baseSlug}-${timestamp}`;
+      
+      // Versão completa do produto com todas as propriedades necessárias
+      const productData = {
+        name: data.name.trim(),
+        description: data.description.trim(),
+        slug,
+        categoryId: data.categoryId,
+        additionalCategories: Array.isArray(data.additionalCategories) ? data.additionalCategories : [], 
+        supplierId: data.supplierId || user?.id,
+        price: data.price ? data.price.toString() : "0",
+        imageUrl: data.imageUrl || "https://via.placeholder.com/400x300?text=Produto",
+        active: true,
+        features: Array.isArray(data.features) ? data.features : [],
+        discount: data.discount || null,
+        originalPrice: data.originalPrice || null,
+        imageData: data.imageData || null,
+        imageType: data.imageType || null,
+        stockQuantity: 0,
+        stockStatus: "in_stock",
+        stockAlert: 5,
+        rating: "0",
+        ratingsCount: 0
+      };
+      
+      console.log("Dados completos para envio:", productData);
+      createProductMutation.mutate(productData as ProductFormValues);
+    } catch (error) {
+      console.error("Erro na validação do formulário:", error);
+      toast({
+        title: "Erro na validação",
+        description: "Ocorreu um erro ao processar os dados do formulário. Verifique todos os campos.",
+        variant: "destructive",
+      });
     }
-    
-    // Garanta que todos os campos obrigatórios estejam presentes
-    const slug = generateSlug(data.name);
-    
-    // Versão completa do produto com todas as propriedades necessárias
-    const productData = {
-      name: data.name,
-      description: data.description,
-      slug,
-      categoryId: data.categoryId,
-      additionalCategories: data.additionalCategories || [], // Adicionando categorias adicionais
-      supplierId: data.supplierId || user?.id,
-      price: data.price ? data.price.toString() : "0",
-      imageUrl: data.imageUrl,
-      active: true,
-      features: [],
-      discount: data.discount,
-      originalPrice: data.originalPrice,
-      imageData: data.imageData,
-      imageType: data.imageType,
-      rating: null,
-      ratingsCount: 0
-    };
-    
-    console.log("Dados simplificados para envio:", productData);
-    createProductMutation.mutate(productData as ProductFormValues);
   };
   
   // Handler for submitting the edit product form
