@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/ui/loading";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Packages, 
+  Package, 
   AlertTriangle, 
   Search, 
   ArrowUpDown, 
