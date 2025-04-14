@@ -1024,8 +1024,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Iniciando atualização do produto ID: ${id}`);
       
-      // Buscar o produto no banco de dados diretamente
-      const product = await storage.getProduct(id);
+      // 1. Validações preliminares
+      if (isNaN(id) || id <= 0) {
+        console.error(`ID de produto inválido: ${req.params.id}`);
+        return res.status(400).json({ 
+          message: "ID de produto inválido", 
+          field: "id"
+        });
+      }
+      
+      // 2. Buscar o produto existente
+      try {
+        var product = await storage.getProduct(id);
+      } catch (queryError: any) {
+        console.error(`Erro ao buscar produto ID ${id}:`, queryError);
+        return res.status(500).json({ 
+          message: "Erro ao acessar os dados do produto", 
+          errorCode: "DB_QUERY_ERROR"
+        });
+      }
       
       if (!product) {
         console.log(`Produto ID ${id} não encontrado no banco de dados`);
@@ -1038,7 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: product.active
       });
       
-      // Suppliers can only update their own products
+      // 3. Verificação de permissão (fornecedor só pode editar seus próprios produtos)
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
         const productSupplierId = Number(product.supplierId);
@@ -1051,37 +1068,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
           - Papel do usuário: ${req.user.role}
         `);
         
-        // Debug extra para verificar o tipo de dados
-        console.log("Tipos de dados na comparação:", {
-          productSupplierId: typeof productSupplierId,
-          userId: typeof userId,
-          productSupplierId_valor: productSupplierId,
-          userId_valor: userId
-        });
-        
         // Verificar se os números são realmente iguais
-        if (Number(productSupplierId) !== Number(userId)) {
-          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} (${typeof productSupplierId}) !== ${userId} (${typeof userId})`);
+        if (productSupplierId !== userId) {
+          console.log(`Acesso negado para atualização - IDs diferentes: ${productSupplierId} !== ${userId}`);
           return res.status(403).json({ 
-            message: "Sem permissão para editar este produto",
-            debug: {
-              productSupplierId,
-              userId,
-              productId: id
-            }
+            message: "Sem permissão para editar este produto", 
+            field: "supplierId"
           });
         }
       }
       
-      // Garantir que o supplierId seja mantido consistente
+      // 4. Validação dos dados de entrada
+      // Verificações manuais específicas
+      if (req.body.name && (typeof req.body.name !== 'string' || req.body.name.trim().length < 3)) {
+        console.error("Nome de produto inválido:", req.body.name);
+        return res.status(400).json({ 
+          message: "O nome do produto deve ter pelo menos 3 caracteres",
+          field: "name"
+        });
+      }
+      
+      if (req.body.description && (typeof req.body.description !== 'string' || req.body.description.trim().length < 10)) {
+        console.error("Descrição de produto inválida:", req.body.description);
+        return res.status(400).json({ 
+          message: "A descrição do produto deve ter pelo menos 10 caracteres",
+          field: "description"
+        });
+      }
+      
+      if (req.body.categoryId && (isNaN(Number(req.body.categoryId)) || Number(req.body.categoryId) <= 0)) {
+        console.error("Categoria de produto inválida:", req.body.categoryId);
+        return res.status(400).json({ 
+          message: "A categoria do produto deve ser um número válido",
+          field: "categoryId"
+        });
+      }
+      
+      if (req.body.price && (isNaN(Number(req.body.price)) || Number(req.body.price) <= 0)) {
+        console.error("Preço de produto inválido:", req.body.price);
+        return res.status(400).json({ 
+          message: "O preço do produto deve ser um número positivo válido",
+          field: "price"
+        });
+      }
+      
+      // 5. Preparar dados para atualização
       let productData = { ...req.body };
       
-      // Remover campos que não devem ser alterados diretamente
+      // Campos que não devem ser alterados diretamente
       delete productData.id; // Não permitir alteração do ID
       
-      // Se o supplierId não foi fornecido ou é diferente do original para um fornecedor,
-      // mantenha o original ou use o ID do usuário atual
+      // Manipular categorias adicionais
+      if (productData.additionalCategories) {
+        if (!Array.isArray(productData.additionalCategories)) {
+          console.warn("Convertendo additionalCategories para array");
+          productData.additionalCategories = [productData.additionalCategories].filter(Boolean);
+        }
+        
+        // Filtrar categorias inválidas
+        productData.additionalCategories = productData.additionalCategories.filter(
+          (catId: any) => catId && !isNaN(Number(catId)) && Number(catId) > 0
+        );
+        
+        console.log("Categorias adicionais processadas:", productData.additionalCategories);
+      }
+      
+      // 6. Tratamento do fornecedor
       if (req.user?.role === UserRole.SUPPLIER) {
+        // Fornecedor só pode usar seu próprio ID
         productData.supplierId = req.user.id;
       } else if (!productData.supplierId) {
         // Se não foi fornecido, manter o original
@@ -1096,7 +1150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categoria: productData.categoryId
       });
       
-      // Realizamos aqui a atualização do produto
+      // 7. Executar a atualização
       try {
         const updatedProduct = await storage.updateProduct(id, productData);
         
@@ -1114,19 +1168,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           supplierId: updatedProduct.supplierId
         });
         
+        // 8. Retornar resposta de sucesso
         res.json(updatedProduct);
-      } catch (updateError) {
+      } catch (updateError: any) {
+        // 9. Tratamento de erros específicos
         console.error("Erro específico ao atualizar produto:", updateError);
-        res.status(500).json({ 
-          message: "Erro ao atualizar dados do produto",
-          error: updateError.message
+        
+        if (updateError.message?.includes("duplicada") || updateError.message?.includes("duplicate")) {
+          return res.status(409).json({ 
+            message: "Já existe um produto com este nome ou slug",
+            field: "name"
+          });
+        }
+        
+        if (updateError.message?.includes("chave estrangeira") || updateError.message?.includes("foreign key")) {
+          return res.status(400).json({ 
+            message: "Referência inválida. Verifique se a categoria e o fornecedor existem.",
+            field: updateError.message.includes("categoryId") ? "categoryId" : "supplierId"
+          });
+        }
+        
+        const statusCode = updateError.status || 500;
+        res.status(statusCode).json({ 
+          message: updateError.message || "Erro ao atualizar dados do produto",
+          errorCode: updateError.code || "UPDATE_ERROR",
+          field: updateError.field
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      // 10. Tratamento de erros genéricos
       console.error("Erro ao processar atualização de produto:", error);
-      res.status(500).json({ 
-        message: "Erro ao atualizar produto",
-        error: error.message
+      
+      const statusCode = error.status || 500;
+      res.status(statusCode).json({ 
+        message: error.message || "Erro ao atualizar produto",
+        errorCode: error.code || "UNKNOWN_ERROR",
+        status: statusCode
       });
     }
   });
@@ -1137,8 +1214,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Iniciando exclusão lógica do produto ID: ${id}`);
       
-      // Buscar o produto no banco de dados diretamente
-      const product = await storage.getProduct(id);
+      // 1. Validações preliminares
+      if (isNaN(id) || id <= 0) {
+        console.error(`ID de produto inválido: ${req.params.id}`);
+        return res.status(400).json({ 
+          message: "ID de produto inválido", 
+          field: "id"
+        });
+      }
+      
+      // 2. Buscar o produto existente
+      try {
+        var product = await storage.getProduct(id);
+      } catch (queryError: any) {
+        console.error(`Erro ao buscar produto ID ${id}:`, queryError);
+        return res.status(500).json({ 
+          message: "Erro ao acessar os dados do produto", 
+          errorCode: "DB_QUERY_ERROR"
+        });
+      }
       
       if (!product) {
         console.log(`Produto ID ${id} não encontrado no banco de dados`);
@@ -1151,7 +1245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: product.active
       });
       
-      // Suppliers can only delete their own products
+      // 3. Verificação de permissão (fornecedor só pode excluir seus próprios produtos)
       if (req.user?.role === UserRole.SUPPLIER) {
         // Converter IDs para número para garantir comparação correta
         const productSupplierId = Number(product.supplierId);
@@ -1164,30 +1258,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           - Papel do usuário: ${req.user.role}
         `);
         
-        // Debug extra para verificar o tipo de dados
-        console.log("Tipos de dados na comparação:", {
-          productSupplierId: typeof productSupplierId,
-          userId: typeof userId,
-          productSupplierId_valor: productSupplierId,
-          userId_valor: userId
-        });
-        
         // Verificar se os números são realmente iguais
-        if (Number(productSupplierId) !== Number(userId)) {
-          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} (${typeof productSupplierId}) !== ${userId} (${typeof userId})`);
+        if (productSupplierId !== userId) {
+          console.log(`Acesso negado para exclusão - IDs diferentes: ${productSupplierId} !== ${userId}`);
           return res.status(403).json({ 
-            message: "Sem permissão para excluir este produto",
-            debug: {
-              productSupplierId,
-              userId,
-              productId: id
-            }
+            message: "Sem permissão para excluir este produto", 
+            field: "supplierId"
           });
         }
       }
       
-      // Garantir que estamos mantendo o supplierId consistente na operação de exclusão lógica
-      // (importante para manter a consistência de dados)
+      // 4. Verificar dependências antes da exclusão
+      try {
+        // Aqui poderíamos verificar se o produto está em pedidos, orçamentos, etc.
+        // Por exemplo:
+        // const hasOrders = await storage.checkProductHasOrders(id);
+        // if (hasOrders) {
+        //   return res.status(409).json({ 
+        //     message: "Não é possível excluir um produto que já possui pedidos", 
+        //     field: "id"
+        //   });
+        // }
+      } catch (dependencyError: any) {
+        console.error("Erro ao verificar dependências do produto:", dependencyError);
+      }
+      
+      // 5. Preparar dados para exclusão lógica
       const deleteData = { 
         active: false,
         supplierId: product.supplierId // Mantenha o ID do fornecedor original
@@ -1195,7 +1291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Desativando produto ID:", id, "do fornecedor:", product.supplierId);
       
-      // Realizamos aqui exclusão lógica do produto (marcar como inativo)
+      // 6. Executar a exclusão lógica
       try {
         const deletedProduct = await storage.updateProduct(id, deleteData);
         
@@ -1213,19 +1309,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           supplierId: deletedProduct.supplierId
         });
         
-        res.json(deletedProduct);
-      } catch (updateError) {
+        // 7. Registrar a operação de exclusão em log para auditoria
+        console.log(`[AUDIT] Produto ID ${id} desativado pelo usuário ${req.user?.id} (${req.user?.role}) em ${new Date().toISOString()}`);
+        
+        // 8. Responder com sucesso
+        res.json({
+          ...deletedProduct,
+          message: "Produto desativado com sucesso"
+        });
+      } catch (updateError: any) {
+        // 9. Tratamento de erros específicos
         console.error("Erro específico ao desativar produto:", updateError);
-        res.status(500).json({ 
-          message: "Erro ao atualizar status do produto para inativo",
-          error: updateError.message
+        
+        const statusCode = updateError.status || 500;
+        res.status(statusCode).json({ 
+          message: updateError.message || "Erro ao atualizar status do produto para inativo",
+          errorCode: updateError.code || "DELETE_ERROR",
+          field: updateError.field || "active"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      // 10. Tratamento de erros genéricos
       console.error("Erro ao processar exclusão de produto:", error);
-      res.status(500).json({ 
-        message: "Erro ao excluir produto",
-        error: error.message 
+      
+      const statusCode = error.status || 500;
+      res.status(statusCode).json({ 
+        message: error.message || "Erro ao excluir produto",
+        errorCode: error.code || "UNKNOWN_ERROR",
+        status: statusCode
       });
     }
   });
