@@ -166,10 +166,7 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-      // Retorna null com status 200 em vez de 401 para permitir acesso a páginas públicas
-      return res.status(200).json(null);
-    }
+    if (!req.isAuthenticated()) return res.sendStatus(401);
     
     // Remove password before sending response
     const { password, ...userWithoutPassword } = req.user as SelectUser;
