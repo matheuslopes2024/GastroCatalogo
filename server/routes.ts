@@ -1641,6 +1641,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para dashboard do fornecedor - produtos mais visualizados
+  // API para obter produtos com estoque baixo
+  app.get("/api/supplier/low-stock-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      // Buscar todos os produtos do fornecedor
+      const products = await storage.getProductsBySupplier(supplierId);
+      
+      // Filtrar produtos com estoque baixo
+      const lowStockProducts = products.filter(product => {
+        // Verificar se o produto tem quantidade de estoque definida
+        if (product.stockQuantity === undefined || product.stockQuantity === null) {
+          return false;
+        }
+        
+        // Verificar se o produto tem um limite de alerta definido
+        const alertThreshold = product.stockAlert || 5; // Valor padrão: 5
+        
+        // Produto está com estoque baixo se a quantidade for menor ou igual ao limite
+        return product.stockQuantity <= alertThreshold;
+      });
+      
+      res.json(lowStockProducts);
+    } catch (error) {
+      console.error("Erro ao buscar produtos com estoque baixo:", error);
+      res.status(500).json({ message: "Erro ao buscar produtos com estoque baixo" });
+    }
+  });
+
+  // API para atualização em massa de produtos
+  app.post("/api/supplier/batch-update-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const { updates } = req.body;
+      
+      if (!Array.isArray(updates) || updates.length === 0) {
+        return res.status(400).json({ message: "Nenhuma atualização válida fornecida" });
+      }
+      
+      // Validar se todos os produtos pertencem ao fornecedor
+      const productIds = updates.map(update => update.id);
+      const products = await storage.getProductsByIds(productIds);
+      
+      // Filtrar apenas os produtos que pertencem ao fornecedor atual
+      const validProducts = products.filter(product => product.supplierId === supplierId);
+      const validProductIds = validProducts.map(p => p.id);
+      
+      // Verificar se há tentativa de acessar produtos de outros fornecedores
+      if (validProductIds.length !== productIds.length) {
+        console.warn(`Tentativa de atualizar produtos de outros fornecedores detectada. Usuário ID ${supplierId}`);
+        return res.status(403).json({ 
+          message: "Alguns produtos não puderam ser atualizados devido a permissões insuficientes",
+          updatedCount: 0
+        });
+      }
+      
+      // Executar as atualizações
+      const results = await Promise.all(
+        updates.map(async (update) => {
+          try {
+            // Garantir que não estamos alterando o supplierId
+            delete update.supplierId;
+            
+            // Atualizar o produto
+            return await storage.updateProduct(update.id, update);
+          } catch (error) {
+            console.error(`Erro ao atualizar produto ID ${update.id}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filtrar apenas as atualizações bem-sucedidas
+      const successfulUpdates = results.filter(Boolean);
+      
+      res.json({
+        message: `${successfulUpdates.length} produtos atualizados com sucesso`,
+        updatedCount: successfulUpdates.length,
+        updatedProducts: successfulUpdates
+      });
+    } catch (error) {
+      console.error("Erro ao processar atualização em massa de produtos:", error);
+      res.status(500).json({ message: "Erro ao processar atualização em massa de produtos" });
+    }
+  });
+
+  // API para atualizar quantidade em estoque
+  app.patch("/api/supplier/update-stock/:productId", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const productId = parseInt(req.params.productId);
+      const { stockQuantity, stockStatus, stockAlert } = req.body;
+      
+      // Verificar se o produto existe e pertence ao fornecedor
+      const product = await storage.getProductById(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      if (product.supplierId !== supplierId) {
+        return res.status(403).json({ message: "Você não tem permissão para atualizar este produto" });
+      }
+      
+      // Preparar os dados de atualização
+      const updateData: Partial<Product> = {};
+      
+      if (stockQuantity !== undefined) {
+        updateData.stockQuantity = stockQuantity;
+        
+        // Atualizar automaticamente o status de estoque com base na quantidade
+        if (stockQuantity <= 0) {
+          updateData.stockStatus = "out_of_stock";
+        } else if (stockQuantity <= (product.stockAlert || 5)) {
+          updateData.stockStatus = "low_stock";
+        } else {
+          updateData.stockStatus = "in_stock";
+        }
+      }
+      
+      // Se um status específico foi fornecido, sobrescrever o calculado automaticamente
+      if (stockStatus !== undefined) {
+        updateData.stockStatus = stockStatus;
+      }
+      
+      if (stockAlert !== undefined) {
+        updateData.stockAlert = stockAlert;
+      }
+      
+      // Atualizar o produto
+      const updatedProduct = await storage.updateProduct(productId, updateData);
+      
+      res.json(updatedProduct);
+    } catch (error) {
+      console.error("Erro ao atualizar estoque do produto:", error);
+      res.status(500).json({ message: "Erro ao atualizar estoque do produto" });
+    }
+  });
+
   app.get("/api/supplier/dashboard/top-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
     try {
       const supplierId = req.user!.id;
