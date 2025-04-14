@@ -104,6 +104,14 @@ const productFormSchema = z.object({
   price: z.string().or(z.number()).pipe(
     z.coerce.number().min(0, "Preço deve ser maior que zero")
   ),
+  // Quantidade em estoque - necessário para criação de produtos
+  stock_quantity: z.number().int().min(0, "A quantidade em estoque deve ser um número inteiro positivo")
+    .or(z.string().pipe(z.coerce.number().int()))
+    .default(0),
+  stockAlert: z.number().int().min(0, "O alerta de estoque deve ser um número inteiro positivo")
+    .or(z.string().pipe(z.coerce.number().int()))
+    .default(0)
+    .optional(),
   discount: z.number().nullable().optional(),
   originalPrice: z.string().nullable().optional(),
   features: z.string().optional().transform(val => 
@@ -167,6 +175,8 @@ export default function ProductManagement() {
       categoryId: undefined,
       supplierId: user?.id,
       price: "",
+      stock_quantity: 0, // Adicionado campo de estoque
+      stockAlert: 5, // Adicionado alerta de estoque
       discount: null,
       originalPrice: null,
       features: "",
@@ -487,6 +497,26 @@ export default function ProductManagement() {
         toast({
           title: "Erro de autenticação",
           description: "Não foi possível identificar o fornecedor. Tente fazer login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validação da quantidade em estoque
+      if (data.stock_quantity === undefined || data.stock_quantity === null) {
+        toast({
+          title: "Quantidade em estoque obrigatória",
+          description: "Por favor, informe a quantidade em estoque disponível.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validar que a quantidade em estoque é um número positivo
+      if (isNaN(Number(data.stock_quantity)) || Number(data.stock_quantity) < 0) {
+        toast({
+          title: "Quantidade em estoque inválida",
+          description: "A quantidade em estoque deve ser um número não negativo.",
           variant: "destructive",
         });
         return;
