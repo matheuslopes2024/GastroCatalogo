@@ -72,11 +72,11 @@ function SupplierSidebar() {
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
       <nav className="space-y-2">
         <Link href="/fornecedor/dashboard" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-          <Packages className="mr-2 h-5 w-5" />
+          <Package className="mr-2 h-5 w-5" />
           Dashboard
         </Link>
         <Link href="/fornecedor/produtos" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
-          <Packages className="mr-2 h-5 w-5" />
+          <Package className="mr-2 h-5 w-5" />
           Meus Produtos
         </Link>
         <Link href="/fornecedor/estoque" className="flex items-center text-primary p-2 rounded-md bg-primary/10 font-medium">
@@ -1006,7 +1006,7 @@ function StockManagementTable({
                     />
                   ) : (
                     <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                      <Packages className="h-4 w-4 text-gray-500" />
+                      <Package className="h-4 w-4 text-gray-500" />
                     </div>
                   )}
                   <div className="font-medium">{product.name}</div>
