@@ -3978,6 +3978,62 @@ export class DatabaseStorage implements IStorage {
     
     return foundCategories;
   }
+
+  // Métodos para dashboard da página inicial
+  async getProductsCount(): Promise<number> {
+    try {
+      const result = await db.select({ count: sql`count(*)` })
+        .from(products)
+        .where(eq(products.active, true));
+      return parseInt(result[0].count.toString());
+    } catch (error) {
+      console.error("Erro ao contar produtos ativos:", error);
+      return 0;
+    }
+  }
+  
+  async getSuppliersCount(): Promise<number> {
+    try {
+      const result = await db.select({ count: sql`count(*)` })
+        .from(users)
+        .where(and(
+          eq(users.role, 'supplier'),
+          eq(users.active, true)
+        ));
+      return parseInt(result[0].count.toString());
+    } catch (error) {
+      console.error("Erro ao contar fornecedores ativos:", error);
+      return 0;
+    }
+  }
+  
+  async getCategoriesCount(): Promise<number> {
+    try {
+      const result = await db.select({ count: sql`count(*)` }).from(categories);
+      return parseInt(result[0].count.toString());
+    } catch (error) {
+      console.error("Erro ao contar categorias:", error);
+      return 0;
+    }
+  }
+  
+  async getUsersCount(options?: { role?: string }): Promise<number> {
+    try {
+      let query = db.select({ count: sql`count(*)` })
+        .from(users)
+        .where(eq(users.active, true));
+      
+      if (options?.role) {
+        query = query.where(eq(users.role, options.role));
+      }
+      
+      const result = await query;
+      return parseInt(result[0].count.toString());
+    } catch (error) {
+      console.error("Erro ao contar usuários:", error);
+      return 0;
+    }
+  }
 }
 
 // Usar o armazenamento de banco de dados PostgreSQL
