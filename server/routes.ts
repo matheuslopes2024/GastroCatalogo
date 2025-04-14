@@ -28,6 +28,17 @@ import {
   getProductComparisonStats 
 } from './controllers/productController';
 
+// Importação dos novos controllers
+import { 
+  getMarketplaceStats, 
+  getSupplierStats, 
+  getProductGroupStats 
+} from './controllers/statsController';
+
+import {
+  getKitPresets
+} from './controllers/kitController';
+
 // Inicialização do Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-03-31.basil" }) 
