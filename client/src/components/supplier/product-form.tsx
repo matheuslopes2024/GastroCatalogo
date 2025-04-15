@@ -129,10 +129,12 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     },
   });
 
+  // Obter o usuário atual
+  const { user } = useAuth();
+  
   // Mutation para criar/atualizar produto
   const productMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const { user } = useAuth();
       if (!user?.id) {
         throw new Error("ID do usuário não encontrado");
       }
@@ -149,19 +151,31 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       // Para debug
       console.log(`Enviando requisição para ${url} usando método ${method}`);
       
-      const res = await fetch(`${window.location.origin}${url}`, {
-        method,
-        body: data,
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        console.error(`Erro ${res.status} ao salvar produto:`, await res.text());
-        const error = await res.json().catch(() => ({ message: `Erro ${res.status}: ${res.statusText}` }));
-        throw new Error(error.message || "Erro ao salvar produto");
+      try {
+        const res = await apiRequest(method, url, data, true);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error(`Erro ${res.status} ao salvar produto:`, errorText);
+          
+          let errorMsg = `Erro ${res.status}: ${res.statusText}`;
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+              errorMsg = errorJson.message;
+            }
+          } catch (e) {
+            // Se não conseguir parsear como JSON, usa o texto bruto
+          }
+          
+          throw new Error(errorMsg);
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("Erro completo:", error);
+        throw error;
       }
-      
-      return await res.json();
     },
     onSuccess: (data) => {
       console.log("Produto salvo com sucesso:", data);
@@ -174,11 +188,12 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       });
       
       // Invalidar as queries corretas com o ID do fornecedor
-      const { user } = useAuth();
-      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user?.id}/products`] });
-      
-      if (productId) {
-        queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user?.id}/products/${productId}`] });
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user.id}/products`] });
+        
+        if (productId) {
+          queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user.id}/products/${productId}`] });
+        }
       }
       
       onSave();
