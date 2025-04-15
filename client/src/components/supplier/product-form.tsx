@@ -143,7 +143,7 @@ interface ProductFormProps {
 export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("general");
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
