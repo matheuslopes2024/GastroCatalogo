@@ -76,18 +76,18 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
       let wsUrl = "";
       
       try {
-        // Construir URL segura seguindo o padrão das diretrizes JavaScript WebSocket
-        // A documentação recomenda usar uma rota específica separada para WebSockets
+        // Construir URL segura com verificações de fallback
+        let port = "5000"; // Porta padrão do servidor
         
         // Garantir que temos um host válido e usar uma abordagem mais robusta
         if (currentHost && currentHost.length > 0) {
-          // Usar o caminho /ws como especificado nas diretrizes de desenvolvimento
+          // Usar host atual, garantindo que o caminho comece com /ws
           wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
           console.log("[WS] Usando URL com host atual:", wsUrl);
         } else {
           // Fallback absoluto para desenvolvimento local apenas como último recurso
-          // Usando uma URL que sabemos que é válida
-          wsUrl = `${protocol}//localhost/ws?token=${token}`;
+          // Usando uma URL que sabemos que é válida e com porta correta para desenvolvimento
+          wsUrl = `${protocol}//localhost:5000/ws?token=${token}`;
           console.log("[WS] Usando URL local fallback:", wsUrl);
         }
         
@@ -135,57 +135,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
         setConnected(true);
         setConnectionError(null);
         
-        // Enviar autenticação imediatamente assim que conectar
+        // Enviar autenticação
         if (ws.current && ws.current.readyState === WebSocket.OPEN && user) {
-          try {
-            // Garantir que estamos enviando dados válidos
-            const authData = {
-              type: "auth",
-              userId: user.id,
-              userRole: user.role,
-              timestamp: Date.now() // Adicionar timestamp para evitar problemas de cache
-            };
-            
-            console.log("[WS] Enviando autenticação:", authData);
-            ws.current.send(JSON.stringify(authData));
-            
-            // Adicionar verificação de autenticação
-            setTimeout(() => {
-              // Se estiver conectado mas não recebeu confirmação de auth em 2 segundos
-              if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-                console.log("[WS] Enviando segunda tentativa de autenticação");
-                try {
-                  ws.current.send(JSON.stringify({
-                    ...authData,
-                    timestamp: Date.now(),
-                    retry: true
-                  }));
-                } catch (retryError) {
-                  console.error("[WS] Erro ao reenviar autenticação:", retryError);
-                }
-              }
-            }, 2000);
-          } catch (authError) {
-            console.error("[WS] Erro ao enviar autenticação:", authError);
-            // Tentar recuperar enviando nova mensagem
-            setTimeout(() => {
-              if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-                try {
-                  ws.current.send(JSON.stringify({
-                    type: "auth",
-                    userId: user.id,
-                    userRole: user.role,
-                    timestamp: Date.now(),
-                    recovery: true
-                  }));
-                } catch (recoveryError) {
-                  console.error("[WS] Erro na tentativa de recuperação:", recoveryError);
-                }
-              }
-            }, 1000);
-          }
-        } else {
-          console.warn("[WS] Não foi possível enviar autenticação - usuário ou conexão indisponíveis");
+          ws.current.send(JSON.stringify({
+            type: "auth",
+            userId: user.id,
+            userRole: user.role
+          }));
         }
         
         // Limpar timeout de reconexão
@@ -296,61 +252,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
       };
       
       ws.current.onerror = (event) => {
-        // Log detalhado de erros para depuração
         console.error("Erro WebSocket:", event);
-        
-        // Investigar o tipo de erro para tratamento específico
-        const errorDetails = event.toString();
-        let errorMessage = "Erro na conexão WebSocket";
-        
-        // Verificar tipos comuns de erros WebSocket
-        if (errorDetails.includes("401") || errorDetails.includes("Unauthorized")) {
-          errorMessage = "Erro de autenticação WebSocket - Reconectando...";
-          
-          // Se houver erro de autenticação, tentar enviar autenticação explícita
-          setTimeout(() => {
-            if (ws.current && ws.current.readyState === WebSocket.OPEN && user) {
-              try {
-                ws.current.send(JSON.stringify({
-                  type: "auth",
-                  userId: user.id,
-                  userRole: user.role,
-                  timestamp: Date.now(),
-                  recovery: true,
-                  errorRecovery: true
-                }));
-              } catch (authError) {
-                console.error("[WS] Erro de recuperação de autenticação:", authError);
-              }
-            }
-          }, 500);
-        } else if (errorDetails.includes("403") || errorDetails.includes("Forbidden")) {
-          errorMessage = "Acesso negado ao WebSocket";
-        } else if (errorDetails.includes("404") || errorDetails.includes("Not Found")) {
-          errorMessage = "Endpoint WebSocket não encontrado";
-        } else if (errorDetails.includes("timeout") || errorDetails.includes("Timeout")) {
-          errorMessage = "Timeout na conexão WebSocket";
-        } else if (errorDetails.includes("400") || errorDetails.includes("Bad Request")) {
-          errorMessage = "Solicitação WebSocket inválida - verificando autenticação...";
-          
-          // Tentar reconectar com autenticação específica para erro 400
-          setTimeout(() => {
-            // Forçar reconexão em caso de erro 400 - isso pode resolver problemas de sequência
-            if (ws.current) {
-              try {
-                ws.current.close();
-              } catch (closeError) {
-                console.error("[WS] Erro ao fechar conexão com problemas:", closeError);
-              }
-            }
-            
-            // Criar nova conexão após fechar a anterior
-            connectWebSocket();
-          }, 1000);
-        }
-        
-        // Atualizar estado com mensagem de erro relevante
-        setConnectionError(errorMessage);
+        setConnectionError("Erro na conexão WebSocket");
         setConnected(false);
       };
     } catch (error) {

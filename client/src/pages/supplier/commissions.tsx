@@ -87,7 +87,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
-import { SupplierSidebar } from "@/components/supplier/supplier-sidebar";
+import SupplierSidebar from "@/components/supplier/supplier-sidebar";
 import {
   Dialog,
   DialogContent,

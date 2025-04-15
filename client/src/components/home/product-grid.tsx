@@ -212,12 +212,18 @@ export function ProductGrid() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        console.log('ProductGrid: Buscando produtos destacados na API');
+        // Preparar parâmetros de busca para garantir que pegamos TODOS os produtos ativos
+        const params = new URLSearchParams({
+          limit: '50', // Aumentamos o limite para garantir que pegamos mais produtos
+          includeInactive: 'false' // Apenas produtos ativos
+        });
         
-        // Usar a nova rota específica para produtos destacados
+        console.log('ProductGrid: Buscando produtos na API com parâmetros:', params.toString());
+        
+        // Fazer requisição à API com parâmetros específicos
         const res = await apiRequest(
           'GET', 
-          `/api/products/featured`, 
+          `/api/products?${params.toString()}`, 
           undefined, 
           {
             // Garantir que estamos enviando header para indicar que NÃO é dashboard de fornecedor
@@ -230,7 +236,7 @@ export function ProductGrid() {
         }
         
         const responseData = await res.json();
-        console.log('ProductGrid: Resposta da API de produtos destacados:', responseData);
+        console.log('ProductGrid: Resposta da API:', responseData);
         
         // Lidar com ambos os formatos de resposta (array ou objeto com data)
         const productsArray = Array.isArray(responseData) 
@@ -239,10 +245,11 @@ export function ProductGrid() {
             ? responseData.data 
             : [];
             
-        console.log(`ProductGrid: Buscou ${productsArray.length} produtos destacados, IDs:`, 
+        console.log(`ProductGrid: Buscou ${productsArray.length} produtos no total, IDs:`, 
           productsArray.map(p => `${p.id} (${p.name})`).join(', '));
         
-        // Verificar se temos os produtos específicos que estamos procurando (para diagnóstico)
+        // Verificar se temos os produtos específicos que estamos procurando
+        // Usando toLowerCase() para garantir que a pesquisa não seja sensível a maiúsculas/minúsculas
         const hasMessiProduct = productsArray.some(p => p.name && p.name.toLowerCase().includes('messi'));
         const hasCR7Product = productsArray.some(p => p.name && p.name.toLowerCase().includes('cr7'));
         
@@ -258,11 +265,11 @@ export function ProductGrid() {
           console.log("ProductGrid: Detalhes do produto CR7:", cr7Products.map(p => `${p.id} - ${p.name}`));
         }
         
-        // Definir os produtos no estado
-        setProducts(productsArray);
+        // Mostrar todos os produtos buscados (ou limitar a 8 conforme necessário)
+        setProducts(productsArray); // Removida a limitação para mostrar mais produtos
         setLoading(false);
       } catch (error) {
-        console.error('Erro ao buscar produtos destacados:', error instanceof Error ? error.message : 'Erro desconhecido');
+        console.error('Erro ao buscar produtos destacados:', error);
         // Garantir que temos algum feedback visual para o usuário
         setProducts([]);
         setLoading(false);
@@ -270,7 +277,7 @@ export function ProductGrid() {
     };
 
     fetchProducts().catch(error => {
-      console.error('Erro não tratado ao buscar produtos destacados:', error instanceof Error ? error.message : 'Erro desconhecido');
+      console.error('Erro não tratado ao buscar produtos:', error);
       setProducts([]);
       setLoading(false);
     });

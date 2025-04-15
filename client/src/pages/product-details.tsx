@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { SupplierOptions } from "@/components/product/supplier-options";
 import { useCart } from "@/hooks/use-cart";
-import { ProductInventoryInfo } from "@/components/product/product-inventory-info";
 
 export default function ProductDetails() {
   const [, params] = useRoute("/produto/:slug");
@@ -198,7 +197,7 @@ export default function ProductDetails() {
                 {isLoadingSupplier ? (
                   <div className="mb-4"><Loading /></div>
                 ) : (
-                  <div className="flex items-center mb-4">
+                  <div className="flex items-center mb-6">
                     <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                       {supplier?.companyName?.charAt(0) || "F"}
                     </div>
@@ -208,11 +207,6 @@ export default function ProductDetails() {
                     </div>
                   </div>
                 )}
-                
-                {/* Inventory Information */}
-                <div className="mb-4">
-                  {product && <ProductInventoryInfo productId={product.id} showDetailed={true} />}
-                </div>
                 
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3 mt-auto">

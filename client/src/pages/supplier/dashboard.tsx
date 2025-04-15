@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/hooks/use-chat";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@shared/schema";
-import { StockStatusSummary } from "@/components/dashboard/stock-status-summary";
 import { 
   Card, 
   CardContent, 
@@ -66,14 +65,6 @@ function SupplierSidebar() {
   // Usar o hook para obter o contador de mensagens não lidas
   const { unreadCount } = useChat();
   
-  // Hook para obter contador de alertas de estoque
-  const { data: inventoryAlerts } = useQuery({
-    queryKey: ["/api/supplier/inventory/alerts", { isRead: false }],
-    enabled: true,
-  });
-  
-  const alertsCount = inventoryAlerts?.length || 0;
-  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
@@ -85,15 +76,6 @@ function SupplierSidebar() {
         <Link href="/fornecedor/produtos" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
           <Package className="mr-2 h-5 w-5" />
           Meus Produtos
-        </Link>
-        <Link href="/fornecedor/inventario" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium relative">
-          <Bell className="mr-2 h-5 w-5" />
-          Gerenciar Estoque
-          {alertsCount > 0 && (
-            <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-              {alertsCount}
-            </span>
-          )}
         </Link>
         <Link href="/fornecedor/vendas" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
           <DollarSign className="mr-2 h-5 w-5" />
@@ -146,9 +128,9 @@ export default function SupplierDashboard() {
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
-  // Fetch recent products - usando a API específica para produtos do fornecedor logado
+  // Fetch recent products - garantir que sejam apenas os produtos do fornecedor logado
   const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
-    queryKey: [`/api/suppliers/${user?.id}/products`, { limit: 5 }],
+    queryKey: ["/api/products", { supplierId: user?.id, limit: 5 }],
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
     // Log detalhado para depuração
     onSuccess: (data) => {
@@ -528,9 +510,6 @@ export default function SupplierDashboard() {
             
             {/* Main Content */}
             <div className="md:col-span-3 space-y-6">
-              {/* Estatísticas de Estoque */}
-              <StockStatusSummary className="w-full" />
-              
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
@@ -760,8 +739,6 @@ export default function SupplierDashboard() {
                     ) : (
                       <div className="space-y-2">
                         {Array.isArray(products) ? 
-                          // Adicionar log detalhado para debug antes da filtragem
-                          (console.log("Todos os produtos antes da filtragem:", products.map(p => `${p.id} (${p.name}) - Fornecedor ID: ${p.supplierId}`)), 
                           // Garantir que apenas produtos do fornecedor atual sejam mostrados
                           products
                             .filter(product => {
@@ -774,8 +751,8 @@ export default function SupplierDashboard() {
                                 console.log(`[Segurança] Produto ${product.id} (fornecedor ${productSupplierId}) filtrado - não pertence ao fornecedor atual (${currentUserId})`);
                               }
                               
-                              return belongsToCurrentSupplier || !productSupplierId; // Também aceitar produtos sem supplierId definido
-                            }))
+                              return belongsToCurrentSupplier;
+                            })
                             .slice(0, 5).map((product) => (
                             <div key={product.id} className="flex items-center justify-between py-2 border-b">
                               <div className="flex items-center">
