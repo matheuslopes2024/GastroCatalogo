@@ -440,12 +440,38 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       formData.append("id", productId.toString());
     }
     
-    // Campos obrigatórios
-    if (safeAppend("name", data.name?.trim(), true)) hasValidData = true;
+    // Campos obrigatórios - nome e categoria não podem ser nulos
+    // Como vimos no erro: "null value in column \"name\" of relation \"products\" violates not-null constraint"
+    if (!data.name || data.name.trim() === '') {
+      setIsLoading(false);
+      toast({
+        title: "Nome obrigatório",
+        description: "O nome do produto não pode ficar em branco.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.categoryId) {
+      setIsLoading(false);
+      toast({
+        title: "Categoria obrigatória",
+        description: "Você precisa selecionar uma categoria para o produto.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Nome tem validação extra para garantir que não será nulo
+    formData.append("name", data.name.trim());
+    hasValidData = true;
+    
+    // Demais campos obrigatórios
     safeAppend("description", data.description?.trim());
     if (safeAppend("slug", data.slug?.trim(), true)) hasValidData = true;
     if (safeAppend("price", data.price, true)) hasValidData = true;
-    if (safeAppend("categoryId", data.categoryId, true)) hasValidData = true;
+    formData.append("categoryId", data.categoryId.toString());
+    hasValidData = true;
     
     // Campos opcionais com validação
     if (data.originalPrice && parseFloat(data.originalPrice) > 0) {
@@ -551,19 +577,35 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     
     // Converter FormData para objeto para melhor debug
     const formDataObj: Record<string, any> = {};
-    for (const [key, value] of formData.entries()) {
-      formDataObj[key] = value;
+    try {
+      // Usar Array.from para evitar erros com iteradores (para compatibilidade com target ES5)
+      Array.from(formData.entries()).forEach(([key, value]) => {
+        formDataObj[key] = value;
+      });
+    } catch (error) {
+      console.error("Erro ao converter FormData para objeto:", error);
+      // Em caso de erro, pelo menos registrar o ID se existir
+      if (productId) {
+        formDataObj["id"] = productId;
+      }
     }
     
     // Log dos dados que serão enviados para o servidor
     console.log("Enviando dados para o servidor:", formDataObj);
     console.log(`Modo: ${productId ? 'Atualização' : 'Criação'}, Total de campos: ${Object.keys(formDataObj).length}`);
     
+    // Verificação de segurança para atualização
     // Adicionar um campo especial para garantir que nunca enviamos um objeto vazio
     // Este campo é apenas para resolver o problema específico com a API
-    if (productId && Object.keys(formDataObj).length <= 1) { // Apenas o ID
-      console.log("Adicionando campo forçado para garantir que não enviamos objeto vazio");
-      formData.append("_forceUpdate", "true");
+    if (productId) {
+      if (Object.keys(formDataObj).length <= 1) { // Apenas o ID
+        console.log("Adicionando campo forçado para garantir que não enviamos objeto vazio");
+        formData.append("_forceUpdate", "true");
+        formData.append("_lastUpdated", new Date().toISOString());
+      }
+      
+      // Adicionar um flag de atualização para informar ao backend
+      formData.append("_isUpdate", "true");
     }
     
     // Enviar a requisição
