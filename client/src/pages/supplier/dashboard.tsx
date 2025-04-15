@@ -146,9 +146,9 @@ export default function SupplierDashboard() {
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
-  // Fetch recent products - garantir que sejam apenas os produtos do fornecedor logado
+  // Fetch recent products - usando a API específica para produtos do fornecedor logado
   const { data: productsResponse, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["/api/products", { supplierId: user?.id, limit: 5 }],
+    queryKey: [`/api/suppliers/${user?.id}/products`, { limit: 5 }],
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
     // Log detalhado para depuração
     onSuccess: (data) => {
