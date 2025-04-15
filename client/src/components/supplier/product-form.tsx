@@ -758,8 +758,8 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
                     <FormLabel>Status do Estoque</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      value={field.value}
+                      defaultValue={field.value || "in_stock"}
+                      value={field.value || "in_stock"}
                     >
                       <FormControl>
                         <SelectTrigger>
