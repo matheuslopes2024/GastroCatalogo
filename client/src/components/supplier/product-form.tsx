@@ -529,8 +529,8 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
                   <FormLabel>Categoria Principal</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                    value={field.value}
+                    defaultValue={field.value || (Array.isArray(categories) && categories.length > 0 ? categories[0].id.toString() : "1")}
+                    value={field.value || (Array.isArray(categories) && categories.length > 0 ? categories[0].id.toString() : "1")}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -538,14 +538,18 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Array.isArray(categories) && categories.map((category: any) => (
-                        <SelectItem 
-                          key={category.id} 
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
+                      {Array.isArray(categories) && categories.length > 0 ? (
+                        categories.map((category: any) => (
+                          <SelectItem 
+                            key={category.id} 
+                            value={category.id.toString()}
+                          >
+                            {category.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="1">Categoria Padrão</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
