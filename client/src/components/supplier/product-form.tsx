@@ -396,7 +396,6 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     console.log("Dados do formulário antes de processar:", data);
     
     const formData = new FormData();
-    let hasValidData = false; // Flag para verificar se há dados válidos para enviar
     
     // Função para adicionar de forma segura ao FormData - formatação consistente
     // e manipulação adequada de valores booleanos e numéricos
