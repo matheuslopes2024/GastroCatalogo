@@ -82,6 +82,12 @@ export const products = pgTable("products", {
   active: boolean("active").notNull().default(true),
   // Armazenar categorias múltiplas como uma matriz de IDs
   additionalCategories: jsonb("additional_categories").$type<number[]>().default([]),
+  // Campos para controle de estoque
+  stock: integer("stock").default(0), // Quantidade atual em estoque
+  lowStockThreshold: integer("low_stock_threshold").default(5), // Limite para alertas de estoque baixo
+  sku: text("sku"), // Código de referência do produto (SKU)
+  lastStockUpdate: timestamp("last_stock_update"), // Data da última atualização de estoque
+  stockStatus: text("stock_status").default("in_stock"), // Status de estoque: in_stock, low_stock, out_of_stock
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

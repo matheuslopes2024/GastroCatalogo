@@ -56,6 +56,7 @@ export interface IStorage {
   getProductBySupplier(baseProductId: number, supplierId: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined>;
+  updateProductsInBulk(productsData: { id: number; [key: string]: any }[]): Promise<{id: number, success: boolean, message?: string}[]>;
   getProducts(options?: { 
     categoryId?: number; 
     supplierId?: number; 
@@ -63,6 +64,7 @@ export interface IStorage {
     limit?: number;
     search?: string;
   }): Promise<Product[]>;
+  getLowStockProducts(supplierId: number): Promise<Product[]>;
   
   // Product Image methods
   getProductImage(id: number): Promise<ProductImage | undefined>;
