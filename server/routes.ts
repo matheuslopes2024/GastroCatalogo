@@ -4473,6 +4473,575 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao buscar dados do fornecedor" });
     }
   });
+
+  // ========== ROTAS DE GERENCIAMENTO DE INVENTÁRIO ==========
+  
+  // Rota para obter lista de inventário de produtos do fornecedor
+  app.get("/api/supplier/inventory", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      // Obter parâmetros de filtragem e paginação
+      const status = req.query.status as InventoryStatusType | undefined;
+      const lowStock = req.query.lowStock === 'true';
+      const outOfStock = req.query.outOfStock === 'true';
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+      
+      const inventoryItems = await storage.getProductInventories({
+        supplierId,
+        status,
+        lowStock,
+        outOfStock,
+        limit,
+        offset
+      });
+      
+      // Para cada item, obter informações do produto
+      const result = await Promise.all(inventoryItems.map(async (item) => {
+        const product = await storage.getProduct(item.productId);
+        return {
+          ...item,
+          productName: product?.name,
+          productSlug: product?.slug,
+          productCategory: product?.categoryId,
+          productImage: product?.imageUrl
+        };
+      }));
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao buscar inventário:", error);
+      res.status(500).json({ message: "Erro ao buscar inventário" });
+    }
+  });
+
+  // Rota para obter estatísticas de estoque
+  app.get("/api/supplier/inventory/stats", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const stats = await storage.calculateStockStatus(supplierId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas de estoque:", error);
+      res.status(500).json({ message: "Erro ao buscar estatísticas de estoque" });
+    }
+  });
+
+  // Rota para buscar detalhes de um item específico do inventário
+  app.get("/api/supplier/inventory/:id", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      const inventoryId = parseInt(req.params.id);
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const inventory = await storage.getProductInventory(inventoryId);
+      
+      if (!inventory) {
+        return res.status(404).json({ message: "Inventário não encontrado" });
+      }
+      
+      if (inventory.supplierId !== supplierId) {
+        return res.status(403).json({ message: "Acesso negado a este inventário" });
+      }
+      
+      // Obter informações do produto
+      const product = await storage.getProduct(inventory.productId);
+      
+      res.json({
+        ...inventory,
+        productName: product?.name,
+        productSlug: product?.slug,
+        productCategory: product?.categoryId,
+        productImage: product?.imageUrl
+      });
+    } catch (error) {
+      console.error("Erro ao buscar item de inventário:", error);
+      res.status(500).json({ message: "Erro ao buscar item de inventário" });
+    }
+  });
+  
+  // Rota para atualizar inventário de um produto
+  app.put("/api/supplier/inventory/:id", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      const inventoryId = parseInt(req.params.id);
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const inventory = await storage.getProductInventory(inventoryId);
+      
+      if (!inventory) {
+        return res.status(404).json({ message: "Inventário não encontrado" });
+      }
+      
+      if (inventory.supplierId !== supplierId) {
+        return res.status(403).json({ message: "Acesso negado a este inventário" });
+      }
+      
+      const { quantity, status, lowStockThreshold, restockLevel, location, batchNumber, expirationDate, notes } = req.body;
+      
+      // Registrar o histórico de alteração se a quantidade estiver sendo modificada
+      if (quantity !== undefined && quantity !== inventory.quantity) {
+        await storage.createInventoryHistory({
+          productId: inventory.productId,
+          supplierId: supplierId,
+          userId: supplierId,
+          action: quantity > inventory.quantity ? "add" : "remove",
+          quantityBefore: inventory.quantity,
+          quantityAfter: quantity,
+          reason: req.body.reason || "Atualização manual",
+          notes: notes
+        });
+        
+        // Verificar se é necessário criar alertas
+        if (quantity <= inventory.lowStockThreshold && inventory.quantity > inventory.lowStockThreshold) {
+          // Criar alerta de estoque baixo
+          await storage.createStockAlert({
+            productId: inventory.productId,
+            supplierId: supplierId,
+            alertType: StockAlertType.LOW_STOCK,
+            message: `O produto atingiu o limite de estoque baixo (${quantity} unidades)`,
+            quantity: quantity,
+            previousQuantity: inventory.quantity,
+            priority: 5 // Prioridade média
+          });
+        } else if (quantity === 0 && inventory.quantity > 0) {
+          // Criar alerta de sem estoque
+          await storage.createStockAlert({
+            productId: inventory.productId,
+            supplierId: supplierId,
+            alertType: "out_of_stock",
+            message: `O produto esgotou (0 unidades)`,
+            quantity: 0,
+            previousQuantity: inventory.quantity,
+            priority: 8 // Prioridade alta
+          });
+        } else if (quantity >= inventory.restockLevel && inventory.quantity < inventory.restockLevel) {
+          // Criar alerta de reabastecimento completo
+          await storage.createStockAlert({
+            productId: inventory.productId,
+            supplierId: supplierId,
+            alertType: StockAlertType.STOCK_UPDATED,
+            message: `O produto foi reabastecido (${quantity} unidades)`,
+            quantity: quantity,
+            previousQuantity: inventory.quantity,
+            priority: 2 // Prioridade baixa
+          });
+        }
+      }
+      
+      // Atualizar o inventário
+      const updatedInventory = await storage.updateProductInventory(inventoryId, {
+        quantity: quantity !== undefined ? quantity : inventory.quantity,
+        status: status !== undefined ? status : inventory.status,
+        lowStockThreshold: lowStockThreshold !== undefined ? lowStockThreshold : inventory.lowStockThreshold,
+        restockLevel: restockLevel !== undefined ? restockLevel : inventory.restockLevel,
+        location: location !== undefined ? location : inventory.location,
+        batchNumber: batchNumber !== undefined ? batchNumber : inventory.batchNumber,
+        expirationDate: expirationDate !== undefined ? new Date(expirationDate) : inventory.expirationDate,
+        notes: notes !== undefined ? notes : inventory.notes,
+        lastUpdated: new Date()
+      });
+      
+      if (!updatedInventory) {
+        return res.status(500).json({ message: "Erro ao atualizar inventário" });
+      }
+      
+      // Obter informações do produto
+      const product = await storage.getProduct(updatedInventory.productId);
+      
+      res.json({
+        ...updatedInventory,
+        productName: product?.name,
+        productSlug: product?.slug,
+        productCategory: product?.categoryId,
+        productImage: product?.imageUrl
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar inventário:", error);
+      res.status(500).json({ message: "Erro ao atualizar inventário" });
+    }
+  });
+  
+  // Rota para atualizar inventário em lote
+  app.post("/api/supplier/inventory/bulk-update", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { items, reason } = req.body;
+      
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "Itens para atualização são obrigatórios" });
+      }
+      
+      // Realizar atualização em lote
+      const result = await storage.batchUpdateInventory(
+        items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity
+        })),
+        supplierId,
+        supplierId,
+        reason || "Atualização em lote"
+      );
+      
+      // Preparar detalhes dos itens atualizados
+      const details = await Promise.all(result.inventory.map(async (inventory) => {
+        const product = await storage.getProduct(inventory.productId);
+        return {
+          productId: inventory.productId,
+          productName: product?.name,
+          success: true
+        };
+      }));
+      
+      res.json({
+        success: result.updated,
+        failed: result.failed,
+        details
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar inventário em lote:", error);
+      res.status(500).json({ message: "Erro ao atualizar inventário em lote" });
+    }
+  });
+  
+  // Rota para visualizar prévia de atualização em lote
+  app.post("/api/supplier/inventory/bulk-preview", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { items } = req.body;
+      
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "Itens para visualização são obrigatórios" });
+      }
+      
+      // Processar cada item para análise
+      const processedItems = await Promise.all(items.map(async (item) => {
+        const { productId, quantity } = item;
+        const inventory = await storage.getProductInventory(productId, supplierId);
+        const product = await storage.getProduct(productId);
+        
+        // Verificar se o produto existe
+        if (!product) {
+          return {
+            productId,
+            error: "Produto não encontrado",
+            status: "error"
+          };
+        }
+        
+        // Verificar se o inventário existe
+        if (!inventory) {
+          return {
+            productId,
+            productName: product.name,
+            sku: product.sku,
+            quantity,
+            error: "Inventário não encontrado para este produto",
+            status: "warning"
+          };
+        }
+        
+        // Analisar a atualização
+        let status = "ok";
+        let error = undefined;
+        
+        if (quantity < 0) {
+          error = "Quantidade não pode ser negativa";
+          status = "error";
+        } else if (quantity === 0 && inventory.quantity > 0) {
+          status = "warning";
+        } else if (quantity < inventory.lowStockThreshold && quantity > 0) {
+          status = "warning";
+        }
+        
+        return {
+          productId,
+          productName: product.name,
+          sku: product.sku,
+          quantity,
+          currentQuantity: inventory.quantity,
+          status,
+          lowStockThreshold: inventory.lowStockThreshold,
+          restockLevel: inventory.restockLevel,
+          error
+        };
+      }));
+      
+      // Contabilizar avisos e erros
+      const errors = processedItems.filter(item => item.status === "error").length;
+      const warnings = processedItems.filter(item => item.status === "warning").length;
+      
+      res.json({
+        items: processedItems,
+        warnings,
+        errors
+      });
+    } catch (error) {
+      console.error("Erro ao gerar visualização prévia:", error);
+      res.status(500).json({ message: "Erro ao gerar visualização prévia" });
+    }
+  });
+  
+  // ============ ROTAS PARA ALERTAS DE ESTOQUE ============
+  
+  // Rota para obter alertas de estoque
+  app.get("/api/supplier/inventory/alerts", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      // Parâmetros de filtragem
+      const alertType = req.query.type as StockAlertTypeValue | undefined;
+      const isRead = req.query.isRead === 'true' ? true : req.query.isRead === 'false' ? false : undefined;
+      const isResolved = req.query.isResolved === 'true' ? true : req.query.isResolved === 'false' ? false : undefined;
+      
+      const alerts = await storage.getStockAlerts({
+        supplierId,
+        alertType,
+        isRead,
+        isResolved
+      });
+      
+      // Enriquecer com informações do produto
+      const result = await Promise.all(alerts.map(async (alert) => {
+        const product = await storage.getProduct(alert.productId);
+        return {
+          ...alert,
+          productName: product?.name,
+          productImage: product?.imageUrl
+        };
+      }));
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao buscar alertas de estoque:", error);
+      res.status(500).json({ message: "Erro ao buscar alertas de estoque" });
+    }
+  });
+  
+  // Rota para marcar alerta como lido
+  app.patch("/api/supplier/inventory/alerts/:id/read", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      const alertId = parseInt(req.params.id);
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const alert = await storage.getStockAlert(alertId);
+      
+      if (!alert) {
+        return res.status(404).json({ message: "Alerta não encontrado" });
+      }
+      
+      if (alert.supplierId !== supplierId) {
+        return res.status(403).json({ message: "Acesso negado a este alerta" });
+      }
+      
+      const updatedAlert = await storage.markStockAlertAsRead(alertId, supplierId);
+      
+      if (!updatedAlert) {
+        return res.status(500).json({ message: "Erro ao marcar alerta como lido" });
+      }
+      
+      const product = await storage.getProduct(updatedAlert.productId);
+      
+      res.json({
+        ...updatedAlert,
+        productName: product?.name,
+        productImage: product?.imageUrl
+      });
+    } catch (error) {
+      console.error("Erro ao marcar alerta como lido:", error);
+      res.status(500).json({ message: "Erro ao marcar alerta como lido" });
+    }
+  });
+  
+  // Rota para resolver alerta
+  app.patch("/api/supplier/inventory/alerts/:id/resolve", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      const alertId = parseInt(req.params.id);
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const alert = await storage.getStockAlert(alertId);
+      
+      if (!alert) {
+        return res.status(404).json({ message: "Alerta não encontrado" });
+      }
+      
+      if (alert.supplierId !== supplierId) {
+        return res.status(403).json({ message: "Acesso negado a este alerta" });
+      }
+      
+      const updatedAlert = await storage.markStockAlertAsResolved(alertId, supplierId);
+      
+      if (!updatedAlert) {
+        return res.status(500).json({ message: "Erro ao resolver alerta" });
+      }
+      
+      const product = await storage.getProduct(updatedAlert.productId);
+      
+      res.json({
+        ...updatedAlert,
+        productName: product?.name,
+        productImage: product?.imageUrl
+      });
+    } catch (error) {
+      console.error("Erro ao resolver alerta:", error);
+      res.status(500).json({ message: "Erro ao resolver alerta" });
+    }
+  });
+  
+  // Rota para obter contagem de alertas não lidos
+  app.get("/api/supplier/inventory/alerts/count", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const alerts = await storage.getStockAlerts({
+        supplierId,
+        isRead: false
+      });
+      
+      res.json({
+        total: alerts.length
+      });
+    } catch (error) {
+      console.error("Erro ao buscar contagem de alertas:", error);
+      res.status(500).json({ message: "Erro ao buscar contagem de alertas" });
+    }
+  });
+  
+  // ============ ROTAS PARA HISTÓRICO DE INVENTÁRIO ============
+  
+  // Rota para obter histórico de inventário
+  app.get("/api/supplier/inventory/history", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      // Parâmetros de filtragem
+      const productId = req.query.productId ? parseInt(req.query.productId as string) : undefined;
+      const action = req.query.action as string | undefined;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      const history = await storage.getInventoryHistory({
+        productId,
+        supplierId,
+        action,
+        startDate,
+        endDate,
+        limit
+      });
+      
+      // Enriquecer com informações do produto e usuário
+      const result = await Promise.all(history.map(async (item) => {
+        const product = await storage.getProduct(item.productId);
+        const user = await storage.getUser(item.userId);
+        
+        return {
+          ...item,
+          productName: product?.name,
+          userName: user?.name
+        };
+      }));
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao buscar histórico de inventário:", error);
+      res.status(500).json({ message: "Erro ao buscar histórico de inventário" });
+    }
+  });
+  
+  // Rota para obter histórico de um produto específico
+  app.get("/api/supplier/inventory/history/:productId", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user?.id;
+      const productId = parseInt(req.params.productId);
+      
+      if (!supplierId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      // Verificar se o produto pertence ao fornecedor
+      const product = await storage.getProduct(productId);
+      
+      if (!product || product.supplierId !== supplierId) {
+        return res.status(403).json({ message: "Acesso negado a este produto" });
+      }
+      
+      // Parâmetros de filtragem
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      const history = await storage.getInventoryHistory({
+        productId,
+        supplierId,
+        startDate,
+        endDate,
+        limit
+      });
+      
+      // Enriquecer com informações do usuário
+      const result = await Promise.all(history.map(async (item) => {
+        const user = await storage.getUser(item.userId);
+        
+        return {
+          ...item,
+          productName: product.name,
+          userName: user?.name
+        };
+      }));
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao buscar histórico de produto:", error);
+      res.status(500).json({ message: "Erro ao buscar histórico de produto" });
+    }
+  });
   
   return httpServer;
 }
