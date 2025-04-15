@@ -4466,5 +4466,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para obter produtos com estoque baixo do fornecedor
+  app.get("/api/supplier/dashboard/low-stock-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = parseInt(req.user!.id.toString());
+      const limit = req.query.limit ? parseInt(req.query.limit.toString()) : 10;
+      
+      // Obter produtos com estoque baixo do fornecedor
+      const lowStockProducts = await storage.getLowStockProducts(supplierId, limit);
+      
+      // Calcular porcentagem de estoque para cada produto
+      const productsWithPercentage = await Promise.all(lowStockProducts.map(async product => {
+        // Calcular a porcentagem de estoque em relação ao limite
+        const stockPercentage = product.stock > 0 && product.stockThreshold > 0
+          ? Math.round((product.stock / product.stockThreshold) * 100)
+          : 0;
+          
+        // Definir nível de alerta com base na porcentagem
+        const alert = stockPercentage <= 20 ? 'critical' : 'warning';
+        
+        // Buscar categoria do produto para exibição
+        const category = await storage.getCategory(product.categoryId);
+        
+        return {
+          ...product,
+          categoryName: category?.name || 'Sem categoria',
+          stockPercentage,
+          alert
+        };
+      }));
+      
+      res.json(productsWithPercentage);
+    } catch (error) {
+      console.error("Erro ao buscar produtos com estoque baixo:", error);
+      res.status(500).json({ error: "Erro ao buscar produtos com estoque baixo" });
+    }
+  });
+  
+  // Rota para atualização em massa de produtos
+  app.post("/api/supplier/products/bulk-update", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = parseInt(req.user!.id.toString());
+      const { productIds, updateData } = req.body;
+      
+      if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({ error: "Lista de IDs de produtos é obrigatória" });
+      }
+      
+      if (!updateData || typeof updateData !== 'object') {
+        return res.status(400).json({ error: "Dados para atualização são obrigatórios" });
+      }
+      
+      // Validar que os produtosIDs pertencem ao fornecedor atual
+      const products = await storage.getProducts({ supplierId });
+      const supplierProductIds = products.map(p => p.id);
+      
+      // Filtrar apenas os IDs de produtos que pertencem ao fornecedor
+      const validProductIds = productIds.filter(id => supplierProductIds.includes(id));
+      
+      if (validProductIds.length === 0) {
+        return res.status(400).json({ error: "Nenhum produto válido para atualização" });
+      }
+      
+      // Atualizar produtos em massa
+      const updatedProducts = await storage.bulkUpdateProducts(validProductIds, updateData, supplierId);
+      
+      res.json({ 
+        success: true, 
+        updatedCount: updatedProducts.length,
+        message: `${updatedProducts.length} produtos atualizados com sucesso` 
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar produtos em massa:", error);
+      res.status(500).json({ error: "Erro ao atualizar produtos em massa" });
+    }
+  });
+  
   return httpServer;
 }
