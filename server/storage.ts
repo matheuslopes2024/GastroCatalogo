@@ -42,6 +42,8 @@ export interface IStorage {
   // Supplier specific methods
   getSupplierProductsCount(supplierId: number): Promise<number>;
   getSupplierCategories(supplierId: number): Promise<Category[]>;
+  getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]>;
+  bulkUpdateProducts(productIds: number[], updateData: Partial<Omit<InsertProduct, "id" | "supplierId" | "createdAt">>, supplierId: number): Promise<Product[]>;
   
   // Category methods
   getCategory(id: number): Promise<Category | undefined>;
