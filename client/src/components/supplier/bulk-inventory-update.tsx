@@ -1,744 +1,1047 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import {
+  FileSpreadsheet,
+  Upload,
+  Download,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  X,
+  Info,
+  Loader2,
+  Table as TableIcon,
+  RefreshCw,
+  Clipboard,
+  FileUp,
+  Package,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { 
-  FileSpreadsheet, 
-  DownloadCloud, 
-  Upload, 
-  CheckCircle, 
-  AlertCircle, 
-  Info, 
-  AlertTriangle, 
-  RefreshCw 
-} from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription, 
-  DialogFooter 
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/use-auth";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
-interface BulkUpdateRow {
-  productId: number;
-  productName?: string;
-  sku?: string;
-  quantity: number;
-  currentQuantity?: number;
-  status?: string;
-  lowStockThreshold?: number;
-  restockLevel?: number;
-  error?: string;
+// Interface para o componente
+interface BulkInventoryUpdateProps {
+  onSuccess?: () => void;
 }
 
-interface BulkUpdatePreview {
-  items: BulkUpdateRow[];
-  warnings: number;
-  errors: number;
-}
+// Esquema de validação para a entrada manual
+const manualEntrySchema = z.object({
+  data: z.string().min(1, "Por favor, insira os dados do estoque"),
+});
 
-interface BulkUpdateResult {
-  success: number;
-  failed: number;
-  details: Array<{
-    productId: number;
-    productName?: string;
-    success: boolean;
-    message?: string;
-  }>;
-}
+// Esquema de validação para o upload de arquivo
+const fileUploadSchema = z.object({
+  file: z.instanceof(File, { message: "Por favor, selecione um arquivo" }),
+});
 
-export const BulkInventoryUpdate = () => {
-  const { toast } = useToast();
+// Esquema de validação para as razões
+const reasonSchema = z.object({
+  reason: z.string().min(3, "Por favor, insira um motivo com pelo menos 3 caracteres"),
+  notes: z.string().optional(),
+});
+
+// Esquema de validação para o processamento dos dados
+const processDataSchema = z.object({
+  data: z.array(
+    z.object({
+      productId: z.number(),
+      quantity: z.number().min(0, "A quantidade deve ser maior ou igual a zero"),
+      lowStockThreshold: z.number().optional(),
+      restockLevel: z.number().optional(),
+      sku: z.string().optional(),
+      location: z.string().optional(),
+      status: z.string().optional(),
+    })
+  ),
+});
+
+export function BulkInventoryUpdate({ onSuccess }: BulkInventoryUpdateProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<BulkUpdatePreview | null>(null);
-  const [uploadMode, setUploadMode] = useState<'csv' | 'manual'>('csv');
-  const [manualItems, setManualItems] = useState<BulkUpdateRow[]>([{ productId: 0, quantity: 0 }]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<BulkUpdateResult | null>(null);
-  const [showResultDialog, setShowResultDialog] = useState(false);
-  const [operationProgress, setOperationProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("manual");
+  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [processingStatus, setProcessingStatus] = useState<{
+    total: number;
+    processed: number;
+    successful: number;
+    failed: number;
+  }>({
+    total: 0,
+    processed: 0,
+    successful: 0,
+    failed: 0,
+  });
+  const [processingResults, setProcessingResults] = useState<any[]>([]);
+  const [isProcessingComplete, setIsProcessingComplete] = useState(false);
+  const [isProcessStarted, setIsProcessStarted] = useState(false);
+  const [isShowingResults, setIsShowingResults] = useState(false);
 
-  // Mutation for bulk updating inventory
+  // Formulários
+  const manualForm = useForm<z.infer<typeof manualEntrySchema>>({
+    resolver: zodResolver(manualEntrySchema),
+    defaultValues: {
+      data: "",
+    },
+  });
+
+  const fileForm = useForm<z.infer<typeof fileUploadSchema>>({
+    resolver: zodResolver(fileUploadSchema),
+  });
+
+  const reasonForm = useForm<z.infer<typeof reasonSchema>>({
+    resolver: zodResolver(reasonSchema),
+    defaultValues: {
+      reason: "",
+      notes: "",
+    },
+  });
+
+  // Query para buscar produtos
+  const { data: products } = useQuery({
+    queryKey: ["/api/supplier/products"],
+    enabled: !!user?.id,
+  });
+
+  // Mutação para atualização em massa
   const bulkUpdateMutation = useMutation({
-    mutationFn: async (data: { items: BulkUpdateRow[] }) => {
-      const response = await apiRequest(
-        "POST", 
-        "/api/supplier/inventory/bulk-update",
-        data
-      );
-      return response.json();
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/supplier/inventory/bulk-update", data);
+      return await res.json();
     },
-    onSuccess: (data: BulkUpdateResult) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/supplier/inventory'] });
-      setResult(data);
-      setShowResultDialog(true);
-      setOperationProgress(100);
-      
+    onSuccess: (data) => {
       toast({
-        title: "Atualização em massa concluída",
-        description: `${data.success} produtos atualizados com sucesso, ${data.failed} falhas.`,
-        variant: data.failed > 0 ? "warning" : "default",
+        title: "Atualização concluída",
+        description: `${data.successCount} itens atualizados com sucesso.`,
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/inventory/stats"] });
+      
+      // Limpar formulários e dados
+      manualForm.reset();
+      fileForm.reset();
+      setParsedData([]);
+      setParseError(null);
+      setIsPreviewOpen(false);
+      setIsConfirmationOpen(false);
+      setIsProcessStarted(false);
+      setUploadProgress(0);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      // Mostrar resultados
+      setIsShowingResults(true);
     },
-    onError: (error: Error) => {
-      setOperationProgress(0);
+    onError: (error: any) => {
       toast({
-        title: "Erro na atualização em massa",
-        description: error.message || "Não foi possível concluir a atualização em massa.",
+        title: "Erro na atualização",
+        description: error.message || "Ocorreu um erro ao atualizar o estoque. Tente novamente.",
         variant: "destructive",
       });
+      setIsConfirmationOpen(false);
     },
   });
 
-  // Mutation for validating before update
-  const validateDataMutation = useMutation({
-    mutationFn: async (data: { items: BulkUpdateRow[] }) => {
-      const response = await apiRequest(
-        "POST", 
-        "/api/supplier/inventory/validate-bulk-update",
-        data
-      );
-      return response.json();
-    },
-    onSuccess: (data: BulkUpdatePreview) => {
-      setPreview(data);
-      setOperationProgress(0);
+  // Lidar com envio manual
+  const handleManualSubmit = (values: z.infer<typeof manualEntrySchema>) => {
+    try {
+      // Tenta analisar tanto CSV quanto JSON
+      let parsed;
+      if (values.data.trim().startsWith("{") || values.data.trim().startsWith("[")) {
+        // Presumir JSON
+        parsed = JSON.parse(values.data);
+        if (!Array.isArray(parsed)) {
+          parsed = [parsed];
+        }
+      } else {
+        // Presumir CSV
+        parsed = parseCSV(values.data);
+      }
       
+      // Validar e processar os dados
+      const processedData = processInventoryData(parsed);
+      setParsedData(processedData);
+      setParseError(null);
+      
+      // Mostrar prévia
+      const previewItems = processedData.slice(0, 5);
+      setPreviewData(previewItems);
+      setIsPreviewOpen(true);
+    } catch (error: any) {
+      setParseError(error.message);
       toast({
-        title: "Validação concluída",
-        description: `${data.items.length} produtos validados, ${data.warnings} avisos, ${data.errors} erros.`,
-        variant: data.errors > 0 ? "destructive" : data.warnings > 0 ? "warning" : "default",
-      });
-    },
-    onError: (error: Error) => {
-      setOperationProgress(0);
-      toast({
-        title: "Erro na validação",
-        description: error.message || "Não foi possível validar os dados.",
+        title: "Erro ao processar dados",
+        description: error.message,
         variant: "destructive",
       });
-    },
-  });
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setCsvFile(e.target.files[0]);
     }
   };
 
-  const parseCSV = async (file: File): Promise<BulkUpdateRow[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const text = e.target?.result as string;
-          const lines = text.split('\n');
-          
-          // Assuming first line is header
-          const headers = lines[0].split(',').map(h => h.trim());
-          
-          const results: BulkUpdateRow[] = [];
-          
-          // Start from index 1 to skip header
-          for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            
-            const values = lines[i].split(',').map(v => v.trim());
-            const item: any = {};
-            
-            // Map values to headers
-            headers.forEach((header, index) => {
-              if (header === 'productId') {
-                item[header] = parseInt(values[index]) || 0;
-              } else if (header === 'quantity' || header === 'lowStockThreshold' || header === 'restockLevel') {
-                item[header] = parseInt(values[index]) || 0;
-              } else {
-                item[header] = values[index];
-              }
-            });
-            
-            // Ensure required fields
-            if (!item.productId) {
-              item.error = 'ID do produto ausente ou inválido';
-            }
-            
-            if (item.quantity === undefined) {
-              item.quantity = 0;
-              item.error = (item.error || '') + ' Quantidade ausente, definida como 0.';
-            }
-            
-            results.push(item as BulkUpdateRow);
+  // Lidar com upload de arquivo
+  const handleFileSubmit = (values: z.infer<typeof fileUploadSchema>) => {
+    const file = values.file;
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        let parsed;
+        
+        if (file.name.endsWith(".csv") || file.name.endsWith(".txt")) {
+          parsed = parseCSV(content);
+        } else if (file.name.endsWith(".json")) {
+          parsed = JSON.parse(content);
+          if (!Array.isArray(parsed)) {
+            parsed = [parsed];
           }
-          
-          resolve(results);
-        } catch (error) {
-          reject(new Error('Falha ao analisar o arquivo CSV. Verifique o formato.'));
+        } else {
+          throw new Error("Formato de arquivo não suportado. Use CSV, TXT ou JSON.");
         }
-      };
+        
+        // Validar e processar os dados
+        const processedData = processInventoryData(parsed);
+        setParsedData(processedData);
+        setParseError(null);
+        
+        // Mostrar prévia
+        const previewItems = processedData.slice(0, 5);
+        setPreviewData(previewItems);
+        setIsPreviewOpen(true);
+      } catch (error: any) {
+        setParseError(error.message);
+        toast({
+          title: "Erro ao processar arquivo",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    };
+    
+    reader.onerror = () => {
+      toast({
+        title: "Erro ao ler arquivo",
+        description: "Ocorreu um erro ao ler o arquivo. Tente novamente.",
+        variant: "destructive",
+      });
+    };
+    
+    reader.readAsText(file);
+  };
+
+  // Lidar com o motivo
+  const handleReasonSubmit = (values: z.infer<typeof reasonSchema>) => {
+    setIsConfirmationOpen(false);
+    
+    // Iniciar processo
+    setIsProcessStarted(true);
+    setProcessingStatus({
+      total: parsedData.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+    });
+    
+    // Processar em lote
+    processInventoryBatch(parsedData, values.reason, values.notes);
+  };
+
+  // Processar lote de inventário
+  const processInventoryBatch = async (data: any[], reason: string, notes?: string) => {
+    // Simular progresso
+    let processed = 0;
+    let successful = 0;
+    let failed = 0;
+    const results: any[] = [];
+    
+    try {
+      // Enviar dados para a API
+      const response = await bulkUpdateMutation.mutateAsync({
+        items: data,
+        reason,
+        notes,
+      });
       
-      reader.onerror = () => {
-        reject(new Error('Erro ao ler o arquivo.'));
-      };
+      // Atualizar status
+      setProcessingStatus({
+        total: data.length,
+        processed: data.length,
+        successful: response.successCount,
+        failed: response.failedCount,
+      });
       
-      reader.readAsText(file);
+      // Atualizar resultados
+      setProcessingResults(response.results || []);
+      setIsProcessingComplete(true);
+    } catch (error) {
+      console.error("Erro ao processar lote:", error);
+      // Em caso de erro, marcar todos como falha
+      setProcessingStatus({
+        total: data.length,
+        processed: data.length,
+        successful: 0,
+        failed: data.length,
+      });
+      setIsProcessingComplete(true);
+    }
+  };
+
+  // Analisar CSV
+  const parseCSV = (csvText: string): any[] => {
+    const lines = csvText.split(/\r\n|\n|\r/).filter(line => line.trim() !== "");
+    
+    if (lines.length === 0) {
+      throw new Error("O arquivo CSV está vazio.");
+    }
+    
+    const headers = lines[0].split(",").map(header => header.trim().toLowerCase());
+    
+    // Verificar cabeçalhos obrigatórios
+    if (!headers.includes("productid") && !headers.includes("product_id") && !headers.includes("id")) {
+      throw new Error("O CSV deve ter uma coluna 'productId', 'product_id' ou 'id'.");
+    }
+    
+    if (!headers.includes("quantity") && !headers.includes("qtd") && !headers.includes("quantidade")) {
+      throw new Error("O CSV deve ter uma coluna 'quantity', 'qtd' ou 'quantidade'.");
+    }
+    
+    const result = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map(value => value.trim());
+      
+      if (values.length !== headers.length) {
+        continue; // Pular linhas com número incorreto de colunas
+      }
+      
+      const entry: any = {};
+      
+      headers.forEach((header, index) => {
+        // Mapear cabeçalhos para nomes de propriedades
+        let key = header;
+        
+        if (header === "product_id" || header === "id") key = "productId";
+        if (header === "qtd" || header === "quantidade") key = "quantity";
+        if (header === "low_stock_threshold" || header === "min_stock") key = "lowStockThreshold";
+        if (header === "restock_level" || header === "max_stock") key = "restockLevel";
+        
+        // Converter valores para os tipos corretos
+        let value = values[index];
+        
+        if (key === "productId" || key === "quantity" || key === "lowStockThreshold" || key === "restockLevel") {
+          value = parseInt(value, 10);
+          if (isNaN(value)) {
+            value = key === "productId" ? 0 : (key === "quantity" ? 0 : undefined);
+          }
+        }
+        
+        entry[key] = value;
+      });
+      
+      result.push(entry);
+    }
+    
+    return result;
+  };
+
+  // Processar dados de inventário
+  const processInventoryData = (data: any[]): any[] => {
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("Os dados fornecidos não são válidos.");
+    }
+    
+    // Mapear e validar cada item
+    return data.map((item, index) => {
+      const processedItem: any = {};
+      
+      // Validar e processar productId
+      const productId = typeof item.productId === "string" ? parseInt(item.productId, 10) : item.productId;
+      if (isNaN(productId) || productId <= 0) {
+        throw new Error(`Linha ${index + 1}: ID do produto inválido.`);
+      }
+      processedItem.productId = productId;
+      
+      // Validar e processar quantity
+      const quantity = typeof item.quantity === "string" ? parseInt(item.quantity, 10) : item.quantity;
+      if (isNaN(quantity) || quantity < 0) {
+        throw new Error(`Linha ${index + 1}: Quantidade inválida.`);
+      }
+      processedItem.quantity = quantity;
+      
+      // Processar campos opcionais se existirem
+      if (item.lowStockThreshold !== undefined) {
+        const threshold = typeof item.lowStockThreshold === "string" ? 
+                        parseInt(item.lowStockThreshold, 10) : item.lowStockThreshold;
+        if (!isNaN(threshold) && threshold >= 0) {
+          processedItem.lowStockThreshold = threshold;
+        }
+      }
+      
+      if (item.restockLevel !== undefined) {
+        const restock = typeof item.restockLevel === "string" ? 
+                     parseInt(item.restockLevel, 10) : item.restockLevel;
+        if (!isNaN(restock) && restock >= 0) {
+          processedItem.restockLevel = restock;
+        }
+      }
+      
+      if (item.sku !== undefined) {
+        processedItem.sku = String(item.sku);
+      }
+      
+      if (item.location !== undefined) {
+        processedItem.location = String(item.location);
+      }
+      
+      if (item.status !== undefined) {
+        processedItem.status = String(item.status);
+      }
+      
+      return processedItem;
     });
   };
 
-  const handleUploadCSV = async () => {
-    if (!csvFile) {
-      toast({
-        title: "Nenhum arquivo selecionado",
-        description: "Por favor, selecione um arquivo CSV para continuar.",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Baixar modelo CSV
+  const downloadCSVTemplate = () => {
+    const headers = ["productId", "quantity", "lowStockThreshold", "restockLevel", "location", "status"];
+    const csv = [headers.join(",")].join("\n");
     
-    try {
-      setIsProcessing(true);
-      setOperationProgress(30);
-      
-      const parsedData = await parseCSV(csvFile);
-      
-      if (parsedData.length === 0) {
-        throw new Error('Nenhum produto encontrado no arquivo CSV.');
-      }
-      
-      setOperationProgress(60);
-      
-      validateDataMutation.mutate({ items: parsedData });
-    } catch (error: any) {
-      toast({
-        title: "Erro no processamento",
-        description: error.message || "Ocorreu um erro ao processar o arquivo.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
-      setOperationProgress(0);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleAddManualRow = () => {
-    setManualItems([...manualItems, { productId: 0, quantity: 0 }]);
-  };
-
-  const handleRemoveManualRow = (index: number) => {
-    const newItems = [...manualItems];
-    newItems.splice(index, 1);
-    setManualItems(newItems);
-  };
-
-  const handleManualItemChange = (index: number, field: keyof BulkUpdateRow, value: any) => {
-    const newItems = [...manualItems];
-    newItems[index] = {
-      ...newItems[index],
-      [field]: field === 'productId' || field === 'quantity' || 
-               field === 'lowStockThreshold' || field === 'restockLevel' 
-                ? parseInt(value) || 0 
-                : value,
-    };
-    setManualItems(newItems);
-  };
-
-  const validateManualData = () => {
-    if (manualItems.length === 0) {
-      toast({
-        title: "Nenhum item para validar",
-        description: "Adicione pelo menos um item para continuar.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsProcessing(true);
-    setOperationProgress(50);
-    
-    validateDataMutation.mutate({ items: manualItems });
-  };
-
-  const processBulkUpdate = () => {
-    if (!preview || preview.items.length === 0) {
-      toast({
-        title: "Nenhum dado para atualizar",
-        description: "Valide os dados primeiro antes de executar a atualização.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (preview.errors > 0) {
-      toast({
-        title: "Erro na validação",
-        description: "Corrija os erros antes de executar a atualização.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsProcessing(true);
-    setOperationProgress(50);
-    
-    // Remove items with errors
-    const validItems = preview.items.filter(item => !item.error);
-    
-    bulkUpdateMutation.mutate({ items: validItems });
-  };
-
-  const downloadTemplate = () => {
-    const headers = ['productId', 'quantity', 'lowStockThreshold', 'restockLevel', 'status'];
-    const template = [
-      headers.join(','),
-      '1,100,10,50,in_stock',
-      '2,50,5,30,in_stock',
-      '3,0,10,50,out_of_stock',
-    ].join('\n');
-    
-    const blob = new Blob([template], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'template_atualizacao_estoque.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "inventory_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const resetOperation = () => {
-    setPreview(null);
-    setResult(null);
-    setCsvFile(null);
-    setManualItems([{ productId: 0, quantity: 0 }]);
-    setShowResultDialog(false);
-    setOperationProgress(0);
+  // Baixar modelo JSON
+  const downloadJSONTemplate = () => {
+    const template = [
+      {
+        productId: 1,
+        quantity: 100,
+        lowStockThreshold: 10,
+        restockLevel: 50,
+        location: "Prateleira A1",
+        status: "in_stock"
+      }
+    ];
+    
+    const json = JSON.stringify(template, null, 2);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "inventory_template.json");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Copiar dados de exemplo para a área de transferência
+  const copyExampleToClipboard = () => {
+    const example = `productId,quantity,lowStockThreshold,restockLevel,location,status
+1,100,10,50,Prateleira A1,in_stock
+2,75,5,30,Prateleira A2,in_stock
+3,0,5,20,Prateleira B1,out_of_stock`;
+    
+    navigator.clipboard.writeText(example).then(() => {
+      toast({
+        title: "Copiado!",
+        description: "Exemplo copiado para a área de transferência.",
+      });
+    });
+  };
+
+  // Continuar para confirmação
+  const handleContinueToConfirmation = () => {
+    setIsPreviewOpen(false);
+    setIsConfirmationOpen(true);
+  };
+
+  // Renderizar resultado do processamento
+  const renderProcessingResult = (result: any) => {
+    if (result.success) {
+      return (
+        <div className="flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <span>Sucesso</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <span>{result.error || "Falha"}</span>
+        </div>
+      );
+    }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-xl font-bold">Atualização em Massa</CardTitle>
-            <CardDescription>
-              Atualize o estoque de vários produtos simultaneamente
-            </CardDescription>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={resetOperation}
-            disabled={isProcessing}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reiniciar
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Tabs for different input methods */}
-        <Tabs value={uploadMode} onValueChange={(v) => setUploadMode(v as 'csv' | 'manual')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="csv" className="flex items-center gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
-              Importar CSV
-            </TabsTrigger>
-            <TabsTrigger value="manual" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Entrada Manual
-            </TabsTrigger>
-          </TabsList>
-          
-          {/* CSV Upload */}
-          <TabsContent value="csv" className="space-y-4 pt-4">
-            <div className="flex flex-col gap-4">
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Instruções</AlertTitle>
-                <AlertDescription>
-                  <p className="mb-2">
-                    Faça upload de um arquivo CSV com as colunas: productId, quantity, lowStockThreshold, restockLevel, status.
-                  </p>
-                  <p>Os valores aceitáveis para "status" são: in_stock, low_stock, out_of_stock, discontinued, back_order.</p>
-                </AlertDescription>
-              </Alert>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileSpreadsheet className="mr-2 h-5 w-5 text-blue-600" />
+            Atualização em Massa de Inventário
+          </CardTitle>
+          <CardDescription>
+            Atualize vários produtos de uma vez através de CSV, JSON ou entrada direta.
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="manual" className="flex items-center">
+                <FileText className="h-4 w-4 mr-2" />
+                Entrada Manual
+              </TabsTrigger>
+              <TabsTrigger value="file" className="flex items-center">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload de Arquivo
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="manual" className="mt-4 space-y-4">
+              <div className="bg-amber-50 p-4 rounded-md border border-amber-200 mb-4">
+                <div className="flex">
+                  <Info className="h-5 w-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-amber-800">Como usar a entrada manual:</h4>
+                    <p className="text-sm text-amber-700">
+                      Cole seus dados em formato CSV ou JSON. Cada linha/item deve conter pelo menos o ID do produto e a quantidade.
+                    </p>
+                    <div className="flex mt-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyExampleToClipboard}
+                        className="h-8 text-xs bg-white"
+                      >
+                        <Clipboard className="h-3.5 w-3.5 mr-1" />
+                        Copiar Exemplo
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadCSVTemplate}
+                        className="h-8 text-xs bg-white"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        CSV Template
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadJSONTemplate}
+                        className="h-8 text-xs bg-white"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        JSON Template
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
               
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  onClick={downloadTemplate} 
-                  className="flex items-center gap-2"
-                >
-                  <DownloadCloud className="h-4 w-4" />
-                  Baixar Modelo
-                </Button>
-                
-                <div className="flex-1">
-                  <Input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileChange}
-                    disabled={isProcessing}
+              <Form {...manualForm}>
+                <form onSubmit={manualForm.handleSubmit(handleManualSubmit)} className="space-y-4">
+                  <FormField
+                    control={manualForm.control}
+                    name="data"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Dados do Inventário</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Cole seus dados CSV ou JSON aqui..."
+                            rows={10}
+                            className="font-mono text-sm"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Campos necessários: productId, quantity. Opcionais: lowStockThreshold, restockLevel, location, status.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
+                  
+                  {parseError && (
+                    <div className="bg-red-50 p-3 rounded-md border border-red-200 text-sm text-red-800">
+                      <div className="flex">
+                        <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0" />
+                        <span>{parseError}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <Button type="submit" disabled={manualForm.formState.isSubmitting}>
+                    {manualForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <TableIcon className="h-4 w-4 mr-2" />
+                        Pré-visualizar dados
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="file" className="mt-4 space-y-4">
+              <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4">
+                <div className="flex">
+                  <Info className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">Como fazer upload de arquivo:</h4>
+                    <p className="text-sm text-blue-700">
+                      Faça upload de um arquivo CSV, TXT ou JSON. Os formatos suportados são os mesmos da entrada manual.
+                    </p>
+                    <div className="flex mt-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadCSVTemplate}
+                        className="h-8 text-xs bg-white"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        CSV Template
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadJSONTemplate}
+                        className="h-8 text-xs bg-white"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        JSON Template
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                
-                <Button 
-                  onClick={handleUploadCSV} 
-                  disabled={!csvFile || isProcessing}
-                  className="flex items-center gap-2"
-                >
-                  {isProcessing ? 
-                    <RefreshCw className="h-4 w-4 animate-spin" /> : 
-                    <Upload className="h-4 w-4" />
-                  }
-                  Validar Dados
-                </Button>
               </div>
               
-              {csvFile && (
-                <div className="text-sm text-muted-foreground">
-                  Arquivo selecionado: <span className="font-medium">{csvFile.name}</span> ({Math.round(csvFile.size / 1024)} KB)
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          {/* Manual Entry */}
-          <TabsContent value="manual" className="space-y-4 pt-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>Instruções</AlertTitle>
-              <AlertDescription>
-                Adicione manualmente os produtos que deseja atualizar. O ID do produto e a quantidade são obrigatórios.
-              </AlertDescription>
-            </Alert>
-            
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[80px]">ID</TableHead>
-                    <TableHead className="w-[100px]">Quantidade</TableHead>
-                    <TableHead className="w-[100px]">Limite Baixo</TableHead>
-                    <TableHead className="w-[100px]">Reabastecimento</TableHead>
-                    <TableHead className="w-[100px]">Status</TableHead>
-                    <TableHead className="w-[80px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {manualItems.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.productId || ''}
-                          onChange={(e) => handleManualItemChange(index, 'productId', e.target.value)}
-                          disabled={isProcessing}
-                          placeholder="ID"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.quantity || ''}
-                          onChange={(e) => handleManualItemChange(index, 'quantity', e.target.value)}
-                          disabled={isProcessing}
-                          placeholder="Qtd"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.lowStockThreshold || ''}
-                          onChange={(e) => handleManualItemChange(index, 'lowStockThreshold', e.target.value)}
-                          disabled={isProcessing}
-                          placeholder="Limite"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.restockLevel || ''}
-                          onChange={(e) => handleManualItemChange(index, 'restockLevel', e.target.value)}
-                          disabled={isProcessing}
-                          placeholder="Reestoque"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <select
-                          className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                          value={item.status || ''}
-                          onChange={(e) => handleManualItemChange(index, 'status', e.target.value)}
-                          disabled={isProcessing}
-                        >
-                          <option value="">Status</option>
-                          <option value="in_stock">Em estoque</option>
-                          <option value="low_stock">Estoque baixo</option>
-                          <option value="out_of_stock">Esgotado</option>
-                          <option value="discontinued">Descontinuado</option>
-                          <option value="back_order">Em espera</option>
-                        </select>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveManualRow(index)}
-                          disabled={manualItems.length === 1 || isProcessing}
-                        >
-                          <AlertCircle className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            
-            <div className="flex justify-between">
-              <Button 
-                variant="outline" 
-                onClick={handleAddManualRow}
-                disabled={isProcessing}
-              >
-                Adicionar Linha
-              </Button>
-              
-              <Button 
-                onClick={validateManualData}
-                disabled={manualItems.length === 0 || isProcessing}
-                className="flex items-center gap-2"
-              >
-                {isProcessing ? 
-                  <RefreshCw className="h-4 w-4 animate-spin" /> : 
-                  <Upload className="h-4 w-4" />
-                }
-                Validar Dados
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        {/* Progress bar when processing */}
-        {operationProgress > 0 && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progresso</span>
-              <span>{operationProgress}%</span>
-            </div>
-            <Progress value={operationProgress} className="h-2" />
-          </div>
-        )}
-        
-        {/* Preview Section */}
-        {preview && (
-          <div className="space-y-4 mt-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Pré-visualização</h3>
-              
-              <div className="flex items-center gap-2">
-                {preview.errors > 0 && (
-                  <Badge variant="destructive" className="flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {preview.errors} erros
-                  </Badge>
-                )}
-                
-                {preview.warnings > 0 && (
-                  <Badge variant="warning" className="flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {preview.warnings} avisos
-                  </Badge>
-                )}
-                
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  {preview.items.length - preview.errors - preview.warnings} válidos
-                </Badge>
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <ScrollArea className="h-64 rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[80px]">ID</TableHead>
-                    <TableHead>Produto</TableHead>
-                    <TableHead className="text-right">Atual</TableHead>
-                    <TableHead className="text-right">Nova Qtd</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Validação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {preview.items.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{item.productId}</TableCell>
-                      <TableCell>{item.productName || `Produto #${item.productId}`}</TableCell>
-                      <TableCell className="text-right">{item.currentQuantity !== undefined ? item.currentQuantity : "N/A"}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {item.quantity}
-                        {item.currentQuantity !== undefined && item.currentQuantity !== item.quantity && (
-                          <span className={item.quantity > (item.currentQuantity || 0) ? "text-green-500 ml-1" : "text-red-500 ml-1"}>
-                            ({item.quantity > (item.currentQuantity || 0) ? "+" : ""}
-                            {item.quantity - (item.currentQuantity || 0)})
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {item.status ? (
-                          <Badge variant="outline">
-                            {item.status === "in_stock" ? "Em estoque" :
-                             item.status === "low_stock" ? "Estoque baixo" :
-                             item.status === "out_of_stock" ? "Esgotado" :
-                             item.status === "discontinued" ? "Descontinuado" :
-                             item.status === "back_order" ? "Em espera" : item.status}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">Sem alteração</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {item.error ? (
-                          <Badge variant="destructive" className="flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {item.error}
-                          </Badge>
-                        ) : (
-                          <Badge variant="success" className="flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            Válido
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-            
-            <div className="flex justify-end">
-              <Button 
-                onClick={processBulkUpdate}
-                disabled={isProcessing || preview.errors > 0}
-                className="flex items-center gap-2"
-              >
-                {isProcessing ? 
-                  <RefreshCw className="h-4 w-4 animate-spin" /> : 
-                  <CheckCircle className="h-4 w-4" />
-                }
-                Executar Atualização
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        {/* Result Dialog */}
-        <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Resultado da Atualização</DialogTitle>
-              <DialogDescription>
-                Resumo da operação de atualização em massa.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {result && (
-              <>
-                <div className="flex items-center justify-center gap-4 py-2">
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-green-500">{result.success}</div>
-                    <div className="text-sm text-muted-foreground">Sucesso</div>
-                  </div>
-                  <Separator orientation="vertical" className="h-10" />
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-red-500">{result.failed}</div>
-                    <div className="text-sm text-muted-foreground">Falhas</div>
-                  </div>
-                  <Separator orientation="vertical" className="h-10" />
-                  <div className="text-center">
-                    <div className="text-xl font-bold">{result.success + result.failed}</div>
-                    <div className="text-sm text-muted-foreground">Total</div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <ScrollArea className="h-64 rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[80px]">ID</TableHead>
-                        <TableHead>Produto</TableHead>
-                        <TableHead>Resultado</TableHead>
-                        <TableHead>Mensagem</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {result.details.map((detail, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{detail.productId}</TableCell>
-                          <TableCell>{detail.productName || `Produto #${detail.productId}`}</TableCell>
-                          <TableCell>
-                            {detail.success ? (
-                              <Badge variant="success" className="flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3" />
-                                Sucesso
-                              </Badge>
+              <Form {...fileForm}>
+                <form onSubmit={fileForm.handleSubmit(handleFileSubmit)} className="space-y-4">
+                  <FormField
+                    control={fileForm.control}
+                    name="file"
+                    render={({ field: { value, onChange, ...fieldProps } }) => (
+                      <FormItem>
+                        <FormLabel>Arquivo de Inventário</FormLabel>
+                        <FormControl>
+                          <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              className="hidden"
+                              accept=".csv,.txt,.json"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  onChange(file);
+                                }
+                              }}
+                              {...fieldProps}
+                            />
+                            <FileUp className="h-12 w-12 text-gray-400 mb-2" />
+                            {value ? (
+                              <div className="flex flex-col items-center">
+                                <Badge variant="outline" className="mb-2 py-1 px-3">
+                                  {value.name}
+                                </Badge>
+                                <span className="text-sm text-gray-600">
+                                  {(value.size / 1024).toFixed(2)} KB
+                                </span>
+                              </div>
                             ) : (
-                              <Badge variant="destructive" className="flex items-center gap-1">
-                                <AlertCircle className="h-3 w-3" />
-                                Falha
-                              </Badge>
+                              <>
+                                <p className="text-sm font-medium">
+                                  Arraste e solte ou clique para selecionar
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  CSV, TXT ou JSON (max. 10MB)
+                                </p>
+                              </>
                             )}
-                          </TableCell>
-                          <TableCell>{detail.message || (detail.success ? "Atualizado com sucesso" : "Erro na atualização")}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-                
-                <DialogFooter>
-                  <Button onClick={() => setShowResultDialog(false)}>Fechar</Button>
-                  <Button variant="outline" onClick={resetOperation}>Nova Atualização</Button>
-                </DialogFooter>
-              </>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="mt-4"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              Selecionar Arquivo
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {parseError && (
+                    <div className="bg-red-50 p-3 rounded-md border border-red-200 text-sm text-red-800">
+                      <div className="flex">
+                        <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0" />
+                        <span>{parseError}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={!fileForm.getValues("file") || fileForm.formState.isSubmitting}
+                  >
+                    {fileForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <TableIcon className="h-4 w-4 mr-2" />
+                        Pré-visualizar dados
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      {/* Dialog de prévia */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização dos Dados</DialogTitle>
+            <DialogDescription>
+              Verifique se os dados estão corretos antes de prosseguir.
+              {parsedData.length > 5 && ` Mostrando 5 de ${parsedData.length} itens.`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[400px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID do Produto</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Limite Min.</TableHead>
+                  <TableHead>Nível Reposição</TableHead>
+                  <TableHead>Localização</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewData.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.productId}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>{item.lowStockThreshold ?? "—"}</TableCell>
+                    <TableCell>{item.restockLevel ?? "—"}</TableCell>
+                    <TableCell>{item.location ?? "—"}</TableCell>
+                    <TableCell>{item.status ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <DialogFooter className="flex gap-2 sm:justify-between">
+            <div className="hidden sm:block">
+              <Badge variant="outline" className="text-sm font-normal">
+                Total: {parsedData.length} itens
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleContinueToConfirmation}>
+                Continuar
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog de confirmação */}
+      <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Atualização</DialogTitle>
+            <DialogDescription>
+              Você está prestes a atualizar {parsedData.length} itens de inventário.
+              Por favor, forneça um motivo para esta atualização.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...reasonForm}>
+            <form onSubmit={reasonForm.handleSubmit(handleReasonSubmit)} className="space-y-4">
+              <FormField
+                control={reasonForm.control}
+                name="reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Motivo da Atualização</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Contagem de estoque semanal" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={reasonForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas Adicionais (opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Detalhes adicionais sobre esta atualização..." 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsConfirmationOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={reasonForm.formState.isSubmitting}
+                >
+                  {reasonForm.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    "Atualizar Inventário"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog de processamento */}
+      <Dialog open={isProcessStarted} onOpenChange={(open) => {
+        if (!open && isProcessingComplete) {
+          setIsProcessStarted(false);
+          setIsShowingResults(true);
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isProcessingComplete ? "Processamento Concluído" : "Processando Atualização"}
+            </DialogTitle>
+            <DialogDescription>
+              {isProcessingComplete
+                ? "A atualização do inventário foi concluída."
+                : "Por favor, aguarde enquanto atualizamos seu inventário."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {!isProcessingComplete && (
+              <div className="flex flex-col items-center justify-center p-6">
+                <Loader2 className="h-12 w-12 text-blue-600 animate-spin mb-4" />
+                <p className="text-sm text-center text-gray-600">
+                  Processando {processingStatus.processed} de {processingStatus.total} itens...
+                </p>
+              </div>
             )}
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progresso:</span>
+                <span>
+                  {Math.round((processingStatus.processed / Math.max(processingStatus.total, 1)) * 100)}%
+                </span>
+              </div>
+              <Progress 
+                value={(processingStatus.processed / Math.max(processingStatus.total, 1)) * 100} 
+                className="h-2"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="bg-green-50 rounded-md p-3 border border-green-100 text-center">
+                <p className="text-xs text-green-700 mb-1">Sucessos</p>
+                <p className="text-xl font-semibold text-green-800">{processingStatus.successful}</p>
+              </div>
+              <div className="bg-red-50 rounded-md p-3 border border-red-100 text-center">
+                <p className="text-xs text-red-700 mb-1">Falhas</p>
+                <p className="text-xl font-semibold text-red-800">{processingStatus.failed}</p>
+              </div>
+            </div>
+          </div>
+          
+          {isProcessingComplete && (
+            <DialogFooter>
+              <Button onClick={() => {
+                setIsProcessStarted(false);
+                setIsShowingResults(true);
+              }}>
+                Ver Resultados
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog de resultados */}
+      <Dialog open={isShowingResults} onOpenChange={setIsShowingResults}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Resultados da Atualização</DialogTitle>
+            <DialogDescription>
+              {processingStatus.successful} de {processingStatus.total} itens foram atualizados com sucesso.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {processingResults.length > 0 ? (
+            <div className="max-h-[400px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID do Produto</TableHead>
+                    <TableHead>Quantidade</TableHead>
+                    <TableHead>Resultado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {processingResults.map((result, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{result.productId}</TableCell>
+                      <TableCell>{result.quantity}</TableCell>
+                      <TableCell>{renderProcessingResult(result)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="bg-amber-50 p-4 rounded-md border border-amber-200 text-sm text-amber-800">
+              <div className="flex">
+                <Info className="h-5 w-5 text-amber-600 mr-2 flex-shrink-0" />
+                <span>
+                  Não há detalhes específicos disponíveis para esta atualização.
+                </span>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => {
+              setIsShowingResults(false);
+              // Limpar estado
+              setProcessingResults([]);
+              setProcessingStatus({
+                total: 0,
+                processed: 0,
+                successful: 0,
+                failed: 0,
+              });
+              setIsProcessingComplete(false);
+            }}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
-};
+}

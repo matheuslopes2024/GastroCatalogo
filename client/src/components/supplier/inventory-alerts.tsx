@@ -1,31 +1,36 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Filter,
+  Search,
+  Package,
+  ShieldAlert,
+  ArrowUpDown,
+  RefreshCw,
+  Bell,
+  BellOff,
+  CircleAlert,
+  ExternalLink,
+  CalendarClock
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { 
-  AlertTriangle, 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
-  Search, 
-  Filter, 
-  RefreshCw, 
-  ArrowUpDown, 
-  Package,
-  Eye,
-  BellOff,
-  CheckSquare
-} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -42,18 +47,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -61,557 +60,599 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "wouter";
 
-// StockAlert interface que já está no inventory-management.tsx
-export interface StockAlert {
-  id: number;
-  productId: number;
-  supplierId: number;
-  message: string;
-  quantity: number | null;
-  alertType: string;
-  isRead: boolean;
-  resolvedAt: string | null;
-  resolvedBy: number | null;
-  previousQuantity: number | null;
-  createdAt: string;
-  priority: number;
-  productName?: string;
-  productImage?: string;
+interface InventoryAlertsProps {
+  onReadAlert?: () => void;
+  onResolveAlert?: () => void;
 }
 
-export const InventoryAlerts = () => {
+export function InventoryAlerts({ onReadAlert, onResolveAlert }: InventoryAlertsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("date-desc");
-  const [selectedAlert, setSelectedAlert] = useState<StockAlert | null>(null);
-  const [showAlertDetails, setShowAlertDetails] = useState(false);
+  const [filterType, setFilterType] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [selectedAlertId, setSelectedAlertId] = useState<number | null>(null);
+  const [showReadDialog, setShowReadDialog] = useState(false);
+  const [showResolveDialog, setShowResolveDialog] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<number[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
-  // Buscar alertas
-  const { data: alerts, isLoading: isLoadingAlerts, refetch: refetchAlerts } = useQuery<StockAlert[]>({
-    queryKey: ['/api/supplier/inventory/alerts'],
+  // Buscar alertas de estoque
+  const { 
+    data: alerts, 
+    isLoading: isLoadingAlerts,
+    refetch: refetchAlerts
+  } = useQuery({
+    queryKey: ["/api/supplier/inventory/alerts", { 
+      isRead: activeTab === "unread" ? false : undefined,
+      resolved: activeTab === "resolved" ? true : undefined,
+      type: filterType || undefined
+    }],
     enabled: !!user?.id,
   });
 
-  // Mutation para marcar alerta como lido
+  // Filtrar alertas baseado na pesquisa
+  const filteredAlerts = alerts?.filter((alert: any) => 
+    !searchTerm || 
+    alert.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    alert.productId.toString().includes(searchTerm) ||
+    (alert.productName && alert.productName.toLowerCase().includes(searchTerm.toLowerCase()))
+  ) || [];
+
+  // Obter alerta selecionado
+  const getSelectedAlert = () => {
+    return alerts?.find((alert: any) => alert.id === selectedAlertId) || null;
+  };
+
+  // Mutação para marcar alerta como lido
   const markAsReadMutation = useMutation({
     mutationFn: async (alertId: number) => {
-      const response = await apiRequest(
-        "PATCH", 
-        `/api/supplier/inventory/alerts/${alertId}/read`,
-        {}
-      );
-      return response.json();
+      const res = await apiRequest("PUT", `/api/supplier/inventory/alerts/${alertId}/read`, {});
+      return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/supplier/inventory/alerts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/supplier/inventory/alerts/count'] });
-      
       toast({
         title: "Alerta marcado como lido",
         description: "O alerta foi marcado como lido com sucesso.",
-        variant: "default",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/inventory/alerts"] });
+      setShowReadDialog(false);
+      
+      if (onReadAlert) {
+        onReadAlert();
+      }
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
-        title: "Erro ao marcar alerta como lido",
-        description: error.message || "Não foi possível marcar o alerta como lido.",
+        title: "Erro ao marcar alerta",
+        description: error.message || "Ocorreu um erro ao marcar o alerta como lido.",
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Mutation para resolver alerta
+  // Mutação para marcar vários alertas como lidos
+  const markMultipleAsReadMutation = useMutation({
+    mutationFn: async (alertIds: number[]) => {
+      const res = await apiRequest("PUT", `/api/supplier/inventory/alerts/bulk-read`, { 
+        alertIds 
+      });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Alertas marcados como lidos",
+        description: `${data.updatedCount} alertas foram marcados como lidos com sucesso.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/inventory/alerts"] });
+      setBulkSelected([]);
+      setIsAllSelected(false);
+      
+      if (onReadAlert) {
+        onReadAlert();
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao marcar alertas",
+        description: error.message || "Ocorreu um erro ao marcar os alertas como lidos.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutação para resolver alerta
   const resolveAlertMutation = useMutation({
     mutationFn: async (alertId: number) => {
-      const response = await apiRequest(
-        "PATCH", 
-        `/api/supplier/inventory/alerts/${alertId}/resolve`,
-        {}
-      );
-      return response.json();
+      const res = await apiRequest("PUT", `/api/supplier/inventory/alerts/${alertId}/resolve`, {});
+      return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/supplier/inventory/alerts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/supplier/inventory/alerts/count'] });
-      
       toast({
         title: "Alerta resolvido",
         description: "O alerta foi marcado como resolvido com sucesso.",
-        variant: "default",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier/inventory/alerts"] });
+      setShowResolveDialog(false);
+      
+      if (onResolveAlert) {
+        onResolveAlert();
+      }
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro ao resolver alerta",
-        description: error.message || "Não foi possível resolver o alerta.",
+        description: error.message || "Ocorreu um erro ao resolver o alerta.",
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Função para exibir detalhes do alerta
-  const handleViewAlertDetails = (alert: StockAlert) => {
-    setSelectedAlert(alert);
-    setShowAlertDetails(true);
+  // Marcar um alerta como lido
+  const handleMarkAsRead = (alertId: number) => {
+    setSelectedAlertId(alertId);
+    setShowReadDialog(true);
+  };
 
-    // Se o alerta não foi lido, marcá-lo como lido
-    if (!alert.isRead) {
-      markAsReadMutation.mutate(alert.id);
+  // Resolver um alerta
+  const handleResolveAlert = (alertId: number) => {
+    setSelectedAlertId(alertId);
+    setShowResolveDialog(true);
+  };
+
+  // Confirmar marcar como lido
+  const confirmMarkAsRead = () => {
+    if (selectedAlertId) {
+      markAsReadMutation.mutate(selectedAlertId);
     }
   };
 
-  // Função para resolver alerta
-  const handleResolveAlert = (alertId: number) => {
-    resolveAlertMutation.mutate(alertId);
-    setShowAlertDetails(false);
+  // Confirmar resolver alerta
+  const confirmResolveAlert = () => {
+    if (selectedAlertId) {
+      resolveAlertMutation.mutate(selectedAlertId);
+    }
   };
 
-  // Filtrar e ordenar alertas
-  const filteredAlerts = alerts
-    ? alerts
-        .filter(alert => {
-          const matchesSearch = !searchTerm || 
-            (alert.productName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             alert.message.toLowerCase().includes(searchTerm.toLowerCase()));
-          
-          const matchesStatus = statusFilter === "all" || 
-            (statusFilter === "unread" && !alert.isRead) ||
-            (statusFilter === "read" && alert.isRead) ||
-            (statusFilter === "resolved" && alert.resolvedAt);
-          
-          const matchesType = typeFilter === "all" || alert.alertType === typeFilter;
-          
-          return matchesSearch && matchesStatus && matchesType;
-        })
-        .sort((a, b) => {
-          switch (sortBy) {
-            case "date-asc":
-              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            case "date-desc":
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            case "priority-asc":
-              return a.priority - b.priority;
-            case "priority-desc":
-              return b.priority - a.priority;
-            case "product-asc":
-              return (a.productName || "").localeCompare(b.productName || "");
-            case "product-desc":
-              return (b.productName || "").localeCompare(a.productName || "");
-            default:
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          }
-        })
-    : [];
+  // Manipular seleção individual
+  const handleSelectAlert = (alertId: number, checked: boolean) => {
+    if (checked) {
+      setBulkSelected(prev => [...prev, alertId]);
+    } else {
+      setBulkSelected(prev => prev.filter(id => id !== alertId));
+      setIsAllSelected(false);
+    }
+  };
 
-  // Contagens de status
-  const totalAlerts = filteredAlerts.length;
-  const unreadAlerts = filteredAlerts.filter(alert => !alert.isRead).length;
-  const resolvedAlerts = filteredAlerts.filter(alert => alert.resolvedAt).length;
+  // Manipular seleção em massa
+  const handleSelectAll = (checked: boolean) => {
+    setIsAllSelected(checked);
+    if (checked) {
+      const allIds = filteredAlerts
+        .filter((alert: any) => !alert.isRead)
+        .map((alert: any) => alert.id);
+      setBulkSelected(allIds);
+    } else {
+      setBulkSelected([]);
+    }
+  };
 
-  // Obter badge de tipo de alerta
+  // Marcar todos os selecionados como lidos
+  const handleMarkSelectedAsRead = () => {
+    if (bulkSelected.length > 0) {
+      markMultipleAsReadMutation.mutate(bulkSelected);
+    } else {
+      toast({
+        title: "Nenhum alerta selecionado",
+        description: "Por favor, selecione pelo menos um alerta para marcar como lido.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Formatar data
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Formatar tipo de alerta
   const getAlertTypeBadge = (type: string) => {
     switch (type) {
       case "low_stock":
-        return <Badge variant="warning" className="flex items-center gap-1">
-          <AlertTriangle className="h-3 w-3" />
+        return <Badge variant="warning" className="flex items-center">
+          <AlertCircle className="mr-1 h-3 w-3" />
           Estoque Baixo
         </Badge>;
       case "out_of_stock":
-        return <Badge variant="destructive" className="flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          Esgotado
+        return <Badge variant="destructive" className="flex items-center">
+          <ShieldAlert className="mr-1 h-3 w-3" />
+          Sem Estoque
+        </Badge>;
+      case "expiration":
+        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 flex items-center">
+          <Clock className="mr-1 h-3 w-3" />
+          Prestes a Expirar
         </Badge>;
       case "restock_needed":
-        return <Badge variant="outline" className="flex items-center gap-1 border-amber-500 text-amber-700">
-          <Package className="h-3 w-3" />
-          Reabastecimento
-        </Badge>;
-      case "stock_updated":
-        return <Badge variant="success" className="flex items-center gap-1">
-          <CheckCircle className="h-3 w-3" />
-          Atualizado
-        </Badge>;
-      case "batch_update":
-        return <Badge variant="outline" className="flex items-center gap-1">
-          <RefreshCw className="h-3 w-3" />
-          Atualização em Lote
-        </Badge>;
-      case "inventory_audit":
-        return <Badge variant="outline" className="flex items-center gap-1 border-blue-500 text-blue-700">
-          <Clock className="h-3 w-3" />
-          Auditoria
-        </Badge>;
-      case "forecasted_shortage":
-        return <Badge variant="outline" className="flex items-center gap-1 border-purple-500 text-purple-700">
-          <AlertTriangle className="h-3 w-3" />
-          Previsão de Escassez
+        return <Badge variant="default" className="flex items-center">
+          <RefreshCw className="mr-1 h-3 w-3" />
+          Reposição Necessária
         </Badge>;
       default:
-        return <Badge variant="outline">{type}</Badge>;
+        return <Badge>{type}</Badge>;
     }
   };
 
-  // Obter badge de prioridade
-  const getPriorityBadge = (priority: number) => {
-    if (priority >= 8) {
-      return <Badge variant="destructive" className="flex items-center gap-1">
-        <AlertCircle className="h-3 w-3" />
-        Alta
-      </Badge>;
-    } else if (priority >= 5) {
-      return <Badge variant="warning" className="flex items-center gap-1">
-        <AlertTriangle className="h-3 w-3" />
-        Média
-      </Badge>;
-    } else {
-      return <Badge variant="outline" className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        Baixa
-      </Badge>;
-    }
+  // Verificar se um alerta está selecionado
+  const isAlertSelected = (alertId: number) => {
+    return bulkSelected.includes(alertId);
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-xl font-bold">Alertas de Estoque</CardTitle>
-            <CardDescription>
-              Monitore e gerencie alertas relacionados ao seu inventário
-            </CardDescription>
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input 
+            placeholder="Buscar por mensagem ou ID do produto..." 
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex gap-2">
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[180px]">
+              <div className="flex items-center">
+                <Filter className="mr-2 h-4 w-4" />
+                <span>{filterType ? 'Filtrar por tipo' : 'Todos os tipos'}</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="low_stock">Estoque Baixo</SelectItem>
+              <SelectItem value="out_of_stock">Sem Estoque</SelectItem>
+              <SelectItem value="expiration">Prestes a Expirar</SelectItem>
+              <SelectItem value="restock_needed">Reposição Necessária</SelectItem>
+            </SelectContent>
+          </Select>
+          
           <Button 
             variant="outline" 
             onClick={() => refetchAlerts()}
-            className="flex items-center gap-2"
+            className="flex items-center"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Estatísticas de alertas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-lg border p-3">
-            <div className="text-sm text-muted-foreground">Total de Alertas</div>
-            <div className="text-2xl font-bold mt-1">{totalAlerts}</div>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="text-sm text-muted-foreground">Não Lidos</div>
-            <div className="text-2xl font-bold mt-1 text-amber-600">{unreadAlerts}</div>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="text-sm text-muted-foreground">Resolvidos</div>
-            <div className="text-2xl font-bold mt-1 text-green-600">{resolvedAlerts}</div>
-          </div>
-        </div>
-
-        {/* Filtros e Pesquisa */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar alertas por produto ou mensagem..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]">
-                <span className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Filtrar por status" />
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="unread">Não lidos</SelectItem>
-                <SelectItem value="read">Lidos</SelectItem>
-                <SelectItem value="resolved">Resolvidos</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[160px]">
-                <span className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Filtrar por tipo" />
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="low_stock">Estoque baixo</SelectItem>
-                <SelectItem value="out_of_stock">Esgotado</SelectItem>
-                <SelectItem value="restock_needed">Reabastecimento</SelectItem>
-                <SelectItem value="stock_updated">Atualizado</SelectItem>
-                <SelectItem value="batch_update">Atualização em lote</SelectItem>
-                <SelectItem value="inventory_audit">Auditoria</SelectItem>
-                <SelectItem value="forecasted_shortage">Previsão de escassez</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <span className="flex items-center gap-2">
-                  <ArrowUpDown className="h-4 w-4" />
-                  <SelectValue placeholder="Ordenar por" />
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-desc">Data (Recentes primeiro)</SelectItem>
-                <SelectItem value="date-asc">Data (Antigos primeiro)</SelectItem>
-                <SelectItem value="priority-desc">Prioridade (Alta primeiro)</SelectItem>
-                <SelectItem value="priority-asc">Prioridade (Baixa primeiro)</SelectItem>
-                <SelectItem value="product-asc">Produto (A-Z)</SelectItem>
-                <SelectItem value="product-desc">Produto (Z-A)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Tabela de Alertas */}
-        {isLoadingAlerts ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="w-full h-16" />
-            ))}
-          </div>
-        ) : filteredAlerts.length > 0 ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">Status</TableHead>
-                  <TableHead>Produto</TableHead>
-                  <TableHead>Mensagem</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Prioridade</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAlerts.map((alert) => (
-                  <TableRow key={alert.id} className={!alert.isRead ? "bg-muted/30" : ""}>
-                    <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            {alert.resolvedAt ? (
-                              <CheckSquare className="h-5 w-5 text-green-500" />
-                            ) : !alert.isRead ? (
-                              <AlertCircle className="h-5 w-5 text-amber-500" />
-                            ) : (
-                              <CheckCircle className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {alert.resolvedAt ? "Resolvido" : !alert.isRead ? "Não lido" : "Lido"}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {alert.productImage && (
-                          <img 
-                            src={alert.productImage} 
-                            alt={alert.productName || "Produto"} 
-                            className="w-8 h-8 object-cover rounded-md"
-                          />
-                        )}
-                        <div className="font-medium">{alert.productName || `Produto #${alert.productId}`}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {alert.message}
-                    </TableCell>
-                    <TableCell>{getAlertTypeBadge(alert.alertType)}</TableCell>
-                    <TableCell>{getPriorityBadge(alert.priority)}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(alert.createdAt), "dd/MM/yyyy HH:mm", { locale: pt })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <ArrowUpDown className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewAlertDetails(alert)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver detalhes
-                          </DropdownMenuItem>
-                          
-                          {!alert.isRead && (
-                            <DropdownMenuItem onClick={() => markAsReadMutation.mutate(alert.id)}>
-                              <BellOff className="h-4 w-4 mr-2" />
-                              Marcar como lido
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {!alert.resolvedAt && (
-                            <DropdownMenuItem onClick={() => resolveAlertMutation.mutate(alert.id)}>
-                              <CheckSquare className="h-4 w-4 mr-2" />
-                              Resolver alerta
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center p-8 border rounded-lg">
-            <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-            <h3 className="text-lg font-medium mb-2">Nenhum alerta encontrado</h3>
-            <p className="text-muted-foreground mb-4 text-center">
-              {searchTerm || statusFilter !== "all" || typeFilter !== "all" 
-                ? "Nenhum resultado encontrado com os filtros atuais. Tente modificar sua busca."
-                : "Você não possui alertas de estoque ativos. Isso é um bom sinal!"}
-            </p>
-          </div>
-        )}
-
-        {/* Modal de Detalhes do Alerta */}
-        <Dialog open={showAlertDetails} onOpenChange={setShowAlertDetails}>
-          <DialogContent className="sm:max-w-[600px]">
-            {selectedAlert && (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center justify-between">
-                    <DialogTitle>Detalhes do Alerta</DialogTitle>
-                    {getAlertTypeBadge(selectedAlert.alertType)}
+      </div>
+      
+      <Card>
+        <CardHeader className="pb-2 space-y-1">
+          <CardTitle className="text-lg flex items-center">
+            <Bell className="mr-2 h-5 w-5 text-amber-500" />
+            Alertas de Estoque
+          </CardTitle>
+          <CardDescription>
+            Monitore alertas importantes sobre o seu estoque de produtos.
+          </CardDescription>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mt-4">
+            <TabsList className="grid grid-cols-3 mb-2">
+              <TabsTrigger value="all" className="flex items-center">
+                <Bell className="mr-2 h-4 w-4" />
+                Todos
+                {alerts?.length > 0 && <span className="ml-1.5 text-xs bg-gray-200 rounded-full px-1.5">{alerts.length}</span>}
+              </TabsTrigger>
+              <TabsTrigger value="unread" className="flex items-center">
+                <CircleAlert className="mr-2 h-4 w-4" />
+                Não lidos
+                {alerts?.filter((a: any) => !a.isRead).length > 0 && 
+                  <span className="ml-1.5 text-xs bg-amber-100 text-amber-700 rounded-full px-1.5">
+                    {alerts.filter((a: any) => !a.isRead).length}
+                  </span>
+                }
+              </TabsTrigger>
+              <TabsTrigger value="resolved" className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Resolvidos
+                {alerts?.filter((a: any) => a.resolvedAt).length > 0 && 
+                  <span className="ml-1.5 text-xs bg-green-100 text-green-700 rounded-full px-1.5">
+                    {alerts.filter((a: any) => a.resolvedAt).length}
+                  </span>
+                }
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        
+        <CardContent>
+          {isLoadingAlerts ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-md" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
                   </div>
-                  <DialogDescription>
-                    Informações detalhadas sobre o alerta selecionado
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <div className="text-sm text-muted-foreground">Produto</div>
-                    <div className="font-medium text-lg flex items-center gap-2">
-                      {selectedAlert.productImage && (
-                        <img 
-                          src={selectedAlert.productImage} 
-                          alt={selectedAlert.productName || "Produto"} 
-                          className="w-8 h-8 object-cover rounded-md"
-                        />
-                      )}
-                      {selectedAlert.productName || `Produto #${selectedAlert.productId}`}
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground">Prioridade</div>
-                      <div>{getPriorityBadge(selectedAlert.priority)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Status</div>
-                      <div>
-                        {selectedAlert.resolvedAt ? (
-                          <Badge variant="success" className="flex items-center gap-1">
-                            <CheckSquare className="h-3 w-3" />
-                            Resolvido
-                          </Badge>
-                        ) : !selectedAlert.isRead ? (
-                          <Badge variant="warning" className="flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Não lido
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            Lido
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground">Data de Criação</div>
-                      <div className="font-medium">
-                        {format(new Date(selectedAlert.createdAt), "dd/MM/yyyy HH:mm", { locale: pt })}
-                      </div>
-                    </div>
-                    {selectedAlert.resolvedAt && (
-                      <div>
-                        <div className="text-sm text-muted-foreground">Data de Resolução</div>
-                        <div className="font-medium">
-                          {format(new Date(selectedAlert.resolvedAt), "dd/MM/yyyy HH:mm", { locale: pt })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm text-muted-foreground">Mensagem</div>
-                    <div className="p-3 rounded-md border mt-1 text-sm">{selectedAlert.message}</div>
-                  </div>
-                  
-                  {(selectedAlert.quantity !== null || selectedAlert.previousQuantity !== null) && (
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedAlert.previousQuantity !== null && (
-                        <div>
-                          <div className="text-sm text-muted-foreground">Quantidade Anterior</div>
-                          <div className="font-medium">{selectedAlert.previousQuantity}</div>
-                        </div>
-                      )}
-                      {selectedAlert.quantity !== null && (
-                        <div>
-                          <div className="text-sm text-muted-foreground">Quantidade Atual</div>
-                          <div className="font-medium">{selectedAlert.quantity}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
-                
-                <DialogFooter className="gap-2">
-                  {!selectedAlert.resolvedAt && (
-                    <Button 
-                      onClick={() => handleResolveAlert(selectedAlert.id)} 
-                      variant="default"
-                      className="flex items-center gap-2"
+              ))}
+            </div>
+          ) : (
+            <>
+              {activeTab === "unread" && filteredAlerts.filter((a: any) => !a.isRead).length > 0 && (
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="select-all"
+                      checked={isAllSelected}
+                      onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                    />
+                    <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
+                      Selecionar todos
+                    </label>
+                  </div>
+                  
+                  {bulkSelected.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center"
+                      onClick={handleMarkSelectedAsRead}
+                      disabled={markMultipleAsReadMutation.isPending}
                     >
-                      <CheckSquare className="h-4 w-4" />
-                      Resolver Alerta
+                      <BellOff className="mr-1.5 h-3.5 w-3.5" />
+                      {markMultipleAsReadMutation.isPending
+                        ? "Marcando..."
+                        : `Marcar ${bulkSelected.length} como lidos`}
                     </Button>
                   )}
-                  
-                  <Button 
-                    onClick={() => setShowAlertDetails(false)} 
-                    variant={selectedAlert.resolvedAt ? "default" : "outline"}
-                  >
-                    Fechar
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+                </div>
+              )}
+              
+              {filteredAlerts.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {activeTab === "unread" && (
+                          <TableHead className="w-12"></TableHead>
+                        )}
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Mensagem</TableHead>
+                        <TableHead>Produto</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAlerts.map((alert: any) => (
+                        <TableRow 
+                          key={alert.id} 
+                          className={
+                            alert.isRead
+                              ? "bg-gray-50 opacity-75"
+                              : alert.priority > 2 
+                                ? "bg-amber-50"
+                                : ""
+                          }
+                        >
+                          {activeTab === "unread" && (
+                            <TableCell>
+                              {!alert.isRead && (
+                                <Checkbox
+                                  checked={isAlertSelected(alert.id)}
+                                  onCheckedChange={(checked) => handleSelectAlert(alert.id, !!checked)}
+                                />
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            {getAlertTypeBadge(alert.alertType)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-sm">
+                              <p className={`${!alert.isRead ? "font-medium" : ""}`}>
+                                {alert.message}
+                              </p>
+                              {alert.resolvedAt && (
+                                <p className="text-xs text-green-600 flex items-center mt-1">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Resolvido em {formatDate(alert.resolvedAt)}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/produto/${alert.productId}`}>
+                              <a className="flex items-center text-blue-600 hover:underline">
+                                #{alert.productId}
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm">{formatDate(alert.createdAt)}</span>
+                              {alert.isRead && (
+                                <span className="text-xs text-gray-500 flex items-center mt-0.5">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Lido {alert.readAt ? formatDate(alert.readAt) : ""}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {!alert.isRead && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMarkAsRead(alert.id)}
+                                  className="h-8 px-2 text-gray-500"
+                                >
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <BellOff className="h-4 w-4" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Marcar como lido</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </Button>
+                              )}
+                              
+                              {!alert.resolvedAt && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleResolveAlert(alert.id)}
+                                  className="h-8 px-2 text-green-600"
+                                >
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <CheckCircle2 className="h-4 w-4" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Marcar como resolvido</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="bg-amber-50 p-3 rounded-full mb-2">
+                    <Bell className="h-8 w-8 text-amber-400" />
+                  </div>
+                  <h3 className="text-lg font-medium">Nenhum alerta encontrado</h3>
+                  <p className="text-gray-500 mt-1 max-w-md">
+                    {searchTerm
+                      ? `Não encontramos alertas correspondentes a "${searchTerm}"`
+                      : filterType
+                        ? "Não existem alertas que correspondam ao filtro selecionado."
+                        : activeTab === "unread"
+                          ? "Você não tem alertas não lidos no momento."
+                          : activeTab === "resolved"
+                            ? "Você não tem alertas resolvidos no momento."
+                            : "Você não tem alertas de estoque no momento."
+                    }
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Dialog para marcar como lido */}
+      <Dialog open={showReadDialog} onOpenChange={setShowReadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marcar alerta como lido</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja marcar este alerta como lido? 
+              Isto apenas indica que você viu o alerta, mas não que o problema foi resolvido.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {getSelectedAlert() && (
+            <div className="p-4 bg-gray-50 rounded-md my-4">
+              <div className="flex justify-between mb-2">
+                <span className="font-medium">Tipo:</span>
+                <span>{getAlertTypeBadge(getSelectedAlert().alertType)}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="font-medium">Produto:</span>
+                <span>#{getSelectedAlert().productId}</span>
+              </div>
+              <div className="mt-2">
+                <span className="font-medium">Mensagem:</span>
+                <p className="mt-1 text-gray-700">{getSelectedAlert().message}</p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReadDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={confirmMarkAsRead}
+              disabled={markAsReadMutation.isPending}
+            >
+              {markAsReadMutation.isPending ? "Marcando..." : "Marcar como lido"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog para resolver alerta */}
+      <Dialog open={showResolveDialog} onOpenChange={setShowResolveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolver alerta</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja marcar este alerta como resolvido? 
+              Isso indica que o problema foi corrigido e o alerta será arquivado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {getSelectedAlert() && (
+            <div className="p-4 bg-gray-50 rounded-md my-4">
+              <div className="flex justify-between mb-2">
+                <span className="font-medium">Tipo:</span>
+                <span>{getAlertTypeBadge(getSelectedAlert().alertType)}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="font-medium">Produto:</span>
+                <span>#{getSelectedAlert().productId}</span>
+              </div>
+              <div className="mt-2">
+                <span className="font-medium">Mensagem:</span>
+                <p className="mt-1 text-gray-700">{getSelectedAlert().message}</p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResolveDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={confirmResolveAlert}
+              disabled={resolveAlertMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {resolveAlertMutation.isPending ? "Resolvendo..." : "Marcar como resolvido"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
-};
+}

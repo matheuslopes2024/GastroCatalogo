@@ -1,154 +1,95 @@
-import React from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useChat } from "@/hooks/use-chat";
 import { 
-  BarChart,
   Package, 
   DollarSign, 
-  Users, 
-  MessageSquare,
-  Percent,
-  Settings,
-  ShoppingCart,
-  LifeBuoy,
-  HelpCircle,
+  BarChart, 
+  MessageCircle, 
+  Bell
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useChat } from "@/hooks/use-chat";
 
-// Componente para o sidebar do fornecedor com navegação completa
-export function SupplierSidebar({ activeItem = "dashboard" }: { activeItem?: string }) {
+export function SupplierSidebar() {
   const [location] = useLocation();
   const { unreadCount } = useChat();
   
-  // Array de itens do menu para facilitar manutenção
-  const menuItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      href: "/fornecedor",
-      icon: BarChart,
-    },
-    {
-      id: "produtos",
-      label: "Meus Produtos",
-      href: "/fornecedor/produtos",
-      icon: Package,
-    },
-    {
-      id: "vendas",
-      label: "Vendas",
-      href: "/fornecedor/vendas",
-      icon: ShoppingCart,
-    },
-    {
-      id: "comissoes",
-      label: "Comissões",
-      href: "/fornecedor/comissoes",
-      icon: Percent,
-    },
-    {
-      id: "financeiro",
-      label: "Financeiro",
-      href: "/fornecedor/financeiro",
-      icon: DollarSign,
-    },
-    {
-      id: "chat",
-      label: "Mensagens",
-      href: "/fornecedor/chat",
-      icon: MessageSquare,
-      badge: unreadCount > 0 ? unreadCount : undefined,
-    },
-    {
-      id: "clientes",
-      label: "Clientes",
-      href: "/fornecedor/clientes",
-      icon: Users,
-    },
-    {
-      id: "configuracoes",
-      label: "Configurações",
-      href: "/fornecedor/configuracoes",
-      icon: Settings,
-    },
-  ];
-
-  // Itens de suporte e ajuda
-  const supportItems = [
-    {
-      id: "suporte",
-      label: "Suporte",
-      href: "/suporte",
-      icon: LifeBuoy,
-    },
-    {
-      id: "ajuda",
-      label: "Central de Ajuda",
-      href: "/ajuda",
-      icon: HelpCircle,
-    },
-  ];
-
+  // Hook para obter contador de alertas de estoque
+  const { data: inventoryAlerts } = useQuery({
+    queryKey: ["/api/supplier/inventory/alerts", { isRead: false }],
+    enabled: true,
+  });
+  
+  const alertsCount = inventoryAlerts?.length || 0;
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
-      
-      {/* Menu Principal */}
-      <nav className="space-y-1.5">
-        {menuItems.map((item) => {
-          const isActive = activeItem === item.id || location === item.href;
-          return (
-            <Link href={item.href} key={item.id}>
-              <a 
-                className={cn(
-                  "flex items-center py-2 px-3 rounded-md font-medium transition-colors",
-                  isActive 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-gray-700 hover:text-primary hover:bg-gray-50"
-                )}
-              >
-                <item.icon className="mr-2 h-5 w-5" />
-                <span className="flex-grow">{item.label}</span>
-                {item.badge && (
-                  <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-              </a>
-            </Link>
-          );
-        })}
-      </nav>
-      
-      {/* Separador */}
-      <div className="border-t border-gray-200 my-4"></div>
-      
-      {/* Itens de Suporte */}
-      <nav className="space-y-1.5">
-        {supportItems.map((item) => (
-          <Link href={item.href} key={item.id}>
-            <a className="flex items-center py-2 px-3 rounded-md text-gray-600 hover:text-primary hover:bg-gray-50 font-medium transition-colors">
-              <item.icon className="mr-2 h-5 w-5" />
-              {item.label}
-            </a>
-          </Link>
-        ))}
-      </nav>
-      
-      {/* Elemento decorativo */}
-      <div className="mt-6 bg-gradient-to-r from-primary/10 to-primary/5 p-4 rounded-md">
-        <p className="text-sm text-gray-600">
-          Precisa de ajuda com sua loja? Nossa equipe está à disposição para auxiliar.
-        </p>
-        <Link href="/contato">
-          <a className="text-sm font-medium text-primary hover:underline mt-2 inline-block">
-            Fale conosco
+      <nav className="space-y-2">
+        <Link href="/fornecedor/dashboard">
+          <a className={`flex items-center p-2 rounded-md font-medium ${
+            location === "/fornecedor/dashboard" 
+              ? "text-primary bg-primary/10" 
+              : "text-gray-700 hover:text-primary hover:bg-gray-50"
+          }`}>
+            <BarChart className="mr-2 h-5 w-5" />
+            Dashboard
           </a>
         </Link>
-      </div>
+        
+        <Link href="/fornecedor/produtos">
+          <a className={`flex items-center p-2 rounded-md font-medium ${
+            location === "/fornecedor/produtos" 
+              ? "text-primary bg-primary/10" 
+              : "text-gray-700 hover:text-primary hover:bg-gray-50"
+          }`}>
+            <Package className="mr-2 h-5 w-5" />
+            Meus Produtos
+          </a>
+        </Link>
+        
+        <Link href="/fornecedor/inventario">
+          <a className={`flex items-center p-2 rounded-md font-medium relative ${
+            location === "/fornecedor/inventario" 
+              ? "text-primary bg-primary/10" 
+              : "text-gray-700 hover:text-primary hover:bg-gray-50"
+          }`}>
+            <Bell className="mr-2 h-5 w-5" />
+            Gerenciar Estoque
+            {alertsCount > 0 && (
+              <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                {alertsCount}
+              </span>
+            )}
+          </a>
+        </Link>
+        
+        <Link href="/fornecedor/vendas">
+          <a className={`flex items-center p-2 rounded-md font-medium ${
+            location === "/fornecedor/vendas" 
+              ? "text-primary bg-primary/10" 
+              : "text-gray-700 hover:text-primary hover:bg-gray-50"
+          }`}>
+            <DollarSign className="mr-2 h-5 w-5" />
+            Vendas e Comissões
+          </a>
+        </Link>
+        
+        <Link href="/fornecedor/chat">
+          <a className={`flex items-center p-2 rounded-md font-medium relative ${
+            location === "/fornecedor/chat" 
+              ? "text-primary bg-primary/10" 
+              : "text-gray-700 hover:text-primary hover:bg-gray-50"
+          }`}>
+            <MessageCircle className="mr-2 h-5 w-5" />
+            Suporte/Chat
+            {unreadCount > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </a>
+        </Link>
+      </nav>
     </div>
   );
 }
-
-// Exportar como default para compatibilidade com código existente
-export default SupplierSidebar;

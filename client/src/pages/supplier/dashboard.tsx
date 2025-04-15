@@ -66,6 +66,14 @@ function SupplierSidebar() {
   // Usar o hook para obter o contador de mensagens não lidas
   const { unreadCount } = useChat();
   
+  // Hook para obter contador de alertas de estoque
+  const { data: inventoryAlerts } = useQuery({
+    queryKey: ["/api/supplier/inventory/alerts", { isRead: false }],
+    enabled: true,
+  });
+  
+  const alertsCount = inventoryAlerts?.length || 0;
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Painel do Fornecedor</h2>
@@ -77,6 +85,15 @@ function SupplierSidebar() {
         <Link href="/fornecedor/produtos" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
           <Package className="mr-2 h-5 w-5" />
           Meus Produtos
+        </Link>
+        <Link href="/fornecedor/inventario" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium relative">
+          <Bell className="mr-2 h-5 w-5" />
+          Gerenciar Estoque
+          {alertsCount > 0 && (
+            <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+              {alertsCount}
+            </span>
+          )}
         </Link>
         <Link href="/fornecedor/vendas" className="flex items-center text-gray-700 hover:text-primary p-2 rounded-md hover:bg-gray-50 font-medium">
           <DollarSign className="mr-2 h-5 w-5" />
