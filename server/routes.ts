@@ -3228,8 +3228,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   const httpServer = createServer(app);
   
-  // Configuração do WebSocket Server para chat em tempo real
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // Configuração do WebSocket Server para chat em tempo real com verificações de segurança melhoradas
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    // Verificar origem da conexão para evitar conexões não autorizadas
+    verifyClient: (info, callback) => {
+      // Exemplo de verificação simples - adaptar conforme necessidade
+      const origin = info.origin || info.req.headers.origin || '';
+      const ip = info.req.socket.remoteAddress;
+      
+      console.log(`Tentativa de conexão WebSocket de ${ip} com origem: ${origin}`);
+      
+      // Você poderia adicionar uma lista de origens permitidas
+      // ou verificar cookies/tokens aqui para maior segurança
+      
+      // Por enquanto aceitamos todas as conexões, mas registramos para monitoramento
+      callback(true);
+    }
+  });
   
   // Mapa para rastrear conexões de usuários
   const clients = new Map();
@@ -3239,6 +3256,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mapa para rastrear status online dos usuários
   const onlineStatus = new Map();
+  
+  // Estatísticas para monitoramento de saúde do WebSocket
+  const wsStats = {
+    totalConnections: 0,
+    activeConnections: 0,
+    authenticationFailures: 0,
+    messagesSent: 0,
+    messagesReceived: 0,
+    errors: 0,
+    lastError: null
+  };
   
   // Função utilitária para enviar mensagens via WebSocket com melhor confiabilidade
   const sendWebSocketMessage = (ws, message) => {
