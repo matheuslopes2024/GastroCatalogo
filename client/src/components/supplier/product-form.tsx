@@ -42,15 +42,33 @@ import { useAuth } from "@/hooks/use-auth";
 const productSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
   description: z.string().optional(),
+  slug: z.string().optional(),
   price: z.string().min(1, { message: "Preço é obrigatório" }),
   originalPrice: z.string().optional(),
+  discount: z.string().optional(),
+  rating: z.string().optional(),
+  ratingsCount: z.string().optional(),
   sku: z.string().optional(),
   categoryId: z.string().min(1, { message: "Categoria é obrigatória" }),
   inventory: z.object({
     quantity: z.string().min(0, { message: "Quantidade não pode ser negativa" }),
     lowStockThreshold: z.string().optional(),
+    restockLevel: z.string().optional(),
+    reservedQuantity: z.string().optional(),
+    location: z.string().optional(),
+    batchNumber: z.string().optional(),
+    expirationDate: z.string().optional(),
+    notes: z.string().optional(),
+    status: z.string().optional(),
   }).optional(),
   imageUrl: z.string().optional(),
+  imageData: z.string().optional(),
+  imageType: z.string().optional(),
+  additionalImages: z.array(z.object({
+    url: z.string().optional(),
+    data: z.string().optional(),
+    type: z.string().optional()
+  })).optional(),
   active: z.boolean().default(true),
   additionalCategories: z.array(z.string()).optional(),
   features: z.string().optional(),
@@ -166,18 +184,32 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       form.reset({
         name: data.name || "",
         description: data.description || "",
+        slug: data.slug || "",
         price: data.price?.toString() || "",
         originalPrice: data.originalPrice?.toString() || "",
+        discount: data.discount?.toString() || "",
+        rating: data.rating?.toString() || "",
+        ratingsCount: data.ratingsCount?.toString() || "",
         sku: data.sku || "",
         categoryId: data.categoryId?.toString() || "",
         inventory: {
           quantity: data.inventory?.quantity?.toString() || "0",
           lowStockThreshold: data.inventory?.lowStockThreshold?.toString() || "10",
+          restockLevel: data.inventory?.restockLevel?.toString() || "20",
+          reservedQuantity: data.inventory?.reservedQuantity?.toString() || "0",
+          location: data.inventory?.location || "",
+          batchNumber: data.inventory?.batchNumber || "",
+          expirationDate: data.inventory?.expirationDate?.toString() || "",
+          notes: data.inventory?.notes || "",
+          status: data.inventory?.status || "in_stock",
         },
         imageUrl: data.imageUrl || "",
+        imageData: data.imageData || "",
+        imageType: data.imageType || "",
+        additionalImages: data.additionalImages || [],
         active: typeof data.active === "boolean" ? data.active : true,
         additionalCategories: data.additionalCategories || [],
-        features: data.features || "",
+        features: Array.isArray(data.features) ? data.features.join("\n") : (data.features || ""),
       });
     }
   }, [form, product, productData, isLoadingProduct]);
@@ -230,20 +262,45 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     
     const formData = new FormData();
     
-    // Converter dados para FormData
+    // Converter dados básicos para FormData
     formData.append("name", data.name);
     formData.append("description", data.description || "");
+    if (data.slug) formData.append("slug", data.slug);
     formData.append("price", data.price);
     if (data.originalPrice) formData.append("originalPrice", data.originalPrice);
+    if (data.discount) formData.append("discount", data.discount);
+    if (data.rating) formData.append("rating", data.rating);
+    if (data.ratingsCount) formData.append("ratingsCount", data.ratingsCount);
     if (data.sku) formData.append("sku", data.sku);
     formData.append("categoryId", data.categoryId);
     formData.append("active", data.active.toString());
     
-    // Dados de inventário
+    // Dados de inventário expandidos
     if (data.inventory) {
       formData.append("inventory.quantity", data.inventory.quantity);
       if (data.inventory.lowStockThreshold) {
         formData.append("inventory.lowStockThreshold", data.inventory.lowStockThreshold);
+      }
+      if (data.inventory.restockLevel) {
+        formData.append("inventory.restockLevel", data.inventory.restockLevel);
+      }
+      if (data.inventory.reservedQuantity) {
+        formData.append("inventory.reservedQuantity", data.inventory.reservedQuantity);
+      }
+      if (data.inventory.location) {
+        formData.append("inventory.location", data.inventory.location);
+      }
+      if (data.inventory.batchNumber) {
+        formData.append("inventory.batchNumber", data.inventory.batchNumber);
+      }
+      if (data.inventory.expirationDate) {
+        formData.append("inventory.expirationDate", data.inventory.expirationDate);
+      }
+      if (data.inventory.notes) {
+        formData.append("inventory.notes", data.inventory.notes);
+      }
+      if (data.inventory.status) {
+        formData.append("inventory.status", data.inventory.status);
       }
     }
     
@@ -257,11 +314,26 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     // Características do produto
     if (data.features) formData.append("features", data.features);
     
-    // Adicionar imagem, se houver
+    // Imagem principal, se houver
     if (imageFile) {
       formData.append("productImage", imageFile);
     } else if (data.imageUrl) {
       formData.append("imageUrl", data.imageUrl);
+    }
+    
+    // Imagens adicionais, se houver
+    if (data.additionalImages && data.additionalImages.length > 0) {
+      data.additionalImages.forEach((img, index) => {
+        if (img.url) {
+          formData.append(`additionalImages[${index}].url`, img.url);
+        }
+        if (img.data) {
+          formData.append(`additionalImages[${index}].data`, img.data);
+        }
+        if (img.type) {
+          formData.append(`additionalImages[${index}].type`, img.type);
+        }
+      });
     }
     
     // Enviar a requisição
@@ -388,6 +460,66 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
               />
             </div>
             
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="discount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Desconto (%)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          type="number" 
+                          step="0.1" 
+                          min="0" 
+                          max="100" 
+                          placeholder="0" 
+                          {...field} 
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                          %
+                        </span>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Percentual de desconto aplicado ao produto.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="rating"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avaliação (0-5)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          type="number" 
+                          step="0.1" 
+                          min="0" 
+                          max="5" 
+                          placeholder="0" 
+                          {...field} 
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                          ★
+                        </span>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Avaliação média do produto (0 a 5 estrelas).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
             <FormField
               control={form.control}
               name="categoryId"
@@ -422,6 +554,27 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
             
             <FormField
               control={form.control}
+              name="features"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Características do Produto</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Liste as características principais do produto, uma por linha..." 
+                      className="min-h-[100px]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Informe as especificações técnicas e diferenciais do produto.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="active"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -443,7 +596,7 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
           </TabsContent>
           
           {/* Inventário */}
-          <TabsContent value="inventory" className="space-y-4 pt-4">
+          <TabsContent value="inventory" className="space-y-6 pt-4">
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -466,6 +619,30 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
               
               <FormField
                 control={form.control}
+                name="inventory.reservedQuantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantidade Reservada</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        placeholder="0" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Quantidade já reservada para pedidos em processamento.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
                 name="inventory.lowStockThreshold"
                 render={({ field }) => (
                   <FormItem>
@@ -485,11 +662,152 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="inventory.restockLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nível de Reabastecimento</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        placeholder="20" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Quantidade ideal para reabastecer quando o estoque estiver baixo.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="inventory.location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Localização</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ex: Estante A, Prateleira 3" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Onde este produto está armazenado.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="inventory.batchNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número do Lote</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ex: LOT-2025-001" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Identificador do lote de produção ou recebimento.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="inventory.expirationDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Validade</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Se aplicável, para produtos perecíveis.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="inventory.status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status do Estoque</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="in_stock">Em Estoque</SelectItem>
+                        <SelectItem value="low_stock">Estoque Baixo</SelectItem>
+                        <SelectItem value="out_of_stock">Sem Estoque</SelectItem>
+                        <SelectItem value="backorder">Em Espera</SelectItem>
+                        <SelectItem value="discontinued">Descontinuado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Status atual de disponibilidade do produto.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid gap-4">
+              <FormField
+                control={form.control}
+                name="inventory.notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações de Estoque</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Informações adicionais sobre o estoque deste produto..." 
+                        className="min-h-[80px]" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Anotações internas sobre o inventário deste produto.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </TabsContent>
           
           {/* Imagens */}
-          <TabsContent value="images" className="space-y-4 pt-4">
+          <TabsContent value="images" className="space-y-6 pt-4">
             <div className="grid gap-4">
               <FormItem>
                 <FormLabel>Imagem Principal</FormLabel>
@@ -544,6 +862,81 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
                 </FormDescription>
                 <FormMessage />
               </FormItem>
+            </div>
+            
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-medium">Imagens Adicionais</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Adicione mais imagens para mostrar diferentes ângulos ou detalhes do produto.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    const current = form.getValues('additionalImages') || [];
+                    form.setValue('additionalImages', [
+                      ...current,
+                      { url: '', data: '', type: '' }
+                    ]);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Imagem
+                </Button>
+              </div>
+              
+              {form.watch('additionalImages')?.map((_, index) => (
+                <div key={index} className="flex items-start gap-4 mb-4 p-3 border rounded-md">
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name={`additionalImages.${index}.url`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL da Imagem {index + 1}</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="mt-8"
+                    onClick={() => {
+                      const current = form.getValues('additionalImages');
+                      form.setValue(
+                        'additionalImages',
+                        current.filter((_, i) => i !== index)
+                      );
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              {!form.watch('additionalImages')?.length && (
+                <div className="flex items-center justify-center p-6 border border-dashed rounded-md">
+                  <div className="text-center text-muted-foreground">
+                    <ImageIcon className="mx-auto h-12 w-12 mb-2 text-muted-foreground/60" />
+                    <p>Nenhuma imagem adicional.</p>
+                    <p className="text-sm">Clique no botão acima para adicionar imagens.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
