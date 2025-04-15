@@ -760,6 +760,8 @@ export default function SupplierDashboard() {
                     ) : (
                       <div className="space-y-2">
                         {Array.isArray(products) ? 
+                          // Adicionar log detalhado para debug antes da filtragem
+                          (console.log("Todos os produtos antes da filtragem:", products.map(p => `${p.id} (${p.name}) - Fornecedor ID: ${p.supplierId}`)), 
                           // Garantir que apenas produtos do fornecedor atual sejam mostrados
                           products
                             .filter(product => {
@@ -772,8 +774,8 @@ export default function SupplierDashboard() {
                                 console.log(`[Segurança] Produto ${product.id} (fornecedor ${productSupplierId}) filtrado - não pertence ao fornecedor atual (${currentUserId})`);
                               }
                               
-                              return belongsToCurrentSupplier;
-                            })
+                              return belongsToCurrentSupplier || !productSupplierId; // Também aceitar produtos sem supplierId definido
+                            }))
                             .slice(0, 5).map((product) => (
                             <div key={product.id} className="flex items-center justify-between py-2 border-b">
                               <div className="flex items-center">
