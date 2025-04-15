@@ -22,12 +22,17 @@ export function ComparisonResult({
   const { data: supplier, isLoading: isLoadingSupplier } = useQuery({
     queryKey: ["/api/suppliers-info", product.supplierId],
     queryFn: async () => {
-      const response = await fetch(`/api/suppliers-info?ids=${product.supplierId}`);
-      if (!response.ok) {
-        throw new Error("Erro ao carregar informações do fornecedor");
+      try {
+        const response = await fetch(`/api/suppliers-info?ids=${product.supplierId}`);
+        if (!response.ok) {
+          throw new Error("Erro ao carregar informações do fornecedor");
+        }
+        const suppliers = await response.json();
+        return suppliers?.length > 0 ? suppliers[0] : null;
+      } catch (error) {
+        console.error("Erro ao buscar informações do fornecedor:", error);
+        return null;
       }
-      const suppliers = await response.json();
-      return suppliers?.length > 0 ? suppliers[0] : null;
     }
   });
   

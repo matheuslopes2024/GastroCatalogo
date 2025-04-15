@@ -72,13 +72,19 @@ export default function SearchResults() {
   
   // Obter lista de fornecedores para os filtros
   const { data: suppliers } = useQuery({
-    queryKey: ["/api/suppliers-info"],
+    queryKey: ["/api/suppliers"],
     queryFn: async () => {
-      const response = await fetch("/api/suppliers-info");
-      if (!response.ok) {
+      try {
+        const response = await fetch("/api/suppliers");
+        if (!response.ok) {
+          console.error("Erro ao buscar fornecedores:", response.statusText);
+          return [];
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Erro ao buscar fornecedores:", error);
         return [];
       }
-      return response.json();
     }
   });
   

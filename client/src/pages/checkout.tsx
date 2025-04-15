@@ -125,13 +125,13 @@ export default function Checkout() {
 
   // Obter fornecedores para os produtos no carrinho
   const { data: suppliers } = useQuery({
-    queryKey: ["/api/suppliers-info", items.map(item => item.product.supplierId)],
+    queryKey: ["/api/suppliers-info-checkout", items.map(item => item.product.supplierId)],
     queryFn: async () => {
       if (!items.length) return [];
       const supplierIdSet = new Set<number>();
       items.forEach(item => supplierIdSet.add(item.product.supplierId));
       const supplierIds = Array.from(supplierIdSet);
-      const res = await apiRequest("GET", `/api/suppliers-info?ids=${supplierIds.join(",")}`);
+      const res = await apiRequest("GET", `/api/suppliers-info-checkout?ids=${supplierIds.join(",")}`);
       return await res.json();
     },
     enabled: items.length > 0,
