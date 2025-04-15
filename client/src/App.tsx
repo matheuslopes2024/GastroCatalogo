@@ -137,7 +137,24 @@ const MainRoutes = memo(function MainRoutes() {
           />
           <ProtectedRoute 
             path="/fornecedor/produtos" 
-            component={SupplierProductManagement} 
+            component={() => (
+              <ErrorBoundary
+                fallback={
+                  <div className="flex flex-col items-center justify-center min-h-screen p-4">
+                    <div className="text-red-500 text-lg font-semibold mb-2">Erro ao carregar produtos</div>
+                    <p className="text-gray-600 mb-4">Houve um problema ao carregar os dados de produtos.</p>
+                    <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
+                  </div>
+                }
+              >
+                <Suspense fallback={<Loader message="Carregando produtos..." />}>
+                  {React.createElement(lazy(() => import("@/pages/supplier/produtos").catch(err => {
+                    console.error("Erro ao carregar página de produtos:", err);
+                    throw err;
+                  })))}
+                </Suspense>
+              </ErrorBoundary>
+            )}
             allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
           />
           <ProtectedRoute 
@@ -182,6 +199,28 @@ const MainRoutes = memo(function MainRoutes() {
           <ProtectedRoute 
             path="/fornecedor/estoque" 
             component={InventoryManagement}
+            allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+          />
+          <ProtectedRoute 
+            path="/fornecedor/inventario" 
+            component={() => (
+              <ErrorBoundary
+                fallback={
+                  <div className="flex flex-col items-center justify-center min-h-screen p-4">
+                    <div className="text-red-500 text-lg font-semibold mb-2">Erro ao carregar o inventário</div>
+                    <p className="text-gray-600 mb-4">Houve um problema ao carregar os dados de inventário.</p>
+                    <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
+                  </div>
+                }
+              >
+                <Suspense fallback={<Loader message="Carregando inventário..." />}>
+                  {React.createElement(lazy(() => import("@/pages/supplier/inventario").catch(err => {
+                    console.error("Erro ao carregar página de inventário:", err);
+                    throw err;
+                  })))}
+                </Suspense>
+              </ErrorBoundary>
+            )}
             allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
           />
           
