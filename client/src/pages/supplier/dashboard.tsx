@@ -60,6 +60,242 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// Componente que exibe alertas de produtos com estoque baixo
+const StockAlert = ({ lowStockProducts, isLoading, onRefresh }: { 
+  lowStockProducts: any[]; 
+  isLoading: boolean;
+  onRefresh: () => void;
+}) => {
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
+  const [newStock, setNewStock] = useState<number>(0);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
+  
+  const handleSelectProduct = (productId: number) => {
+    if (selectedProducts.includes(productId)) {
+      setSelectedProducts(prev => prev.filter(id => id !== productId));
+    } else {
+      setSelectedProducts(prev => [...prev, productId]);
+    }
+  };
+  
+  const handleSelectAll = () => {
+    if (selectedProducts.length === lowStockProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(lowStockProducts.map(p => p.id));
+    }
+  };
+  
+  const handleBulkUpdate = async () => {
+    if (selectedProducts.length === 0 || newStock <= 0) {
+      toast({
+        title: "Ação inválida",
+        description: "Selecione produtos e informe um valor de estoque válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsUpdating(true);
+    
+    try {
+      const response = await fetch('/api/supplier/products/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productIds: selectedProducts,
+          updateData: { stock: newStock }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Falha ao atualizar estoque');
+      }
+      
+      toast({
+        title: "Estoque atualizado",
+        description: `${selectedProducts.length} produtos atualizados com sucesso.`,
+      });
+      
+      setSelectedProducts([]);
+      setNewStock(0);
+      onRefresh();
+    } catch (error) {
+      console.error('Erro ao atualizar estoque:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o estoque dos produtos selecionados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-amber-600">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            Alertas de Estoque
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-64 flex items-center justify-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (!lowStockProducts || lowStockProducts.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-green-600">
+            <CheckCircle className="h-5 w-5 mr-2" />
+            Estoque Normal
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-64 flex flex-col items-center justify-center text-center p-4">
+          <ThumbsUp className="h-12 w-12 text-green-500 mb-4" />
+          <h3 className="text-lg font-medium">Nenhum alerta de estoque</h3>
+          <p className="text-sm text-gray-500 mt-2">
+            Todos os seus produtos possuem estoque acima do limite mínimo configurado.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center text-amber-600">
+          <AlertTriangle className="h-5 w-5 mr-2" />
+          Alertas de Estoque ({lowStockProducts.length})
+        </CardTitle>
+        <CardDescription>
+          Produtos com estoque abaixo do limite configurado
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="border-t border-gray-200">
+          <div className="px-4 py-3 bg-gray-50 flex justify-between items-center">
+            <div className="flex items-center">
+              <Checkbox 
+                id="select-all" 
+                checked={selectedProducts.length === lowStockProducts.length && lowStockProducts.length > 0}
+                onCheckedChange={handleSelectAll}
+              />
+              <label htmlFor="select-all" className="ml-2 text-sm font-medium">
+                Selecionar todos
+              </label>
+            </div>
+            <Badge variant="outline">
+              {selectedProducts.length} selecionados
+            </Badge>
+          </div>
+          
+          <div className="max-h-64 overflow-y-auto">
+            {lowStockProducts.map(product => (
+              <div 
+                key={product.id} 
+                className={cn(
+                  "flex items-center px-4 py-3 border-t border-gray-100 hover:bg-gray-50",
+                  product.stockPercentage <= 20 ? "bg-red-50" : "bg-amber-50"
+                )}
+              >
+                <Checkbox 
+                  id={`product-${product.id}`} 
+                  checked={selectedProducts.includes(product.id)}
+                  onCheckedChange={() => handleSelectProduct(product.id)}
+                />
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {product.name}
+                      </p>
+                      <div className="flex items-center mt-1">
+                        <Badge 
+                          variant={product.stockPercentage <= 20 ? "destructive" : "warning"}
+                          className="text-xs mr-2"
+                        >
+                          {product.alert === 'critical' ? 'Crítico' : 'Alerta'}
+                        </Badge>
+                        <p className="text-xs text-gray-500">
+                          Estoque: <span className="font-medium">{product.stock}</span> / 
+                          Mínimo: <span className="font-medium">{product.stockThreshold}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <Progress 
+                      value={product.stockPercentage} 
+                      className="w-20 h-2" 
+                      indicatorClassName={
+                        product.stockPercentage <= 20 
+                          ? "bg-red-500" 
+                          : product.stockPercentage <= 50 
+                            ? "bg-amber-500" 
+                            : "bg-yellow-400"
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="border-t bg-gray-50 px-4 py-3 flex flex-col sm:flex-row gap-2">
+        <div className="flex items-center">
+          <Label htmlFor="new-stock" className="mr-2 text-sm whitespace-nowrap">
+            Novo estoque:
+          </Label>
+          <Input
+            id="new-stock"
+            type="number"
+            min="0"
+            value={newStock}
+            onChange={(e) => setNewStock(parseInt(e.target.value) || 0)}
+            className="w-20 h-8"
+          />
+        </div>
+        <div className="flex gap-2 ml-auto">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onRefresh}
+            disabled={isUpdating}
+          >
+            <RefreshCcw className="h-4 w-4 mr-1" />
+            Atualizar
+          </Button>
+          <Button
+            size="sm"
+            disabled={selectedProducts.length === 0 || newStock <= 0 || isUpdating}
+            onClick={handleBulkUpdate}
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-1" />
+                Atualizar Estoque
+              </>
+            )}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};
+
 // Dashboard sidebar with links to other supplier pages
 function SupplierSidebar() {
   // Usar o hook para obter o contador de mensagens não lidas
@@ -147,6 +383,16 @@ export default function SupplierDashboard() {
         variant: "destructive",
       });
     }
+  });
+  
+  // Fetch produtos com estoque baixo
+  const { 
+    data: lowStockProducts, 
+    isLoading: isLoadingLowStock,
+    refetch: refetchLowStock
+  } = useQuery({
+    queryKey: ["/api/supplier/low-stock-products", { supplierId: user?.id, limit: 10 }],
+    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
   // Assegurar que products é sempre um array, mesmo quando a API retorna um objeto

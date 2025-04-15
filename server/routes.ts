@@ -2657,6 +2657,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao buscar imagem" });
     }
   });
+  
+  /**
+   * @route GET /api/supplier/low-stock-products
+   * @desc Obtém produtos com estoque abaixo do limiar configurado para um fornecedor
+   * @access Privado - Fornecedores
+   */
+  app.get("/api/supplier/low-stock-products", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      // Verificar se é um fornecedor
+      const user = req.user;
+      if (user.role !== UserRole.SUPPLIER) {
+        return res.status(403).json({ message: "Acesso negado. Apenas fornecedores podem acessar este recurso" });
+      }
+      
+      // Obter o ID do fornecedor
+      const supplierId = user.id;
+      
+      // Obter parâmetros de consulta
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Buscar produtos com estoque baixo
+      const lowStockProducts = await storage.getLowStockProducts(supplierId, limit);
+      
+      // Enriquecer os produtos com informações adicionais
+      const enrichedProducts = await Promise.all(
+        lowStockProducts.map(async (product) => {
+          // Buscar a imagem principal do produto
+          const images = await storage.getProductImages(product.id);
+          const primaryImage = images.find(img => img.isPrimary);
+          
+          // Calcular a diferença entre o estoque atual e o limiar
+          const stockDifference = product.stock !== null && product.stockThreshold !== null 
+            ? product.stockThreshold - product.stock 
+            : 0;
+          
+          // Calcular a porcentagem do estoque em relação ao limiar
+          const stockPercentage = product.stock !== null && product.stockThreshold !== null && product.stockThreshold > 0
+            ? Math.round((product.stock / product.stockThreshold) * 100)
+            : 0;
+          
+          // Retornar produto enriquecido
+          return {
+            ...product,
+            imageUrl: primaryImage?.imageUrl || null,
+            stockDifference,
+            stockPercentage,
+            alert: stockPercentage <= 20 ? 'critical' : 'warning'
+          };
+        })
+      );
+      
+      res.json(enrichedProducts);
+    } catch (error) {
+      console.error("Erro ao buscar produtos com estoque baixo:", error);
+      res.status(500).json({ message: "Erro ao buscar produtos com estoque baixo" });
+    }
+  });
 
   app.patch("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
     try {
