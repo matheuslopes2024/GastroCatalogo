@@ -1524,6 +1524,28 @@ export class MemStorage implements IStorage {
       return undefined;
     }
   }
+
+  async deleteProduct(id: number): Promise<boolean> {
+    try {
+      const product = await this.getProduct(id);
+      if (!product) return false;
+      
+      // Usamos uma exclusão lógica (setando active = false) em vez de excluir fisicamente
+      const [deletedProduct] = await db
+        .update(products)
+        .set({ active: false })
+        .where(eq(products.id, id))
+        .returning()
+        .execute();
+      
+      console.log(`Produto ${id} excluído (logicamente) com sucesso:`, deletedProduct);
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao excluir produto:", error);
+      return false;
+    }
+  }
   
   // Método específico para buscar produtos por fornecedor com opções avançadas
   async getProductsBySupplier(supplierId: number, options?: { 
