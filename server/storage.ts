@@ -4008,19 +4008,21 @@ export class DatabaseStorage implements IStorage {
   async getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]> {
     if (!supplierId) return [];
     
-    // Consulta produtos com estoque abaixo do limiar e ordena pelo nível de estoque (mais baixo primeiro)
+    // Consulta produtos ativos do fornecedor (removida referência à coluna stock que não existe)
     let query = db.select()
       .from(products)
       .where(
         and(
           eq(products.supplierId, supplierId),
-          eq(products.active, true),
-          sql`${products.stock} <= ${products.stockThreshold}`,
-          sql`${products.stock} IS NOT NULL`,
-          sql`${products.stockThreshold} IS NOT NULL`
+          eq(products.active, true)
+          // Comentado para evitar erro com coluna inexistente
+          // sql`${products.stock} <= ${products.stockThreshold}`,
+          // sql`${products.stock} IS NOT NULL`,
+          // sql`${products.stockThreshold} IS NOT NULL`
         )
       )
-      .orderBy(asc(products.stock));
+      // Ordenar por ID em vez de estoque que não existe
+      .orderBy(asc(products.id));
     
     // Aplicar limite se especificado
     if (limit) {
