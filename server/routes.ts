@@ -1050,29 +1050,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API para fornecer informações de fornecedores para filtragem
   app.get("/api/suppliers-info", async (req, res) => {
     try {
-      // Obter todos os fornecedores
-      const suppliers = await storage.getSuppliers({});
+      // Verificar se IDs específicos foram solicitados
+      const queryIds = req.query.ids;
+      let filterOptions = {};
+      
+      if (queryIds) {
+        // Se IDs foram fornecidos na query, filtrar por esses IDs
+        const ids = Array.isArray(queryIds) 
+          ? queryIds.map(id => parseInt(id.toString())) 
+          : [parseInt(queryIds.toString())];
+          
+        filterOptions = { ids };
+      }
+      
+      // Obter fornecedores com o filtro aplicado
+      const suppliers = await storage.getSuppliers(filterOptions);
       
       // Formatar para uso na UI de filtro
       const formattedSuppliers = suppliers.map(supplier => ({
         id: supplier.id,
-        name: supplier.name,
+        name: supplier.name || supplier.companyName || supplier.username,
+        companyName: supplier.companyName,
         logo: supplier.logo,
-        rating: supplier.rating,
+        logoUrl: supplier.logoUrl,
+        rating: supplier.rating || 0,
         productsCount: supplier.productsCount || 0,
         minPrice: supplier.minPrice,
         maxPrice: supplier.maxPrice,
-        // Gerar estatísticas para cada fornecedor
-        stats: [
-          {
-            name: "Produtos",
-            value: supplier.productsCount || 0
-          },
-          {
-            name: "Avaliação",
-            value: supplier.rating || 0
-          }
-        ]
+        // Enviar as estatísticas como propriedades simples em vez de objetos complexos
+        productCount: supplier.productsCount || 0,
+        ratingValue: supplier.rating || 0,
+        // Outras informações úteis
+        website: supplier.website,
+        address: supplier.address
       }));
       
       res.json(formattedSuppliers);
