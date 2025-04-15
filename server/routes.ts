@@ -538,6 +538,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para obter informações de inventário de um produto específico
+  app.get("/api/products/:productId/inventory", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const product = await storage.getProduct(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Buscar informações de inventário
+      const inventory = await storage.getProductInventoryByProductId(productId);
+      
+      if (!inventory) {
+        // Se não existir inventário, retornamos um padrão com valores que não criem alertas
+        return res.json({
+          quantity: 100,
+          status: InventoryStatus.IN_STOCK,
+          lowStockThreshold: 10,
+          restockLevel: 20,
+          reserved: 0,
+          available: 100,
+          statusText: "Em estoque"
+        });
+      }
+      
+      // Calcular quantidade disponível (total - reservada)
+      const available = Math.max(0, inventory.quantity - (inventory.reservedQuantity || 0));
+      
+      // Formatação amigável do status
+      let statusText = "Em estoque";
+      switch (inventory.status) {
+        case InventoryStatus.IN_STOCK:
+          statusText = "Em estoque";
+          break;
+        case InventoryStatus.LOW_STOCK:
+          statusText = "Estoque baixo";
+          break;
+        case InventoryStatus.OUT_OF_STOCK:
+          statusText = "Esgotado";
+          break;
+        case InventoryStatus.DISCONTINUED:
+          statusText = "Descontinuado";
+          break;
+        case InventoryStatus.BACK_ORDER:
+          statusText = "Em espera";
+          break;
+      }
+      
+      // Retorna os dados formatados para exibição frontend
+      res.json({
+        quantity: inventory.quantity,
+        status: inventory.status,
+        lowStockThreshold: inventory.lowStockThreshold,
+        restockLevel: inventory.restockLevel,
+        reserved: inventory.reservedQuantity || 0,
+        available,
+        statusText,
+        expirationDate: inventory.expirationDate,
+        lastUpdated: inventory.lastUpdated
+      });
+    } catch (error) {
+      console.error("Erro ao buscar inventário:", error);
+      res.status(500).json({ message: "Erro ao buscar informações de inventário" });
+    }
+  });
+  
   // Endpoint para buscar o mesmo produto de diferentes fornecedores
   app.get("/api/products/:slug/suppliers", async (req, res) => {
     try {
