@@ -552,38 +552,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inventory = await storage.getProductInventoryByProductId(productId);
       
       if (!inventory) {
-        // Se não existir inventário no banco de dados, criamos um inventário padrão para este produto
-        console.log(`Criando inventário padrão para o produto ${productId} (${product.name})`);
-        
-        // Defina valores baseados no produto específico para maior realismo
-        const defaultInventory = {
-          productId,
-          supplierId: product.supplierId,
-          quantity: Math.floor(Math.random() * 100) + 20, // Entre 20 e 120 unidades
-          status: InventoryStatus.IN_STOCK,
-          lowStockThreshold: 10,
-          restockLevel: 50,
-          reservedQuantity: 0,
-          location: "Depósito Principal",
-          notes: "Inventário inicial"
-        };
-        
-        // Persiste o inventário padrão no banco de dados
-        const createdInventory = await storage.createProductInventory(defaultInventory);
-        
-        // Calcular quantidade disponível
-        const available = Math.max(0, createdInventory.quantity - (createdInventory.reservedQuantity || 0));
-        
-        // Retorna o novo inventário criado
-        return res.json({
-          quantity: createdInventory.quantity,
-          status: createdInventory.status,
-          lowStockThreshold: createdInventory.lowStockThreshold,
-          restockLevel: createdInventory.restockLevel,
-          reserved: createdInventory.reservedQuantity || 0,
-          available,
-          statusText: "Em estoque",
-          lastUpdated: createdInventory.lastUpdated
+        // Retornar 404 caso não exista inventário para o produto
+        console.log(`Inventário não encontrado para o produto ${productId} (${product.name})`);
+        return res.status(404).json({ 
+          message: "Informações de inventário não disponíveis para este produto" 
         });
       }
       
