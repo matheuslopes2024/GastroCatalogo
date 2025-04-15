@@ -149,8 +149,28 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
         
       const method = productId ? "PATCH" : "POST";
       
+      // Verificar se o FormData tem algum conteúdo
+      const formDataObj: Record<string, any> = {};
+      for (const [key, value] of data.entries()) {
+        formDataObj[key] = value;
+      }
+      
+      // Verificação adicional para evitar enviar objetos vazios
+      const totalEntries = Object.keys(formDataObj).length;
+      console.log(`FormData contém ${totalEntries} campos.`);
+      
+      if (totalEntries === 0) {
+        throw new Error("Nenhum dado foi fornecido para atualização. Verifique os campos do formulário.");
+      }
+      
+      // Adicionar campo especial para PATCH (edição) caso tenhamos apenas o ID
+      if (method === "PATCH" && totalEntries <= 1) {
+        console.log("Adicionando campo forçado para evitar objeto vazio no PATCH");
+        data.append("_forceUpdate", "true");
+      }
+      
       // Para debug
-      console.log(`Enviando requisição para ${url} usando método ${method}`);
+      console.log(`Enviando requisição para ${url} usando método ${method} com ${totalEntries} campos`);
       
       try {
         // Passar objeto de opções para indicar que estamos enviando um FormData
@@ -171,8 +191,16 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
             if (errorJson.message) {
               errorMsg = errorJson.message;
             }
+            
+            // Log adicional para análise completa do erro
+            console.error('Resposta de erro detalhada:', {
+              status: res.status,
+              statusText: res.statusText,
+              errorJson
+            });
           } catch (e) {
             // Se não conseguir parsear como JSON, usa o texto bruto
+            console.error('Erro ao parsear resposta como JSON:', e);
           }
           
           throw new Error(errorMsg);
@@ -186,6 +214,7 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     },
     onSuccess: (data) => {
       console.log("Produto salvo com sucesso:", data);
+      setIsLoading(false);
       toast({
         title: productId ? "Produto atualizado" : "Produto criado",
         description: productId 
@@ -196,16 +225,22 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       
       // Invalidar as queries corretas com o ID do fornecedor
       if (user?.id) {
+        // Invalidar lista de produtos
         queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user.id}/products`] });
         
+        // Invalidar produto específico
         if (productId) {
           queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user.id}/products/${productId}`] });
         }
+        
+        // Também invalidar inventário já que pode ter sido atualizado
+        queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user.id}/inventory`] });
       }
       
       onSave();
     },
     onError: (error: Error) => {
+      setIsLoading(false);
       console.error("Erro detalhado ao salvar produto:", error);
       toast({
         title: "Erro ao salvar produto",
@@ -352,99 +387,110 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     const formData = new FormData();
     let hasValidData = false; // Flag para verificar se há dados válidos para enviar
     
-    // Verificar e adicionar campos obrigatórios
-    if (data.name && data.name.trim() !== "") {
-      formData.append("name", data.name.trim());
-      hasValidData = true;
+    // Função para adicionar de forma segura ao FormData - formatação consistente
+    // e manipulação adequada de valores booleanos e numéricos
+    const safeAppend = (key: string, value: any, isRequired: boolean = false) => {
+      // Tratar valores undefined, null, ou strings vazias
+      if (value === undefined || value === null) {
+        if (isRequired && key !== 'description') {
+          console.log(`Campo obrigatório '${key}' é undefined ou null`);
+          return false;
+        }
+        return false;
+      }
+      
+      // Tratamento especial para strings - verificar se é vazia
+      if (typeof value === 'string' && value.trim() === '') {
+        if (isRequired && key !== 'description') {
+          console.log(`Campo obrigatório '${key}' é uma string vazia`);
+          return false;
+        }
+        // Para descrição, permitimos string vazia
+        if (key === 'description') {
+          formData.append(key, '');
+          return true;
+        }
+        return false;
+      }
+      
+      // Tratamento para valores booleanos - converter para "true" ou "false"
+      if (typeof value === 'boolean') {
+        formData.append(key, value ? "true" : "false");
+        return true;
+      }
+      
+      // Tratamento para números - verificar se é válido
+      if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+        if ((key.includes('price') || key.includes('Price')) && Number(value) <= 0 && isRequired) {
+          console.log(`Preço inválido (deve ser maior que 0): ${value}`);
+          return false;
+        }
+        
+        formData.append(key, value.toString());
+        return true;
+      }
+      
+      // Para outros tipos, usar string
+      formData.append(key, String(value));
+      return true;
+    };
+    
+    // Garantir que o produto tenha ID quando for atualização
+    if (productId) {
+      formData.append("id", productId.toString());
     }
     
-    if (data.description && data.description.trim() !== "") {
-      formData.append("description", data.description.trim());
-      hasValidData = true;
-    } else {
-      formData.append("description", ""); // Garantir que descrição sempre tenha um valor, mesmo que vazio
-    }
+    // Campos obrigatórios
+    if (safeAppend("name", data.name?.trim(), true)) hasValidData = true;
+    safeAppend("description", data.description?.trim());
+    if (safeAppend("slug", data.slug?.trim(), true)) hasValidData = true;
+    if (safeAppend("price", data.price, true)) hasValidData = true;
+    if (safeAppend("categoryId", data.categoryId, true)) hasValidData = true;
     
-    if (data.slug && data.slug.trim() !== "") {
-      formData.append("slug", data.slug.trim());
-      hasValidData = true;
-    }
-    
-    if (data.price) {
-      formData.append("price", data.price);
-      hasValidData = true;
-    }
-    
-    if (data.categoryId) {
-      formData.append("categoryId", data.categoryId);
-      hasValidData = true;
-    }
-    
-    // Adicionar campos opcionais apenas se tiverem valores válidos
+    // Campos opcionais com validação
     if (data.originalPrice && parseFloat(data.originalPrice) > 0) {
-      formData.append("originalPrice", data.originalPrice);
+      safeAppend("originalPrice", data.originalPrice);
     }
     
-    if (data.discount && parseFloat(data.discount) > 0) {
-      formData.append("discount", data.discount);
+    if (data.discount && parseFloat(data.discount) >= 0) {
+      safeAppend("discount", data.discount);
     }
     
-    if (data.rating) {
-      formData.append("rating", data.rating);
-    }
+    safeAppend("rating", data.rating);
+    safeAppend("ratingsCount", data.ratingsCount);
+    safeAppend("sku", data.sku?.trim());
     
-    if (data.ratingsCount !== undefined && data.ratingsCount !== null) {
-      formData.append("ratingsCount", data.ratingsCount.toString());
-    }
+    // Sempre enviar o status ativo
+    safeAppend("active", data.active);
     
-    if (data.sku && data.sku.trim() !== "") {
-      formData.append("sku", data.sku.trim());
-    }
-    
-    // Garantir que active seja sempre enviado como string
-    formData.append("active", data.active === true ? "true" : "false");
-    
-    // Dados de inventário expandidos - verificar cada campo individualmente
+    // Dados de inventário expandidos
     if (data.inventory) {
-      if (data.inventory.quantity !== undefined && data.inventory.quantity !== null) {
-        formData.append("inventory.quantity", data.inventory.quantity.toString());
-        hasValidData = true;
+      const inv = data.inventory;
+      
+      if (inv.quantity !== undefined && inv.quantity !== null) {
+        if (safeAppend("inventory.quantity", inv.quantity.toString())) hasValidData = true;
       }
       
-      if (data.inventory.lowStockThreshold && parseInt(data.inventory.lowStockThreshold) > 0) {
-        formData.append("inventory.lowStockThreshold", data.inventory.lowStockThreshold);
+      if (inv.lowStockThreshold && parseInt(inv.lowStockThreshold) >= 0) {
+        safeAppend("inventory.lowStockThreshold", inv.lowStockThreshold);
       }
       
-      if (data.inventory.restockLevel && parseInt(data.inventory.restockLevel) > 0) {
-        formData.append("inventory.restockLevel", data.inventory.restockLevel);
+      if (inv.restockLevel && parseInt(inv.restockLevel) >= 0) {
+        safeAppend("inventory.restockLevel", inv.restockLevel);
       }
       
-      if (data.inventory.reservedQuantity && parseInt(data.inventory.reservedQuantity) >= 0) {
-        formData.append("inventory.reservedQuantity", data.inventory.reservedQuantity);
+      if (inv.reservedQuantity && parseInt(inv.reservedQuantity) >= 0) {
+        safeAppend("inventory.reservedQuantity", inv.reservedQuantity);
       }
       
-      if (data.inventory.location && data.inventory.location.trim() !== "") {
-        formData.append("inventory.location", data.inventory.location.trim());
-      }
-      
-      if (data.inventory.batchNumber && data.inventory.batchNumber.trim() !== "") {
-        formData.append("inventory.batchNumber", data.inventory.batchNumber.trim());
-      }
-      
-      if (data.inventory.expirationDate && data.inventory.expirationDate.trim() !== "") {
-        formData.append("inventory.expirationDate", data.inventory.expirationDate.trim());
-      }
-      
-      if (data.inventory.notes && data.inventory.notes.trim() !== "") {
-        formData.append("inventory.notes", data.inventory.notes.trim());
-      }
-      
-      if (data.inventory.status && data.inventory.status.trim() !== "") {
-        formData.append("inventory.status", data.inventory.status.trim());
-      }
+      safeAppend("inventory.location", inv.location?.trim());
+      safeAppend("inventory.batchNumber", inv.batchNumber?.trim());
+      safeAppend("inventory.expirationDate", inv.expirationDate?.trim());
+      safeAppend("inventory.notes", inv.notes?.trim());
+      safeAppend("inventory.status", inv.status?.trim());
     }
     
-    // Categorias adicionais - verificar se há categorias válidas
+    // Categorias adicionais com validação
     if (data.additionalCategories && data.additionalCategories.length > 0) {
       const validCategories = data.additionalCategories.filter(cat => cat && cat.trim() !== "");
       
@@ -460,7 +506,7 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       formData.append("features", data.features.trim());
     }
     
-    // Imagem principal, se houver
+    // Imagem principal com validação
     if (imageFile) {
       formData.append("productImage", imageFile);
       hasValidData = true;
@@ -469,9 +515,9 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       hasValidData = true;
     }
     
-    // Imagens adicionais, se houver
+    // Imagens adicionais com validação
     if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
-      // Filtar apenas imagens com dados válidos
+      // Filtrar apenas imagens com dados válidos
       const validImages = data.additionalImages.filter(img => 
         img && ((img.url && typeof img.url === 'string' && img.url.trim() !== "") || 
                 (img.data && img.data !== null))
@@ -492,8 +538,8 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       }
     }
     
-    // Verificar se há dados válidos para enviar
-    if (!hasValidData) {
+    // Verificação final se há dados válidos para enviar
+    if (!hasValidData && !productId) {
       setIsLoading(false);
       toast({
         title: "Erro ao enviar formulário",
@@ -503,8 +549,22 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       return;
     }
     
+    // Converter FormData para objeto para melhor debug
+    const formDataObj: Record<string, any> = {};
+    for (const [key, value] of formData.entries()) {
+      formDataObj[key] = value;
+    }
+    
     // Log dos dados que serão enviados para o servidor
-    console.log("Enviando dados para o servidor:", Object.fromEntries(formData));
+    console.log("Enviando dados para o servidor:", formDataObj);
+    console.log(`Modo: ${productId ? 'Atualização' : 'Criação'}, Total de campos: ${Object.keys(formDataObj).length}`);
+    
+    // Adicionar um campo especial para garantir que nunca enviamos um objeto vazio
+    // Este campo é apenas para resolver o problema específico com a API
+    if (productId && Object.keys(formDataObj).length <= 1) { // Apenas o ID
+      console.log("Adicionando campo forçado para garantir que não enviamos objeto vazio");
+      formData.append("_forceUpdate", "true");
+    }
     
     // Enviar a requisição
     productMutation.mutate(formData);
