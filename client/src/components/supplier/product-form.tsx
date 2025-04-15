@@ -427,12 +427,14 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     }
     
     // Imagens adicionais, se houver
-    if (data.additionalImages && data.additionalImages.length > 0) {
+    if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+      // Filtar apenas imagens com dados válidos
       const validImages = data.additionalImages.filter(img => 
-        (img.url && img.url.trim() !== "") || img.data
+        img && ((img.url && typeof img.url === 'string' && img.url.trim() !== "") || 
+                (img.data && img.data !== null))
       );
       
-      if (validImages.length > 0) {
+      if (validImages && validImages.length > 0) {
         validImages.forEach((img, index) => {
           if (img.url && img.url.trim() !== "") {
             formData.append(`additionalImages[${index}].url`, img.url.trim());
