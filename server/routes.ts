@@ -1052,40 +1052,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Verificar se IDs específicos foram solicitados
       const queryIds = req.query.ids;
-      let filterOptions = {};
       
+      // Se IDs foram fornecidos na query, filtrar por esses IDs
       if (queryIds) {
-        // Se IDs foram fornecidos na query, filtrar por esses IDs
         const ids = Array.isArray(queryIds) 
           ? queryIds.map(id => parseInt(id.toString())) 
           : [parseInt(queryIds.toString())];
           
-        filterOptions = { ids };
+        // Buscar usuários por IDs que sejam fornecedores
+        const supplierUsers = await db.select()
+          .from(users)
+          .where(and(
+            inArray(users.id, ids),
+            eq(users.role, 'supplier')
+          ));
+        
+        if (!supplierUsers || supplierUsers.length === 0) {
+          return res.json([]);
+        }
+        
+        // Formatar para uso na UI de filtro
+        const formattedSuppliers = await Promise.all(supplierUsers.map(async (supplier) => {
+          // Contar produtos deste fornecedor
+          const productsCount = await storage.getSupplierProductsCount(supplier.id);
+          
+          return {
+            id: supplier.id,
+            name: supplier.name || supplier.companyName || supplier.username,
+            companyName: supplier.companyName,
+            username: supplier.username,
+            email: supplier.email,
+            logo: supplier.logo,
+            logoUrl: supplier.logoUrl,
+            rating: supplier.rating || 4.5, // Valor temporário
+            productsCount,
+            minPrice: supplier.minPrice || "0",
+            maxPrice: supplier.maxPrice || "5000",
+            // Enviar as estatísticas como propriedades simples em vez de objetos complexos
+            productCount: productsCount,
+            ratingValue: supplier.rating || 4.5,
+            // Outras informações úteis
+            website: supplier.website || `https://fornecedor-${supplier.id}.com.br`,
+            address: supplier.address || "Endereço do fornecedor"
+          };
+        }));
+        
+        res.json(formattedSuppliers);
+      } else {
+        // Se não há IDs específicos, buscar todos os fornecedores
+        const supplierUsers = await db.select()
+          .from(users)
+          .where(eq(users.role, 'supplier'));
+          
+        if (!supplierUsers || supplierUsers.length === 0) {
+          return res.json([]);
+        }
+        
+        // Formatar para uso na UI de filtro
+        const formattedSuppliers = await Promise.all(supplierUsers.map(async (supplier) => {
+          // Contar produtos deste fornecedor
+          const productsCount = await storage.getSupplierProductsCount(supplier.id);
+          
+          return {
+            id: supplier.id,
+            name: supplier.name || supplier.companyName || supplier.username,
+            companyName: supplier.companyName,
+            username: supplier.username,
+            email: supplier.email,
+            logo: supplier.logo,
+            logoUrl: supplier.logoUrl,
+            rating: supplier.rating || 4.5, // Valor temporário
+            productsCount,
+            minPrice: supplier.minPrice || "0",
+            maxPrice: supplier.maxPrice || "5000",
+            // Enviar as estatísticas como propriedades simples em vez de objetos complexos
+            productCount: productsCount,
+            ratingValue: supplier.rating || 4.5,
+            // Outras informações úteis
+            website: supplier.website || `https://fornecedor-${supplier.id}.com.br`,
+            address: supplier.address || "Endereço do fornecedor"
+          };
+        }));
+        
+        res.json(formattedSuppliers);
       }
-      
-      // Obter fornecedores com o filtro aplicado
-      const suppliers = await storage.getSuppliers(filterOptions);
-      
-      // Formatar para uso na UI de filtro
-      const formattedSuppliers = suppliers.map(supplier => ({
-        id: supplier.id,
-        name: supplier.name || supplier.companyName || supplier.username,
-        companyName: supplier.companyName,
-        logo: supplier.logo,
-        logoUrl: supplier.logoUrl,
-        rating: supplier.rating || 0,
-        productsCount: supplier.productsCount || 0,
-        minPrice: supplier.minPrice,
-        maxPrice: supplier.maxPrice,
-        // Enviar as estatísticas como propriedades simples em vez de objetos complexos
-        productCount: supplier.productsCount || 0,
-        ratingValue: supplier.rating || 0,
-        // Outras informações úteis
-        website: supplier.website,
-        address: supplier.address
-      }));
-      
-      res.json(formattedSuppliers);
     } catch (error) {
       console.error("Erro ao buscar informações de fornecedores:", error);
       res.status(500).json({ message: "Erro ao buscar informações de fornecedores" });
