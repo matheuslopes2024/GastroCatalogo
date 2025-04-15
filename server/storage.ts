@@ -49,6 +49,48 @@ export interface IStorage {
   getSupplierProductsCount(supplierId: number): Promise<number>;
   getSupplierCategories(supplierId: number): Promise<Category[]>;
   
+  // Inventory methods
+  getProductInventory(productId: number, supplierId: number): Promise<ProductInventory | undefined>;
+  getProductInventories(options?: { 
+    productId?: number; 
+    supplierId?: number; 
+    status?: InventoryStatusType;
+    lowStock?: boolean;
+    outOfStock?: boolean;
+  }): Promise<ProductInventory[]>;
+  createProductInventory(inventory: InsertProductInventory): Promise<ProductInventory>;
+  updateProductInventory(id: number, inventoryData: Partial<ProductInventory>): Promise<ProductInventory | undefined>;
+  updateProductQuantity(productId: number, supplierId: number, quantity: number, reason?: string, userId?: number): Promise<ProductInventory | undefined>;
+  batchUpdateInventory(items: {productId: number, quantity: number}[], supplierId: number, userId: number, reason?: string): Promise<{updated: number, failed: number, inventory: ProductInventory[]}>;
+  
+  // Stock Alerts methods
+  getStockAlert(id: number): Promise<StockAlert | undefined>;
+  getStockAlerts(options?: { 
+    productId?: number; 
+    supplierId?: number; 
+    alertType?: StockAlertTypeValue;
+    isRead?: boolean;
+    isResolved?: boolean;
+    priority?: number;
+  }): Promise<StockAlert[]>;
+  createStockAlert(alert: InsertStockAlert): Promise<StockAlert>;
+  updateStockAlert(id: number, alertData: Partial<StockAlert>): Promise<StockAlert | undefined>;
+  markStockAlertAsRead(id: number, userId?: number): Promise<StockAlert | undefined>;
+  markStockAlertAsResolved(id: number, userId?: number): Promise<StockAlert | undefined>;
+  
+  // Inventory History methods
+  getInventoryHistory(options?: { 
+    productId?: number; 
+    supplierId?: number; 
+    userId?: number;
+    action?: string;
+    batchId?: string;
+    limit?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<InventoryHistory[]>;
+  createInventoryHistory(history: InsertInventoryHistory): Promise<InventoryHistory>;
+  
   // Category methods
   getCategory(id: number): Promise<Category | undefined>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
@@ -200,6 +242,60 @@ export interface IStorage {
     totalMatches: number;
   }>;
 
+  // Métodos para gerenciamento de estoque (Product Inventory)
+  getProductInventory(id: number): Promise<ProductInventory | undefined>;
+  getProductInventoryByProductId(productId: number): Promise<ProductInventory | undefined>;
+  createProductInventory(inventory: InsertProductInventory): Promise<ProductInventory>;
+  updateProductInventory(id: number, inventoryData: Partial<ProductInventory>): Promise<ProductInventory | undefined>;
+  getProductInventories(options?: {
+    supplierId?: number;
+    status?: InventoryStatusType;
+    lowStock?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<ProductInventory[]>;
+  
+  // Atualizações em massa de estoque
+  bulkUpdateInventory(items: {productId: number, quantity: number, status?: InventoryStatusType}[]): Promise<ProductInventory[]>;
+  
+  // Métodos para alertas de estoque (Stock Alerts)
+  getStockAlert(id: number): Promise<StockAlert | undefined>;
+  createStockAlert(alert: InsertStockAlert): Promise<StockAlert>;
+  updateStockAlert(id: number, alertData: Partial<StockAlert>): Promise<StockAlert | undefined>;
+  getStockAlerts(options?: {
+    supplierId?: number;
+    productId?: number;
+    type?: StockAlertTypeValue;
+    active?: boolean;
+    resolved?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<StockAlert[]>;
+  
+  // Métodos para histórico de inventário (Inventory History)
+  getInventoryHistory(id: number): Promise<InventoryHistory | undefined>;
+  createInventoryHistory(history: InsertInventoryHistory): Promise<InventoryHistory>;
+  getInventoryHistoryByProduct(productId: number, options?: {
+    limit?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<InventoryHistory[]>;
+  
+  // Métodos avançados para gerenciamento de estoque
+  checkLowStockProducts(supplierId?: number): Promise<{
+    product: Product;
+    inventory: ProductInventory;
+    threshold: number;
+  }[]>;
+  
+  calculateStockStatus(supplierId?: number): Promise<{
+    totalProducts: number;
+    inStock: number;
+    lowStock: number;
+    outOfStock: number;
+    totalValue: number;
+  }>;
+
   // Session store
   sessionStore: any;
 }
@@ -224,6 +320,11 @@ export class MemStorage implements IStorage {
   private productComparisons: Map<number, ProductComparison>;
   private productComparisonDetails: Map<number, ProductComparisonDetail>;
   
+  // Mapas para o sistema de estoque
+  private productInventory: Map<number, ProductInventory>;
+  private stockAlerts: Map<number, StockAlert>;
+  private inventoryHistory: Map<number, InventoryHistory>;
+  
   currentUserId: number;
   currentCategoryId: number;
   currentProductId: number;
@@ -242,6 +343,11 @@ export class MemStorage implements IStorage {
   currentProductComparisonId: number;
   currentProductComparisonDetailId: number;
   currentProductCommissionSettingId: number;
+  
+  // Contadores para o sistema de estoque
+  currentProductInventoryId: number;
+  currentStockAlertId: number;
+  currentInventoryHistoryId: number;
   
   sessionStore: any;
 
@@ -265,6 +371,11 @@ export class MemStorage implements IStorage {
     this.productComparisonDetails = new Map();
     this.productCommissionSettings = new Map();
     
+    // Inicializar os mapas para sistema de estoque
+    this.productInventory = new Map();
+    this.stockAlerts = new Map();
+    this.inventoryHistory = new Map();
+    
     this.currentUserId = 1;
     this.currentCategoryId = 1;
     this.currentProductId = 1;
@@ -283,6 +394,11 @@ export class MemStorage implements IStorage {
     this.currentProductComparisonId = 1;
     this.currentProductComparisonDetailId = 1;
     this.currentProductCommissionSettingId = 1;
+    
+    // Inicializar contadores para o sistema de estoque
+    this.currentProductInventoryId = 1;
+    this.currentStockAlertId = 1;
+    this.currentInventoryHistoryId = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
