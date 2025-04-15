@@ -2696,10 +2696,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log("Atualizando produto com dados (PATCH):", JSON.stringify(req.body, null, 2));
+      // Validar e limpar os dados recebidos para evitar o erro "No values to set"
+      const requestData = req.body;
+      console.log("Dados originais recebidos (PATCH):", JSON.stringify(requestData, null, 2));
       
-      // Atualizar o produto
-      const updatedProduct = await storage.updateProduct(productId, req.body);
+      // Objeto para armazenar os dados limpos e validados
+      const cleanedData: Partial<Product> = {};
+      let hasValidData = false;
+      
+      // Processar e validar os campos individualmente
+      if (requestData) {
+        // Campos de texto
+        const textFields = ['name', 'description', 'slug', 'imageUrl', 'sku', 'features'];
+        textFields.forEach(field => {
+          if (requestData[field] !== undefined && requestData[field] !== null) {
+            // Converter para string e verificar se não é vazio após trimming
+            const value = String(requestData[field]).trim();
+            if (value !== '') {
+              cleanedData[field] = value;
+              hasValidData = true;
+            }
+          }
+        });
+        
+        // Campos numéricos
+        const numericFields = ['price', 'originalPrice', 'discount', 'rating', 'ratingsCount', 'categoryId'];
+        numericFields.forEach(field => {
+          if (requestData[field] !== undefined && requestData[field] !== null) {
+            // Para campos de preço que podem vir como string com formato brasileiro (vírgula)
+            let value = requestData[field];
+            if (typeof value === 'string' && value.includes(',')) {
+              value = value.replace(',', '.');
+            }
+            
+            // Converter para número e verificar se é válido
+            const numValue = Number(value);
+            if (!isNaN(numValue)) {
+              cleanedData[field] = numValue.toString();
+              hasValidData = true;
+            }
+          }
+        });
+        
+        // Campo booleano (active)
+        if (requestData.active !== undefined) {
+          cleanedData.active = requestData.active === true || requestData.active === 'true';
+          hasValidData = true;
+        }
+        
+        // Arrays
+        if (Array.isArray(requestData.additionalCategories)) {
+          const validCategories = requestData.additionalCategories.filter(cat => cat);
+          if (validCategories.length > 0) {
+            cleanedData.additionalCategories = validCategories;
+            hasValidData = true;
+          }
+        }
+        
+        // Objetos aninhados (como inventory)
+        if (requestData.inventory && typeof requestData.inventory === 'object') {
+          const cleanedInventory: any = {};
+          let hasValidInventoryData = false;
+          
+          // Processar os campos do inventário
+          Object.entries(requestData.inventory).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+              cleanedInventory[key] = value;
+              hasValidInventoryData = true;
+            }
+          });
+          
+          if (hasValidInventoryData) {
+            cleanedData.inventory = cleanedInventory;
+            hasValidData = true;
+          }
+        }
+      }
+      
+      // Verificar se há dados válidos para atualizar
+      if (!hasValidData) {
+        return res.status(400).json({ 
+          message: "Nenhum dado válido fornecido para atualização", 
+          receivedData: requestData 
+        });
+      }
+      
+      console.log("Dados limpos e validados para atualização:", JSON.stringify(cleanedData, null, 2));
+      
+      // Atualizar o produto com os dados limpos
+      const updatedProduct = await storage.updateProduct(productId, cleanedData);
+      
+      if (!updatedProduct) {
+        return res.status(500).json({ message: "Erro ao atualizar produto no banco de dados" });
+      }
       
       return res.json(updatedProduct);
     } catch (error) {
@@ -2712,9 +2801,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.status(500).json({ 
-        message: "Erro ao atualizar produto",
-        error: error.message
+      return res.status(500).json({ 
+        message: "Erro ao atualizar produto", 
+        error: error instanceof Error ? error.message : "Erro desconhecido" 
       });
     }
   });

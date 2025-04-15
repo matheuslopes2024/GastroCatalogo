@@ -3525,9 +3525,43 @@ export class DatabaseStorage implements IStorage {
   
   async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
     try {
+      // Verificar se existem dados para atualizar
+      if (!productData || Object.keys(productData).length === 0) {
+        console.warn(`Tentativa de atualizar produto id=${id} sem dados fornecidos`);
+        
+        // Buscar o produto atual e retorná-lo sem alterações em vez de lançar erro
+        const existingProduct = await this.getProduct(id);
+        if (!existingProduct) {
+          console.error(`Produto id=${id} não encontrado durante tentativa de atualização sem dados`);
+        }
+        return existingProduct;
+      }
+      
+      // Log detalhado dos dados recebidos para depuração
+      console.log(`Atualizando produto id=${id} com dados:`, JSON.stringify(productData, null, 2));
+      
+      // Remover propriedades vazias/nulas/undefined para evitar erro "No values to set"
+      const cleanedData: Partial<Product> = {};
+      
+      Object.entries(productData).forEach(([key, value]) => {
+        // Manter valores booleanos (incluindo false) e números (incluindo 0)
+        if (value === false || value === 0 || Boolean(value)) {
+          // @ts-ignore - Estamos validando a propriedade dinamicamente
+          cleanedData[key] = value;
+        }
+      });
+      
+      // Verificar novamente após limpeza se ainda há dados para atualizar
+      if (Object.keys(cleanedData).length === 0) {
+        console.warn(`Nenhum dado válido para atualizar no produto id=${id} após limpeza`);
+        const existingProduct = await this.getProduct(id);
+        return existingProduct;
+      }
+      
+      // Executar a atualização com os dados limpos
       const [updatedProduct] = await db
         .update(products)
-        .set(productData)
+        .set(cleanedData)
         .where(eq(products.id, id))
         .returning()
         .execute();
@@ -3537,7 +3571,8 @@ export class DatabaseStorage implements IStorage {
         console.log(`Produto atualizado id=${id}:`, {
           id: updatedProduct.id,
           supplierId: updatedProduct.supplierId,
-          supplierId_tipo: typeof updatedProduct.supplierId
+          supplierId_tipo: typeof updatedProduct.supplierId,
+          camposAtualizados: Object.keys(cleanedData)
         });
       } else {
         console.log(`Produto não foi atualizado id=${id}`);

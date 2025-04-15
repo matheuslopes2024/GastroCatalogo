@@ -303,82 +303,163 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
   const onSubmit = (data: ProductFormData) => {
     setIsLoading(true);
     
-    const formData = new FormData();
+    // Log para debug dos dados que estão sendo enviados
+    console.log("Dados do formulário antes de processar:", data);
     
-    // Converter dados básicos para FormData
-    formData.append("name", data.name);
-    formData.append("description", data.description || "");
-    if (data.slug) formData.append("slug", data.slug);
-    formData.append("price", data.price);
-    if (data.originalPrice) formData.append("originalPrice", data.originalPrice);
-    if (data.discount) formData.append("discount", data.discount);
-    if (data.rating) formData.append("rating", data.rating);
-    if (data.ratingsCount) formData.append("ratingsCount", data.ratingsCount);
-    if (data.sku) formData.append("sku", data.sku);
-    formData.append("categoryId", data.categoryId);
-    // Enviar active como string "true" ou "false" para poder ser parseado no backend
+    const formData = new FormData();
+    let hasValidData = false; // Flag para verificar se há dados válidos para enviar
+    
+    // Verificar e adicionar campos obrigatórios
+    if (data.name && data.name.trim() !== "") {
+      formData.append("name", data.name.trim());
+      hasValidData = true;
+    }
+    
+    if (data.description && data.description.trim() !== "") {
+      formData.append("description", data.description.trim());
+      hasValidData = true;
+    } else {
+      formData.append("description", ""); // Garantir que descrição sempre tenha um valor, mesmo que vazio
+    }
+    
+    if (data.slug && data.slug.trim() !== "") {
+      formData.append("slug", data.slug.trim());
+      hasValidData = true;
+    }
+    
+    if (data.price) {
+      formData.append("price", data.price);
+      hasValidData = true;
+    }
+    
+    if (data.categoryId) {
+      formData.append("categoryId", data.categoryId);
+      hasValidData = true;
+    }
+    
+    // Adicionar campos opcionais apenas se tiverem valores válidos
+    if (data.originalPrice && parseFloat(data.originalPrice) > 0) {
+      formData.append("originalPrice", data.originalPrice);
+    }
+    
+    if (data.discount && parseFloat(data.discount) > 0) {
+      formData.append("discount", data.discount);
+    }
+    
+    if (data.rating) {
+      formData.append("rating", data.rating);
+    }
+    
+    if (data.ratingsCount !== undefined && data.ratingsCount !== null) {
+      formData.append("ratingsCount", data.ratingsCount.toString());
+    }
+    
+    if (data.sku && data.sku.trim() !== "") {
+      formData.append("sku", data.sku.trim());
+    }
+    
+    // Garantir que active seja sempre enviado como string
     formData.append("active", data.active === true ? "true" : "false");
     
-    // Dados de inventário expandidos
+    // Dados de inventário expandidos - verificar cada campo individualmente
     if (data.inventory) {
-      formData.append("inventory.quantity", data.inventory.quantity);
-      if (data.inventory.lowStockThreshold) {
+      if (data.inventory.quantity !== undefined && data.inventory.quantity !== null) {
+        formData.append("inventory.quantity", data.inventory.quantity.toString());
+        hasValidData = true;
+      }
+      
+      if (data.inventory.lowStockThreshold && parseInt(data.inventory.lowStockThreshold) > 0) {
         formData.append("inventory.lowStockThreshold", data.inventory.lowStockThreshold);
       }
-      if (data.inventory.restockLevel) {
+      
+      if (data.inventory.restockLevel && parseInt(data.inventory.restockLevel) > 0) {
         formData.append("inventory.restockLevel", data.inventory.restockLevel);
       }
-      if (data.inventory.reservedQuantity) {
+      
+      if (data.inventory.reservedQuantity && parseInt(data.inventory.reservedQuantity) >= 0) {
         formData.append("inventory.reservedQuantity", data.inventory.reservedQuantity);
       }
-      if (data.inventory.location) {
-        formData.append("inventory.location", data.inventory.location);
+      
+      if (data.inventory.location && data.inventory.location.trim() !== "") {
+        formData.append("inventory.location", data.inventory.location.trim());
       }
-      if (data.inventory.batchNumber) {
-        formData.append("inventory.batchNumber", data.inventory.batchNumber);
+      
+      if (data.inventory.batchNumber && data.inventory.batchNumber.trim() !== "") {
+        formData.append("inventory.batchNumber", data.inventory.batchNumber.trim());
       }
-      if (data.inventory.expirationDate) {
-        formData.append("inventory.expirationDate", data.inventory.expirationDate);
+      
+      if (data.inventory.expirationDate && data.inventory.expirationDate.trim() !== "") {
+        formData.append("inventory.expirationDate", data.inventory.expirationDate.trim());
       }
-      if (data.inventory.notes) {
-        formData.append("inventory.notes", data.inventory.notes);
+      
+      if (data.inventory.notes && data.inventory.notes.trim() !== "") {
+        formData.append("inventory.notes", data.inventory.notes.trim());
       }
-      if (data.inventory.status) {
-        formData.append("inventory.status", data.inventory.status);
+      
+      if (data.inventory.status && data.inventory.status.trim() !== "") {
+        formData.append("inventory.status", data.inventory.status.trim());
       }
     }
     
-    // Categorias adicionais
+    // Categorias adicionais - verificar se há categorias válidas
     if (data.additionalCategories && data.additionalCategories.length > 0) {
-      data.additionalCategories.forEach((cat, index) => {
-        formData.append(`additionalCategories[${index}]`, cat);
-      });
+      const validCategories = data.additionalCategories.filter(cat => cat && cat.trim() !== "");
+      
+      if (validCategories.length > 0) {
+        validCategories.forEach((cat, index) => {
+          formData.append(`additionalCategories[${index}]`, cat.trim());
+        });
+      }
     }
     
     // Características do produto
-    if (data.features) formData.append("features", data.features);
+    if (data.features && data.features.trim() !== "") {
+      formData.append("features", data.features.trim());
+    }
     
     // Imagem principal, se houver
     if (imageFile) {
       formData.append("productImage", imageFile);
-    } else if (data.imageUrl) {
-      formData.append("imageUrl", data.imageUrl);
+      hasValidData = true;
+    } else if (data.imageUrl && data.imageUrl.trim() !== "") {
+      formData.append("imageUrl", data.imageUrl.trim());
+      hasValidData = true;
     }
     
     // Imagens adicionais, se houver
     if (data.additionalImages && data.additionalImages.length > 0) {
-      data.additionalImages.forEach((img, index) => {
-        if (img.url) {
-          formData.append(`additionalImages[${index}].url`, img.url);
-        }
-        if (img.data) {
-          formData.append(`additionalImages[${index}].data`, img.data);
-        }
-        if (img.type) {
-          formData.append(`additionalImages[${index}].type`, img.type);
-        }
-      });
+      const validImages = data.additionalImages.filter(img => 
+        (img.url && img.url.trim() !== "") || img.data
+      );
+      
+      if (validImages.length > 0) {
+        validImages.forEach((img, index) => {
+          if (img.url && img.url.trim() !== "") {
+            formData.append(`additionalImages[${index}].url`, img.url.trim());
+          }
+          if (img.data) {
+            formData.append(`additionalImages[${index}].data`, img.data);
+          }
+          if (img.type) {
+            formData.append(`additionalImages[${index}].type`, img.type);
+          }
+        });
+      }
     }
+    
+    // Verificar se há dados válidos para enviar
+    if (!hasValidData) {
+      setIsLoading(false);
+      toast({
+        title: "Erro ao enviar formulário",
+        description: "Por favor, preencha pelo menos os campos obrigatórios (nome, preço e categoria).",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Log dos dados que serão enviados para o servidor
+    console.log("Enviando dados para o servidor:", Object.fromEntries(formData));
     
     // Enviar a requisição
     productMutation.mutate(formData);
@@ -964,7 +1045,7 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
                     size="icon"
                     className="mt-8"
                     onClick={() => {
-                      const current = form.getValues('additionalImages');
+                      const current = form.getValues('additionalImages') || [];
                       form.setValue(
                         'additionalImages',
                         current.filter((_, i) => i !== index)
