@@ -2527,7 +2527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rota para criar um produto para um fornecedor específico
-  app.post("/api/suppliers/:supplierId/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.post("/api/suppliers/:supplierId/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("productImage"), async (req, res) => {
     try {
       const supplierId = parseInt(req.params.supplierId);
       
@@ -2588,7 +2588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rota para atualizar um produto específico de um fornecedor
-  app.put("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.put("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("productImage"), async (req, res) => {
     try {
       const supplierId = parseInt(req.params.supplierId);
       const productId = parseInt(req.params.productId);
@@ -2682,7 +2682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rota alternativa com PATCH para atualização parcial
-  app.patch("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.patch("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("productImage"), async (req, res) => {
     try {
       const supplierId = parseInt(req.params.supplierId);
       const productId = parseInt(req.params.productId);
