@@ -170,7 +170,7 @@ export default function SupplierDashboard() {
     isLoading: isLoadingLowStock,
     refetch: refetchLowStock
   } = useQuery({
-    queryKey: ["/api/supplier/low-stock-products", { supplierId: user?.id, limit: 10 }],
+    queryKey: ["/api/supplier/dashboard/low-stock-products", { supplierId: user?.id, limit: 10 }],
     enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
