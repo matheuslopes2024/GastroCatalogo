@@ -4727,6 +4727,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Rota para visualizar prévia de atualização em lote
   app.post("/api/supplier/inventory/bulk-preview", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    // Redireciona para a rota de validação
+    return res.redirect(307, '/api/supplier/inventory/validate-bulk-update');
+  });
+  
+  // Rota para validar atualização em lote
+  app.post("/api/supplier/inventory/validate-bulk-update", checkRole([UserRole.SUPPLIER]), async (req, res) => {
     try {
       const supplierId = req.user?.id;
       
