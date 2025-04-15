@@ -220,39 +220,82 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     if (product || (productData && !isLoadingProduct)) {
       const data = product || productData;
       
-      if (data.imageUrl) {
+      // Função utilitária para garantir conversão segura para string e evitar undefined/null
+      const safeToString = (value: any, defaultValue: string = ""): string => {
+        if (value === undefined || value === null) return defaultValue;
+        return String(value);
+      };
+      
+      // Definir a imagem de pré-visualização se houver
+      if (data?.imageUrl) {
         setImagePreview(data.imageUrl);
       }
       
+      // Log de debug para verificar dados
+      console.log('Inicializando formulário com dados do produto:', {
+        id: data?.id,
+        name: data?.name,
+        categoryId: data?.categoryId,
+        price: data?.price,
+        inventory: data?.inventory || 'Sem dados de inventário'
+      });
+      
+      // Inicializar o inventário com valores seguros
+      const inventoryData = {
+        quantity: safeToString(data?.inventory?.quantity, "0"),
+        lowStockThreshold: safeToString(data?.inventory?.lowStockThreshold, "10"),
+        restockLevel: safeToString(data?.inventory?.restockLevel, "20"),
+        reservedQuantity: safeToString(data?.inventory?.reservedQuantity, "0"),
+        location: data?.inventory?.location || "",
+        batchNumber: data?.inventory?.batchNumber || "",
+        expirationDate: safeToString(data?.inventory?.expirationDate, ""),
+        notes: data?.inventory?.notes || "",
+        status: data?.inventory?.status || "in_stock",
+      };
+      
+      // Inicializar as imagens adicionais com validação
+      const additionalImagesData = Array.isArray(data?.additionalImages) 
+        ? data.additionalImages
+            .filter((img: any) => img !== null && img !== undefined)
+            .map((img: any) => ({
+              url: img?.url || "",
+              data: img?.data || "",
+              type: img?.type || "",
+            }))
+        : [];
+        
+      // Inicializar categorias adicionais com validação
+      const additionalCategoriesData = Array.isArray(data?.additionalCategories) 
+        ? data.additionalCategories
+            .filter((cat: any) => cat !== null && cat !== undefined)
+            .map((cat: any) => safeToString(cat))
+        : [];
+      
+      // Features - pode ser array ou string
+      const featuresData = Array.isArray(data?.features) 
+        ? data.features.join("\n") 
+        : (data?.features || "");
+      
+      // Reset completo do formulário com todos os valores validados
       form.reset({
-        name: data.name || "",
-        description: data.description || "",
-        slug: data.slug || "",
-        price: data.price?.toString() || "",
-        originalPrice: data.originalPrice?.toString() || "",
-        discount: data.discount?.toString() || "",
-        rating: data.rating?.toString() || "",
-        ratingsCount: data.ratingsCount?.toString() || "",
-        sku: data.sku || "",
-        categoryId: data.categoryId?.toString() || "",
-        inventory: {
-          quantity: data.inventory?.quantity?.toString() || "0",
-          lowStockThreshold: data.inventory?.lowStockThreshold?.toString() || "10",
-          restockLevel: data.inventory?.restockLevel?.toString() || "20",
-          reservedQuantity: data.inventory?.reservedQuantity?.toString() || "0",
-          location: data.inventory?.location || "",
-          batchNumber: data.inventory?.batchNumber || "",
-          expirationDate: data.inventory?.expirationDate?.toString() || "",
-          notes: data.inventory?.notes || "",
-          status: data.inventory?.status || "in_stock",
-        },
-        imageUrl: data.imageUrl || "",
-        imageData: data.imageData || "",
-        imageType: data.imageType || "",
-        additionalImages: data.additionalImages || [],
-        active: typeof data.active === "boolean" ? data.active : true,
-        additionalCategories: data.additionalCategories || [],
-        features: Array.isArray(data.features) ? data.features.join("\n") : (data.features || ""),
+        name: data?.name || "",
+        description: data?.description || "",
+        slug: data?.slug || "",
+        price: safeToString(data?.price),
+        originalPrice: safeToString(data?.originalPrice),
+        discount: safeToString(data?.discount),
+        rating: safeToString(data?.rating),
+        ratingsCount: safeToString(data?.ratingsCount),
+        sku: data?.sku || "",
+        categoryId: safeToString(data?.categoryId),
+        inventory: inventoryData,
+        imageUrl: data?.imageUrl || "",
+        imageData: data?.imageData || "",
+        imageType: data?.imageType || "",
+        additionalImages: additionalImagesData,
+        active: data?.active === false ? false : true, // default para true se undefined
+        additionalCategories: additionalCategoriesData,
+        features: featuresData,
       });
     }
   }, [form, product, productData, isLoadingProduct]);
