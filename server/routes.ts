@@ -2764,14 +2764,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Excluindo produto #${productId} do fornecedor #${supplierId}`);
       
-      // Realizar exclusão lógica (marcar como inativo) ou exclusão física
-      const result = await storage.deleteProduct(productId);
-      
-      return res.json({
-        message: "Produto excluído com sucesso",
-        productId,
-        result
-      });
+      // Realizar exclusão lógica (marcar como inativo)
+      try {
+        const result = await storage.deleteProduct(productId);
+        
+        if (!result) {
+          console.error(`Erro na exclusão lógica - produto ID: ${productId} não pôde ser excluído`);
+          return res.status(500).json({ 
+            message: "Erro ao excluir produto - operação falhou",
+            productId: productId
+          });
+        }
+        
+        console.log(`Produto ID ${productId} desativado com sucesso`);
+        
+        return res.json({
+          message: "Produto excluído com sucesso",
+          productId,
+          success: result
+        });
+      } catch (deleteError) {
+        console.error("Erro específico ao excluir produto:", deleteError);
+        return res.status(500).json({ 
+          message: "Erro ao excluir produto",
+          error: deleteError.message
+        });
+      }
     } catch (error) {
       console.error("Erro ao excluir produto:", error);
       res.status(500).json({ 
