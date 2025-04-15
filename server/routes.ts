@@ -4694,18 +4694,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Realizar atualização em lote
-      const result = await storage.batchUpdateInventory(
+      const updatedInventory = await storage.bulkUpdateInventory(
         items.map(item => ({
           productId: item.productId,
           quantity: item.quantity
-        })),
-        supplierId,
-        supplierId,
-        reason || "Atualização em lote"
+        }))
       );
       
       // Preparar detalhes dos itens atualizados
-      const details = await Promise.all(result.inventory.map(async (inventory) => {
+      const details = await Promise.all(updatedInventory.map(async (inventory) => {
         const product = await storage.getProduct(inventory.productId);
         return {
           productId: inventory.productId,
@@ -4715,8 +4712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       res.json({
-        success: result.updated,
-        failed: result.failed,
+        success: updatedInventory.length,
+        failed: items.length - updatedInventory.length,
         details
       });
     } catch (error) {
