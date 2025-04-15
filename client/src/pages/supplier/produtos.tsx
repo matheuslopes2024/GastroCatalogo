@@ -128,14 +128,6 @@ export default function ProdutosPage() {
         throw error;
       }
     },
-    onError: (error: Error) => {
-      console.error("Erro na consulta de produtos:", error);
-      toast({
-        title: "Erro ao carregar produtos",
-        description: error.message || "Não foi possível carregar seus produtos.",
-        variant: "destructive",
-      });
-    }
   });
 
   // Buscar categorias

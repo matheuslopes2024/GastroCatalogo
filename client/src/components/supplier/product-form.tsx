@@ -153,8 +153,14 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       console.log(`Enviando requisição para ${url} usando método ${method}`);
       
       try {
-        // Passar um objeto vazio como opções para indicar que estamos enviando um FormData
-        const res = await apiRequest(method, url, data, { isFormData: true });
+        // Passar objeto de opções para indicar que estamos enviando um FormData
+        const res = await apiRequest(method, url, data, { 
+          headers: {
+            // Não definir Content-Type aqui, o navegador irá configurar automaticamente
+            // com o boundary correto para FormData
+          },
+          isFormData: true 
+        });
         
         if (!res.ok) {
           const errorText = await res.text();
