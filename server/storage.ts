@@ -42,8 +42,6 @@ export interface IStorage {
   // Supplier specific methods
   getSupplierProductsCount(supplierId: number): Promise<number>;
   getSupplierCategories(supplierId: number): Promise<Category[]>;
-  getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]>;
-  bulkUpdateProducts(productIds: number[], updateData: Partial<Omit<InsertProduct, "id" | "supplierId" | "createdAt">>, supplierId: number): Promise<Product[]>;
   
   // Category methods
   getCategory(id: number): Promise<Category | undefined>;
@@ -557,67 +555,6 @@ export class MemStorage implements IStorage {
       .filter(Boolean) as Category[];
     
     return categories;
-  }
-  
-  /**
-   * Obtém produtos com estoque abaixo do limite configurado
-   * @param supplierId ID do fornecedor
-   * @param limit Limitar quantidade de resultados
-   * @returns Lista de produtos com estoque baixo
-   */
-  async getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]> {
-    if (!supplierId) return [];
-    
-    let products = Array.from(this.products.values())
-      .filter(product => 
-        product.supplierId === supplierId && 
-        product.active && 
-        product.stock !== undefined && 
-        product.stockThreshold !== undefined &&
-        product.stock <= product.stockThreshold
-      )
-      .sort((a, b) => (a.stock || 0) - (b.stock || 0));
-      
-    if (limit) {
-      products = products.slice(0, limit);
-    }
-    
-    return products;
-  }
-  
-  /**
-   * Atualiza vários produtos em massa
-   * @param productIds IDs dos produtos a serem atualizados
-   * @param updateData Dados a serem atualizados
-   * @param supplierId ID do fornecedor para verificação de propriedade
-   * @returns Produtos atualizados
-   */
-  async bulkUpdateProducts(productIds: number[], updateData: Partial<Omit<InsertProduct, "id" | "supplierId" | "createdAt">>, supplierId: number): Promise<Product[]> {
-    if (!supplierId || !productIds.length) return [];
-    
-    // Verificar se todos os produtos pertencem ao fornecedor
-    const productsToUpdate = Array.from(this.products.values())
-      .filter(product => 
-        productIds.includes(product.id) && 
-        product.supplierId === supplierId
-      );
-    
-    // Se a quantidade de produtos encontrados não corresponder aos IDs fornecidos, algum produto não pertence ao fornecedor
-    if (productsToUpdate.length !== productIds.length) {
-      throw new Error("Alguns produtos não pertencem a este fornecedor");
-    }
-    
-    const updatedProducts: Product[] = [];
-    
-    // Atualizar cada produto individualmente
-    for (const productId of productIds) {
-      const result = await this.updateProduct(productId, updateData);
-      if (result) {
-        updatedProducts.push(result);
-      }
-    }
-    
-    return updatedProducts;
   }
   
   async getProducts(options?: { 
@@ -3997,93 +3934,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.supplierId, supplierId));
       
     return result[0]?.count || 0;
-  }
-  
-  /**
-   * Obtém produtos com estoque abaixo do limite configurado
-   * @param supplierId ID do fornecedor
-   * @param limit Limitar quantidade de resultados
-   * @returns Lista de produtos com estoque baixo
-   */
-  async getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]> {
-    if (!supplierId) return [];
-    
-    // Consulta produtos ativos do fornecedor (removida referência à coluna stock que não existe)
-    let query = db.select()
-      .from(products)
-      .where(
-        and(
-          eq(products.supplierId, supplierId),
-          eq(products.active, true)
-          // Comentado para evitar erro com coluna inexistente
-          // sql`${products.stock} <= ${products.stockThreshold}`,
-          // sql`${products.stock} IS NOT NULL`,
-          // sql`${products.stockThreshold} IS NOT NULL`
-        )
-      )
-      // Ordenar por ID em vez de estoque que não existe
-      .orderBy(asc(products.id));
-    
-    // Aplicar limite se especificado
-    if (limit) {
-      query = query.limit(limit);
-    }
-    
-    return await query;
-  }
-  
-  /**
-   * Atualiza vários produtos em massa
-   * @param productIds IDs dos produtos a serem atualizados
-   * @param updateData Dados a serem atualizados
-   * @param supplierId ID do fornecedor para verificação de propriedade
-   * @returns Produtos atualizados
-   */
-  async bulkUpdateProducts(productIds: number[], updateData: Partial<Omit<InsertProduct, "id" | "supplierId" | "createdAt">>, supplierId: number): Promise<Product[]> {
-    if (!supplierId || !productIds.length) return [];
-    
-    // Verificar se todos os produtos pertencem ao fornecedor
-    const productsToUpdate = await db.select()
-      .from(products)
-      .where(
-        and(
-          inArray(products.id, productIds),
-          eq(products.supplierId, supplierId)
-        )
-      );
-    
-    // Se a quantidade de produtos encontrados não corresponder aos IDs fornecidos, algum produto não pertence ao fornecedor
-    if (productsToUpdate.length !== productIds.length) {
-      throw new Error("Alguns produtos não pertencem a este fornecedor");
-    }
-    
-    // Remover as propriedades stock e stockThreshold que não existem no banco
-    // para evitar erros ao tentar atualizar colunas inexistentes
-    const { stock, stockThreshold, ...validUpdateData } = updateData as any;
-    
-    // Log para depuração
-    console.log("Dados de atualização recebidos:", updateData);
-    console.log("Dados de atualização filtrados:", validUpdateData);
-    
-    const updatedProducts: Product[] = [];
-    
-    // Atualizar cada produto individualmente
-    for (const productId of productIds) {
-      // Passar apenas os dados que existem no esquema de banco de dados
-      const result = await this.updateProduct(productId, validUpdateData);
-      if (result) {
-        // Adicionar manualmente as propriedades de stock simuladas
-        // para manter compatibilidade com o frontend
-        const productWithStock = {
-          ...result,
-          stock: stock !== undefined ? stock : Math.floor(Math.random() * 20),
-          stockThreshold: stockThreshold !== undefined ? stockThreshold : 10
-        };
-        updatedProducts.push(productWithStock as Product);
-      }
-    }
-    
-    return updatedProducts;
   }
   
   // Método para buscar categorias de produtos de um fornecedor

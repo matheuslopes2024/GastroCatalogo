@@ -13,7 +13,6 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 
 import {
@@ -35,10 +34,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { 
   Package, 
   DollarSign, 
@@ -53,15 +48,8 @@ import {
   Edit,
   Calendar,
   Paperclip, 
-  Send,
-  AlertTriangle,
-  CheckCircle,
-  Loader2,
-  ThumbsUp,
-  RefreshCcw,
-  Save
+  Send
 } from "lucide-react";
-import { StockAlert } from "@/components/supplier/stock-alert";
 import {
   AreaChart,
   Area,
@@ -71,9 +59,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
-// Utilizando o componente de Alerta de Estoque centralizado
-// Componente implementado em @/components/supplier/stock-alert.tsx
 
 // Dashboard sidebar with links to other supplier pages
 function SupplierSidebar() {
@@ -162,16 +147,6 @@ export default function SupplierDashboard() {
         variant: "destructive",
       });
     }
-  });
-  
-  // Fetch produtos com estoque baixo
-  const { 
-    data: lowStockProducts, 
-    isLoading: isLoadingLowStock,
-    refetch: refetchLowStock
-  } = useQuery({
-    queryKey: ["/api/supplier/dashboard/low-stock-products", { supplierId: user?.id, limit: 10 }],
-    enabled: !!user?.id && user?.role === UserRole.SUPPLIER,
   });
   
   // Assegurar que products é sempre um array, mesmo quando a API retorna um objeto
@@ -730,30 +705,6 @@ export default function SupplierDashboard() {
                   </div>
                 </CardContent>
               </Card>
-              
-              {/* Alerta de Estoque Baixo */}
-              <div className="my-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div>
-                      <CardTitle className="flex items-center">
-                        <AlertTriangle className="mr-2 h-5 w-5 text-amber-500" />
-                        Alerta de Estoque Baixo
-                      </CardTitle>
-                      <CardDescription>
-                        Produtos que necessitam reposição de estoque
-                      </CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <StockAlert 
-                      lowStockProducts={lowStockProducts}
-                      isLoading={isLoadingLowStock}
-                      onRefresh={refetchLowStock}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
               
               {/* Grid de Produtos e Top Performers */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
