@@ -1,0 +1,7 @@
+-- Adicionando colunas de gerenciamento de estoque à tabela products
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS sku VARCHAR(255) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS stock_status VARCHAR(50) DEFAULT 'unknown',
+ADD COLUMN IF NOT EXISTS last_stock_update TIMESTAMP DEFAULT NULL;
