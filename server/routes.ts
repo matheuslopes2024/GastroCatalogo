@@ -2632,8 +2632,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Atualizando produto com dados:", JSON.stringify(req.body, null, 2));
       
+      // Verificar se existem dados para atualização
+      if (!req.body || Object.keys(req.body).length === 0) {
+        console.error("Erro: Nenhum dado fornecido para atualização do produto");
+        return res.status(400).json({ 
+          message: "Nenhum dado válido fornecido para atualização", 
+          productId,
+          receivedData: req.body
+        });
+      }
+      
+      // Adicionar verificações extras para os campos obrigatórios
+      // Se estiver atualizando mas não enviar nome/categoria, busca os valores atuais para incluir na atualização
+      let updateData = { ...req.body };
+      
+      // Sempre garantir que temos nome e categoria
+      if (!updateData.name || updateData.name === "") {
+        console.log("Nome não fornecido ou vazio na atualização, usando valor atual");
+        updateData.name = product.name;
+      }
+      
+      if (!updateData.categoryId || updateData.categoryId === "") {
+        console.log("Categoria não fornecida ou vazia na atualização, usando valor atual");
+        updateData.categoryId = product.categoryId;
+      }
+      
+      // Log completo dos dados finais de atualização
+      console.log("Dados finais para atualização:", JSON.stringify(updateData, null, 2));
+      
       // Atualizar o produto
-      const updatedProduct = await storage.updateProduct(productId, req.body);
+      const updatedProduct = await storage.updateProduct(productId, updateData);
       
       return res.json(updatedProduct);
     } catch (error) {
@@ -2699,6 +2727,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validar e limpar os dados recebidos para evitar o erro "No values to set"
       const requestData = req.body;
       console.log("Dados originais recebidos (PATCH):", JSON.stringify(requestData, null, 2));
+      
+      // Verificação extra antes de prosseguir - se o objeto está vazio ou for nulo/undefined
+      if (!requestData || Object.keys(requestData).length === 0) {
+        return res.status(400).json({
+          message: "Nenhum dado fornecido para atualização",
+          productId,
+          receivedData: requestData
+        });
+      }
       
       // Objeto para armazenar os dados limpos e validados
       const cleanedData: Partial<Product> = {};
