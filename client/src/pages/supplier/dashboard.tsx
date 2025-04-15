@@ -61,6 +61,7 @@ import {
   RefreshCcw,
   Save
 } from "lucide-react";
+import { StockAlert } from "@/components/supplier/stock-alert";
 import {
   AreaChart,
   Area,
@@ -729,6 +730,30 @@ export default function SupplierDashboard() {
                   </div>
                 </CardContent>
               </Card>
+              
+              {/* Alerta de Estoque Baixo */}
+              <div className="my-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <div>
+                      <CardTitle className="flex items-center">
+                        <AlertTriangle className="mr-2 h-5 w-5 text-amber-500" />
+                        Alerta de Estoque Baixo
+                      </CardTitle>
+                      <CardDescription>
+                        Produtos que necessitam reposição de estoque
+                      </CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <StockAlert 
+                      lowStockProducts={lowStockProducts}
+                      isLoading={isLoadingLowStock}
+                      onRefresh={refetchLowStock}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
               
               {/* Grid de Produtos e Top Performers */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
