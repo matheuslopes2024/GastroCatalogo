@@ -147,11 +147,20 @@ export default function ProdutosPage() {
   // Mutation para excluir produto
   const deleteMutation = useMutation({
     mutationFn: async (productId: number) => {
-      const res = await apiRequest("DELETE", `/api/supplier/products/${productId}`);
+      if (!user?.id) {
+        throw new Error("ID do usuário não encontrado");
+      }
+      
+      console.log(`Excluindo produto ID ${productId} do fornecedor ID ${user.id}`);
+      
+      // Usar o endpoint correto para exclusão de produtos
+      const res = await apiRequest("DELETE", `/api/suppliers/${user.id}/products/${productId}`);
+      
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Erro ao excluir produto");
       }
+      
       return await res.json();
     },
     onSuccess: () => {
@@ -160,14 +169,17 @@ export default function ProdutosPage() {
         description: "O produto foi excluído com sucesso.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/supplier/products"] });
+      
+      // Atualizar a consulta correta após exclusão
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user?.id}/products`] });
       setShowDeleteDialog(false);
       setProductToDelete(null);
     },
     onError: (error: Error) => {
+      console.error("Erro na exclusão do produto:", error);
       toast({
         title: "Erro ao excluir",
-        description: error.message,
+        description: error.message || "Não foi possível excluir o produto. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -518,10 +530,10 @@ export default function ProdutosPage() {
             </div>
             
             {/* Paginação */}
-            {productsData?.totalPages > 1 && (
+            {productsData?.pagination?.totalPages > 1 && (
               <div className="flex justify-between items-center mt-4">
                 <div className="text-sm text-muted-foreground">
-                  Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, productsData.total)} - {Math.min(currentPage * itemsPerPage, productsData.total)} de {productsData.total} produtos
+                  Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, productsData.pagination.totalItems)} - {Math.min(currentPage * itemsPerPage, productsData.pagination.totalItems)} de {productsData.pagination.totalItems} produtos
                 </div>
                 <div className="flex gap-1">
                   <Button
@@ -532,7 +544,7 @@ export default function ProdutosPage() {
                   >
                     Anterior
                   </Button>
-                  {Array.from({ length: productsData.totalPages }, (_, i) => i + 1).map((page) => (
+                  {Array.from({ length: productsData.pagination.totalPages }, (_, i) => i + 1).map((page) => (
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "outline"}
@@ -546,7 +558,7 @@ export default function ProdutosPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === productsData.totalPages}
+                    disabled={currentPage === productsData.pagination.totalPages}
                   >
                     Próximo
                   </Button>

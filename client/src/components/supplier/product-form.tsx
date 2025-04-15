@@ -132,11 +132,23 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
   // Mutation para criar/atualizar produto
   const productMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      const { user } = useAuth();
+      if (!user?.id) {
+        throw new Error("ID do usuário não encontrado");
+      }
+      
+      console.log(`Enviando produto para o fornecedor ID ${user.id}, produto ID ${productId || 'novo'}`);
+      
+      // Atualizar para usar a API correta com o ID do fornecedor
       const url = productId 
-        ? `/api/supplier/products/${productId}` 
-        : "/api/supplier/products";
+        ? `/api/suppliers/${user.id}/products/${productId}` 
+        : `/api/suppliers/${user.id}/products`;
         
       const method = productId ? "PATCH" : "POST";
+      
+      // Para debug
+      console.log(`Enviando requisição para ${url} usando método ${method}`);
+      
       const res = await fetch(`${window.location.origin}${url}`, {
         method,
         body: data,
@@ -144,13 +156,15 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       });
       
       if (!res.ok) {
-        const error = await res.json();
+        console.error(`Erro ${res.status} ao salvar produto:`, await res.text());
+        const error = await res.json().catch(() => ({ message: `Erro ${res.status}: ${res.statusText}` }));
         throw new Error(error.message || "Erro ao salvar produto");
       }
       
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Produto salvo com sucesso:", data);
       toast({
         title: productId ? "Produto atualizado" : "Produto criado",
         description: productId 
@@ -158,16 +172,22 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
           : "O produto foi criado com sucesso.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/supplier/products"] });
+      
+      // Invalidar as queries corretas com o ID do fornecedor
+      const { user } = useAuth();
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user?.id}/products`] });
+      
       if (productId) {
-        queryClient.invalidateQueries({ queryKey: [`/api/supplier/products/${productId}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${user?.id}/products/${productId}`] });
       }
+      
       onSave();
     },
     onError: (error: Error) => {
+      console.error("Erro detalhado ao salvar produto:", error);
       toast({
-        title: "Erro ao salvar",
-        description: error.message,
+        title: "Erro ao salvar produto",
+        description: error.message || "Ocorreu um erro ao salvar o produto. Por favor, tente novamente.",
         variant: "destructive",
       });
     },
