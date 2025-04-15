@@ -598,8 +598,32 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     // Adicionar um campo especial para garantir que nunca enviamos um objeto vazio
     // Este campo é apenas para resolver o problema específico com a API
     if (productId) {
-      if (Object.keys(formDataObj).length <= 1) { // Apenas o ID
-        console.log("Adicionando campo forçado para garantir que não enviamos objeto vazio");
+      // Log detalhado para atualizações
+      console.log(`Atualizando produto ${productId} com ${Object.keys(formDataObj).length} campos`);
+      
+      // Log dos campos específicos que vão ser atualizados
+      const keysList = Object.keys(formDataObj).join(", ");
+      console.log(`Campos sendo enviados: ${keysList}`);
+      
+      // Mesmo se tiver poucos campos, sempre garantir que enviamos dados suficientes
+      // para evitar o erro 400 "Nenhum dado válido fornecido para atualização"
+      if (Object.keys(formDataObj).length <= 2) { // Apenas o ID e talvez mais um campo
+        console.log("Adicionando campos forçados para garantir atualização válida");
+        
+        // Garantir que pelo menos nome e categoria estão presentes
+        if (!formDataObj.name && productId) {
+          // Vamos buscar o nome atual do produto para incluir
+          console.log("Nome não presente na atualização, usando nome atual");
+          formData.append("name", form.getValues("name") || "Produto");
+        }
+        
+        if (!formDataObj.categoryId && productId) {
+          // Garantir categoria
+          console.log("Categoria não presente na atualização, usando categoria atual");
+          formData.append("categoryId", form.getValues("categoryId") || "1");
+        }
+        
+        // Campos timestamp para forçar detecção de mudança
         formData.append("_forceUpdate", "true");
         formData.append("_lastUpdated", new Date().toISOString());
       }
