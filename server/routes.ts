@@ -2526,6 +2526,261 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para criar um produto para um fornecedor específico
+  app.post("/api/suppliers/:supplierId/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.supplierId);
+      
+      if (isNaN(supplierId)) {
+        return res.status(400).json({ message: "ID de fornecedor inválido" });
+      }
+      
+      // Verificar permissões: o usuário deve ser o próprio fornecedor ou um administrador
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      if (req.user.role === UserRole.SUPPLIER && req.user.id !== supplierId) {
+        return res.status(403).json({ 
+          message: "Sem permissão para adicionar produtos para este fornecedor",
+          debug: {
+            requestUserId: req.user.id,
+            supplierIdRequested: supplierId
+          } 
+        });
+      }
+      
+      // Verificar se o fornecedor existe
+      const supplier = await storage.getUser(supplierId);
+      
+      if (!supplier || supplier.role !== UserRole.SUPPLIER) {
+        return res.status(404).json({ message: "Fornecedor não encontrado" });
+      }
+      
+      // Processar dados do produto
+      const productData = { 
+        ...req.body, 
+        supplierId,
+        active: req.body.active !== undefined ? req.body.active : true
+      };
+      
+      console.log("Criando produto com dados:", JSON.stringify(productData, null, 2));
+      
+      // Criar o produto
+      const createdProduct = await storage.createProduct(productData);
+      
+      return res.status(201).json(createdProduct);
+    } catch (error) {
+      console.error("Erro ao criar produto:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos do produto", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Erro ao criar produto",
+        error: error.message
+      });
+    }
+  });
+  
+  // Rota para atualizar um produto específico de um fornecedor
+  app.put("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.supplierId);
+      const productId = parseInt(req.params.productId);
+      
+      if (isNaN(supplierId) || isNaN(productId)) {
+        return res.status(400).json({ message: "ID de fornecedor ou de produto inválido" });
+      }
+      
+      // Verificar permissões: o usuário deve ser o próprio fornecedor ou um administrador
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      if (req.user.role === UserRole.SUPPLIER && req.user.id !== supplierId) {
+        return res.status(403).json({ 
+          message: "Sem permissão para editar produtos deste fornecedor",
+          debug: {
+            requestUserId: req.user.id,
+            supplierIdRequested: supplierId
+          } 
+        });
+      }
+      
+      // Buscar o produto para verificar permissões
+      const product = await storage.getProduct(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Verificar se o produto pertence ao fornecedor
+      if (Number(product.supplierId) !== supplierId) {
+        return res.status(404).json({ 
+          message: "Produto não encontrado para este fornecedor",
+          debug: {
+            requestedSupplierId: supplierId,
+            productSupplierId: product.supplierId
+          }
+        });
+      }
+      
+      console.log("Atualizando produto com dados:", JSON.stringify(req.body, null, 2));
+      
+      // Atualizar o produto
+      const updatedProduct = await storage.updateProduct(productId, req.body);
+      
+      return res.json(updatedProduct);
+    } catch (error) {
+      console.error("Erro ao atualizar produto:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos do produto", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Erro ao atualizar produto",
+        error: error.message
+      });
+    }
+  });
+  
+  // Rota alternativa com PATCH para atualização parcial
+  app.patch("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.supplierId);
+      const productId = parseInt(req.params.productId);
+      
+      if (isNaN(supplierId) || isNaN(productId)) {
+        return res.status(400).json({ message: "ID de fornecedor ou de produto inválido" });
+      }
+      
+      // Verificar permissões: o usuário deve ser o próprio fornecedor ou um administrador
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      if (req.user.role === UserRole.SUPPLIER && req.user.id !== supplierId) {
+        return res.status(403).json({ 
+          message: "Sem permissão para editar produtos deste fornecedor",
+          debug: {
+            requestUserId: req.user.id,
+            supplierIdRequested: supplierId
+          } 
+        });
+      }
+      
+      // Buscar o produto para verificar permissões
+      const product = await storage.getProduct(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Verificar se o produto pertence ao fornecedor
+      if (Number(product.supplierId) !== supplierId) {
+        return res.status(404).json({ 
+          message: "Produto não encontrado para este fornecedor",
+          debug: {
+            requestedSupplierId: supplierId,
+            productSupplierId: product.supplierId
+          }
+        });
+      }
+      
+      console.log("Atualizando produto com dados (PATCH):", JSON.stringify(req.body, null, 2));
+      
+      // Atualizar o produto
+      const updatedProduct = await storage.updateProduct(productId, req.body);
+      
+      return res.json(updatedProduct);
+    } catch (error) {
+      console.error("Erro ao atualizar produto:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos do produto", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Erro ao atualizar produto",
+        error: error.message
+      });
+    }
+  });
+  
+  // Rota para excluir um produto específico de um fornecedor
+  app.delete("/api/suppliers/:supplierId/products/:productId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.supplierId);
+      const productId = parseInt(req.params.productId);
+      
+      if (isNaN(supplierId) || isNaN(productId)) {
+        return res.status(400).json({ message: "ID de fornecedor ou de produto inválido" });
+      }
+      
+      // Verificar permissões: o usuário deve ser o próprio fornecedor ou um administrador
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autorizado" });
+      }
+      
+      if (req.user.role === UserRole.SUPPLIER && req.user.id !== supplierId) {
+        return res.status(403).json({ 
+          message: "Sem permissão para excluir produtos deste fornecedor",
+          debug: {
+            requestUserId: req.user.id,
+            supplierIdRequested: supplierId
+          } 
+        });
+      }
+      
+      // Buscar o produto para verificar permissões
+      const product = await storage.getProduct(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+      }
+      
+      // Verificar se o produto pertence ao fornecedor
+      if (Number(product.supplierId) !== supplierId) {
+        return res.status(404).json({ 
+          message: "Produto não encontrado para este fornecedor",
+          debug: {
+            requestedSupplierId: supplierId,
+            productSupplierId: product.supplierId
+          }
+        });
+      }
+      
+      console.log(`Excluindo produto #${productId} do fornecedor #${supplierId}`);
+      
+      // Realizar exclusão lógica (marcar como inativo) ou exclusão física
+      const result = await storage.deleteProduct(productId);
+      
+      return res.json({
+        message: "Produto excluído com sucesso",
+        productId,
+        result
+      });
+    } catch (error) {
+      console.error("Erro ao excluir produto:", error);
+      res.status(500).json({ 
+        message: "Erro ao excluir produto",
+        error: error.message
+      });
+    }
+  });
+  
   // Stripe Payment API
   app.post("/api/create-payment-intent", async (req, res) => {
     if (!stripe) {

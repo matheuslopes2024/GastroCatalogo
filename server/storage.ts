@@ -111,6 +111,7 @@ export interface IStorage {
     limit?: number;
     search?: string;
   }): Promise<Product[]>;
+  deleteProduct(id: number): Promise<boolean>;
   
   // Product Image methods
   getProductImage(id: number): Promise<ProductImage | undefined>;
