@@ -157,8 +157,8 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
         const res = await apiRequest(method, url, data, { 
           // Não definir Content-Type aqui, o navegador irá configurar automaticamente
           // com o boundary correto para FormData
-          isFormData: true,
-          headers: {} 
+          isFormData: true as unknown as string,
+          headers: {} as unknown as string
         });
         
         if (!res.ok) {

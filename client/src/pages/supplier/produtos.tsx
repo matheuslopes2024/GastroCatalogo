@@ -184,12 +184,14 @@ export default function ProdutosPage() {
   };
 
   const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value);
+    // Se o valor for "todas", deixar o filtro vazio para mostrar todas categorias
+    setCategoryFilter(value === "todas" ? "" : value);
     setCurrentPage(1);
   };
 
   const handleStatusChange = (value: string) => {
-    setStatusFilter(value);
+    // Se o valor for "todos", deixar o filtro vazio para mostrar todos status
+    setStatusFilter(value === "todos" ? "" : value);
     setCurrentPage(1);
   };
 
@@ -350,7 +352,7 @@ export default function ProdutosPage() {
                       <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas Categorias</SelectItem>
+                      <SelectItem value="todas">Todas Categorias</SelectItem>
                       {Array.isArray(categories) && categories.map((category: any) => (
                         <SelectItem key={category.id} value={String(category.id)}>
                           {category.name}
@@ -366,7 +368,7 @@ export default function ProdutosPage() {
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos Status</SelectItem>
+                      <SelectItem value="todos">Todos Status</SelectItem>
                       <SelectItem value="active">Ativos</SelectItem>
                       <SelectItem value="inactive">Inativos</SelectItem>
                       <SelectItem value="low-stock">Estoque Baixo</SelectItem>
