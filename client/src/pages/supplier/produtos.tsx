@@ -88,18 +88,53 @@ export default function ProdutosPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("todos");
 
-  // Buscar produtos do fornecedor com estoque integrado
+  // Buscar produtos do fornecedor usando a API de produtos por fornecedor
   const { 
     data: productsData, 
     isLoading: isLoadingProducts,
-    refetch: refetchProducts 
+    refetch: refetchProducts,
+    error: productsError
   } = useQuery({
-    queryKey: ["/api/supplier/products", "with-inventory", currentPage, sortBy, sortOrder, searchQuery, categoryFilter, statusFilter],
+    queryKey: [`/api/suppliers/${user?.id}/products`, currentPage, sortBy, sortOrder, searchQuery, categoryFilter, statusFilter],
     enabled: !!user?.id,
     queryFn: async () => {
-      const url = `/api/supplier/products?page=${currentPage}&limit=${itemsPerPage}&sort=${sortBy}&order=${sortOrder}&search=${searchQuery}${categoryFilter ? `&category=${categoryFilter}` : ""}${statusFilter ? `&status=${statusFilter}` : ""}&withInventory=true`;
-      const res = await apiRequest("GET", url);
-      return await res.json();
+      try {
+        // Log para debug
+        console.log(`Carregando produtos para o fornecedor ID ${user?.id}`);
+        
+        // Usando a API de produtos do fornecedor atual que sabemos que está funcionando (conforme visto nos logs do console)
+        const url = `/api/suppliers/${user?.id}/products?page=${currentPage}&limit=${itemsPerPage}&sort=${sortBy}&order=${sortOrder}&search=${searchQuery}${categoryFilter ? `&category=${categoryFilter}` : ""}${statusFilter ? `&status=${statusFilter}` : ""}`;
+        
+        const res = await apiRequest("GET", url);
+        
+        if (!res.ok) {
+          throw new Error(`Erro ao buscar produtos: ${res.status} ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log("Produtos carregados:", data);
+        
+        // Formatar resposta no formato esperado pela interface
+        return {
+          products: Array.isArray(data) ? data : [],
+          pagination: {
+            currentPage,
+            totalPages: Math.ceil((Array.isArray(data) ? data.length : 0) / itemsPerPage),
+            totalItems: Array.isArray(data) ? data.length : 0
+          }
+        };
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+        throw error;
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Erro na consulta de produtos:", error);
+      toast({
+        title: "Erro ao carregar produtos",
+        description: error.message || "Não foi possível carregar seus produtos.",
+        variant: "destructive",
+      });
     }
   });
 
