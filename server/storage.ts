@@ -1679,6 +1679,133 @@ export class DatabaseStorage implements IStorage {
     });
     this.initData();
   }
+  
+  /**
+   * Atualiza vários produtos de uma só vez
+   * @param productsData Array com os dados dos produtos a serem atualizados em massa
+   * @returns Array com resultados da operação
+   */
+  async updateProductsInBulk(productsData: { id: number; [key: string]: any }[]): Promise<{id: number, success: boolean, message?: string}[]> {
+    const results: {id: number, success: boolean, message?: string}[] = [];
+    
+    // Tratar cada produto individualmente para garantir o controle de erros
+    for (const productData of productsData) {
+      try {
+        const { id, ...updateData } = productData;
+        
+        // Verificar se o produto existe
+        const existingProduct = await this.getProduct(id);
+        if (!existingProduct) {
+          results.push({
+            id,
+            success: false,
+            message: "Produto não encontrado"
+          });
+          continue;
+        }
+        
+        // Tratar dados antes da atualização
+        if (updateData.stock !== undefined) {
+          updateData.stock = Number(updateData.stock);
+          updateData.lastStockUpdate = new Date();
+          
+          // Atualizar status do estoque com base na quantidade
+          if (existingProduct.lowStockThreshold !== null) {
+            if (updateData.stock <= 0) {
+              updateData.stockStatus = "out_of_stock";
+            } else if (updateData.stock < existingProduct.lowStockThreshold) {
+              updateData.stockStatus = "low_stock";
+            } else {
+              updateData.stockStatus = "in_stock";
+            }
+          }
+        }
+        
+        // Se estiver atualizando apenas o limite de estoque baixo
+        if (updateData.lowStockThreshold !== undefined && updateData.stock === undefined) {
+          const stockThreshold = Number(updateData.lowStockThreshold);
+          updateData.lowStockThreshold = stockThreshold;
+          
+          // Atualizar status com base no novo limite
+          if (existingProduct.stock !== null) {
+            if (existingProduct.stock <= 0) {
+              updateData.stockStatus = "out_of_stock";
+            } else if (existingProduct.stock < stockThreshold) {
+              updateData.stockStatus = "low_stock";
+            } else {
+              updateData.stockStatus = "in_stock";
+            }
+          }
+        }
+        
+        // Atualizar o produto
+        const updatedProduct = await this.updateProduct(id, updateData);
+        
+        if (updatedProduct) {
+          results.push({
+            id,
+            success: true
+          });
+        } else {
+          results.push({
+            id,
+            success: false,
+            message: "Falha ao atualizar produto"
+          });
+        }
+      } catch (error) {
+        console.error(`Erro ao atualizar produto ${productData.id}:`, error);
+        results.push({
+          id: productData.id,
+          success: false,
+          message: `Erro ao processar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+        });
+      }
+    }
+    
+    return results;
+  }
+  
+  /**
+   * Busca produtos com estoque baixo de um fornecedor específico
+   * @param supplierId ID do fornecedor
+   * @returns Lista de produtos com estoque baixo
+   */
+  async getLowStockProducts(supplierId: number): Promise<Product[]> {
+    try {
+      // Buscar produtos do fornecedor
+      const supplierProducts = await db.select()
+        .from(products)
+        .where(
+          and(
+            eq(products.supplierId, supplierId),
+            eq(products.active, true)
+          )
+        )
+        .execute();
+      
+      // Filtrar produtos com estoque baixo
+      const lowStockProducts = supplierProducts.filter(product => {
+        // Se o produto tem campos de estoque definidos
+        if (product.stock !== null && product.lowStockThreshold !== null) {
+          return product.stock < product.lowStockThreshold;
+        }
+        return false;
+      });
+      
+      // Ordenar por urgência (menor estoque proporcional primeiro)
+      lowStockProducts.sort((a, b) => {
+        const ratioA = (a.stock || 0) / (a.lowStockThreshold || 1);
+        const ratioB = (b.stock || 0) / (b.lowStockThreshold || 1);
+        return ratioA - ratioB;
+      });
+      
+      return lowStockProducts;
+    } catch (error) {
+      console.error('Erro ao buscar produtos com estoque baixo:', error);
+      return [];
+    }
+  }
 
   private async initData() {
     try {
