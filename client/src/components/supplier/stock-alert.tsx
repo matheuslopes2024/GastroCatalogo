@@ -56,24 +56,27 @@ type LowStockProduct = {
   price: string;
 };
 
-export function StockAlert() {
+interface StockAlertProps {
+  lowStockProducts?: LowStockProduct[];
+  isLoading?: boolean;
+  onRefresh?: () => void;
+}
+
+export function StockAlert({ lowStockProducts = [], isLoading = false, onRefresh }: StockAlertProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [bulkStock, setBulkStock] = useState<string>("");
   const [bulkThreshold, setBulkThreshold] = useState<string>("");
   const [bulkUpdateMode, setBulkUpdateMode] = useState(false);
-
-  // Obter produtos com estoque baixo
-  const { 
-    data: lowStockProducts = [], 
-    isLoading, 
-    isError, 
-    refetch 
-  } = useQuery({
-    queryKey: ['/api/supplier/dashboard/low-stock-products'],
-    refetchOnWindowFocus: false,
-  });
+  const [isError, setIsError] = useState(false);
+  
+  // Função para refetch personalizada
+  const refetch = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
 
   // Mutação para atualização em massa dos produtos
   const updateMutation = useMutation({
