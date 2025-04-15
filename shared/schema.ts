@@ -453,3 +453,126 @@ export type InsertProductComparison = z.infer<typeof insertProductComparisonSche
 
 export type ProductComparisonDetail = typeof productComparisonDetails.$inferSelect;
 export type InsertProductComparisonDetail = z.infer<typeof insertProductComparisonDetailSchema>;
+
+// Status do Estoque
+export const InventoryStatus = {
+  IN_STOCK: "in_stock",            // Em estoque
+  LOW_STOCK: "low_stock",          // Estoque baixo
+  OUT_OF_STOCK: "out_of_stock",    // Fora de estoque
+  DISCONTINUED: "discontinued",    // Descontinuado
+  BACK_ORDER: "back_order",        // Em espera para ressuprimento
+} as const;
+
+export type InventoryStatusType = (typeof InventoryStatus)[keyof typeof InventoryStatus];
+
+// Tipos de Alertas de Estoque
+export const StockAlertType = {
+  LOW_STOCK: "low_stock",          // Alerta de estoque baixo
+  RESTOCK_NEEDED: "restock_needed",// Necessidade de ressuprimento
+  STOCK_UPDATED: "stock_updated",  // Estoque atualizado
+  BATCH_UPDATE: "batch_update",    // Atualização em lote
+  INVENTORY_AUDIT: "inventory_audit", // Auditoria de inventário
+  FORECASTED_SHORTAGE: "forecasted_shortage", // Previsão de escassez
+} as const;
+
+export type StockAlertTypeValue = (typeof StockAlertType)[keyof typeof StockAlertType];
+
+// Tabela de Inventário de Produtos (estoque)
+export const productInventory = pgTable("product_inventory", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  supplierId: integer("supplier_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(0),
+  status: text("status").$type<InventoryStatusType>().notNull().default(InventoryStatus.IN_STOCK),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(5), // Limiar de estoque baixo
+  restockLevel: integer("restock_level").notNull().default(20), // Nível para ressuprimento
+  reservedQuantity: integer("reserved_quantity").notNull().default(0), // Quantidade reservada (em pedidos)
+  location: text("location"), // Localização física no armazém
+  batchNumber: text("batch_number"), // Número do lote
+  expirationDate: timestamp("expiration_date"), // Data de validade (para produtos perecíveis)
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    productIdx: index("product_inventory_product_idx").on(table.productId),
+    supplierIdx: index("product_inventory_supplier_idx").on(table.supplierId),
+    statusIdx: index("product_inventory_status_idx").on(table.status),
+    productSupplierUniq: uniqueIndex("product_inventory_product_supplier_uniq").on(table.productId, table.supplierId),
+  };
+});
+
+// Tabela para Alertas de Estoque
+export const stockAlerts = pgTable("stock_alerts", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  supplierId: integer("supplier_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  alertType: text("alert_type").$type<StockAlertTypeValue>().notNull(),
+  message: text("message").notNull(),
+  quantity: integer("quantity"), // Quantidade relevante para o alerta
+  previousQuantity: integer("previous_quantity"), // Quantidade anterior à atualização
+  isRead: boolean("is_read").notNull().default(false), // Se o alerta foi lido
+  isResolved: boolean("is_resolved").notNull().default(false), // Se o problema foi resolvido
+  resolvedAt: timestamp("resolved_at"), // Quando foi resolvido
+  resolvedBy: integer("resolved_by").references(() => users.id), // Quem resolveu
+  priority: integer("priority").notNull().default(1), // Prioridade: 1=Baixa, 2=Média, 3=Alta
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    productIdx: index("stock_alerts_product_idx").on(table.productId),
+    supplierIdx: index("stock_alerts_supplier_idx").on(table.supplierId),
+    alertTypeIdx: index("stock_alerts_alert_type_idx").on(table.alertType),
+    isReadIdx: index("stock_alerts_is_read_idx").on(table.isRead),
+    isResolvedIdx: index("stock_alerts_is_resolved_idx").on(table.isResolved),
+  };
+});
+
+// Tabela para registro de histórico de atualizações de estoque
+export const inventoryHistory = pgTable("inventory_history", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  supplierId: integer("supplier_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Usuário que fez a atualização
+  action: text("action").notNull(), // Tipo de ação: "add", "remove", "adjust", "batch_update"
+  quantityBefore: integer("quantity_before").notNull(),
+  quantityAfter: integer("quantity_after").notNull(),
+  reason: text("reason"), // Motivo da atualização
+  notes: text("notes"),
+  batchId: text("batch_id"), // Para agrupar atualizações em lote
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    productIdx: index("inventory_history_product_idx").on(table.productId),
+    supplierIdx: index("inventory_history_supplier_idx").on(table.supplierId),
+    userIdx: index("inventory_history_user_idx").on(table.userId),
+    actionIdx: index("inventory_history_action_idx").on(table.action),
+    batchIdx: index("inventory_history_batch_idx").on(table.batchId),
+  };
+});
+
+// Insert schemas para as novas tabelas
+export const insertProductInventorySchema = createInsertSchema(productInventory).omit({
+  id: true,
+  lastUpdated: true,
+  createdAt: true,
+});
+
+export const insertStockAlertSchema = createInsertSchema(stockAlerts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertInventoryHistorySchema = createInsertSchema(inventoryHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types para as novas tabelas
+export type ProductInventory = typeof productInventory.$inferSelect;
+export type InsertProductInventory = z.infer<typeof insertProductInventorySchema>;
+
+export type StockAlert = typeof stockAlerts.$inferSelect;
+export type InsertStockAlert = z.infer<typeof insertStockAlertSchema>;
+
+export type InventoryHistory = typeof inventoryHistory.$inferSelect;
+export type InsertInventoryHistory = z.infer<typeof insertInventoryHistorySchema>;

@@ -15,8 +15,16 @@ import {
   insertFaqItemSchema,
   insertChatMessageSchema,
   insertChatConversationSchema,
-  UserRole, 
-  productImages 
+  insertProductInventorySchema,
+  insertStockAlertSchema,
+  insertInventoryHistorySchema,
+  UserRole,
+  InventoryStatus,
+  StockAlertType,
+  productImages,
+  productInventory,
+  stockAlerts,
+  inventoryHistory
 } from "@shared/schema";
 import { eq, and, or, like, ne } from "drizzle-orm";
 import bodyParser from "body-parser";

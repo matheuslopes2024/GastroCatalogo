@@ -16,9 +16,15 @@ import {
   productSearches, type ProductSearch, type InsertProductSearch,
   productComparisons, type ProductComparison, type InsertProductComparison,
   productComparisonDetails, type ProductComparisonDetail, type InsertProductComparisonDetail,
+  // Importações para o sistema de estoque
+  productInventory, type ProductInventory, type InsertProductInventory,
+  stockAlerts, type StockAlert, type InsertStockAlert,
+  inventoryHistory, type InventoryHistory, type InsertInventoryHistory,
   // Tipos para ordenação e status
   type ProductSortTypeValue, ProductSortType,
-  type ProductComparisonStatusType, ProductComparisonStatus
+  type ProductComparisonStatusType, ProductComparisonStatus,
+  type InventoryStatusType, InventoryStatus,
+  type StockAlertTypeValue, StockAlertType
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
