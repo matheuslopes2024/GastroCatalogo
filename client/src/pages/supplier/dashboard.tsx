@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/hooks/use-chat";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@shared/schema";
+import { StockStatusSummary } from "@/components/dashboard/stock-status-summary";
 import { 
   Card, 
   CardContent, 
@@ -510,6 +511,9 @@ export default function SupplierDashboard() {
             
             {/* Main Content */}
             <div className="md:col-span-3 space-y-6">
+              {/* Estatísticas de Estoque */}
+              <StockStatusSummary className="w-full" />
+              
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
