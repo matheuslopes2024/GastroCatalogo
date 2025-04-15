@@ -155,11 +155,10 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       try {
         // Passar objeto de opções para indicar que estamos enviando um FormData
         const res = await apiRequest(method, url, data, { 
-          headers: {
-            // Não definir Content-Type aqui, o navegador irá configurar automaticamente
-            // com o boundary correto para FormData
-          },
-          isFormData: true 
+          // Não definir Content-Type aqui, o navegador irá configurar automaticamente
+          // com o boundary correto para FormData
+          isFormData: true,
+          headers: {} 
         });
         
         if (!res.ok) {
@@ -317,7 +316,8 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     if (data.ratingsCount) formData.append("ratingsCount", data.ratingsCount);
     if (data.sku) formData.append("sku", data.sku);
     formData.append("categoryId", data.categoryId);
-    formData.append("active", data.active.toString());
+    // Enviar active como string "true" ou "false" para poder ser parseado no backend
+    formData.append("active", data.active === true ? "true" : "false");
     
     // Dados de inventário expandidos
     if (data.inventory) {
