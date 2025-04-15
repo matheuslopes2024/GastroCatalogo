@@ -380,6 +380,17 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
   // Handler para envio do formulário
   const onSubmit = (data: ProductFormData) => {
     setIsLoading(true);
+    let hasValidData = false;
+    
+    // Valores padrão para campos obrigatórios e situações de emergência
+    const defaultValues: Record<string, string> = {
+      name: "Produto sem nome",
+      slug: `produto-${Date.now()}`,
+      description: "Descrição pendente",
+      price: "0.01",
+      categoryId: "1",
+      active: "true"
+    };
     
     // Log para debug dos dados que estão sendo enviados
     console.log("Dados do formulário antes de processar:", data);
@@ -390,8 +401,24 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     // Função para adicionar de forma segura ao FormData - formatação consistente
     // e manipulação adequada de valores booleanos e numéricos
     const safeAppend = (key: string, value: any, isRequired: boolean = false) => {
-      // Tratar valores undefined, null, ou strings vazias
+      // Valores padrão para campos críticos que não podem ser vazios
+      const defaultValues: Record<string, string> = {
+        'name': 'Produto sem nome',
+        'slug': 'produto-sem-slug',
+        'categoryId': '1',
+        'price': '0.01',
+        'description': ''
+      };
+      
+      // Tratamento de valores null/undefined
       if (value === undefined || value === null) {
+        // Se for campo obrigatório, verificar se é um dos críticos que não podem ser vazios
+        if (defaultValues[key] !== undefined) {
+          formData.append(key, defaultValues[key]);
+          console.log(`Campo crítico '${key}' recebeu valor padrão: ${defaultValues[key]}`);
+          return true;
+        }
+        
         if (isRequired && key !== 'description') {
           console.log(`Campo obrigatório '${key}' é undefined ou null`);
           return false;
@@ -401,16 +428,21 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       
       // Tratamento especial para strings - verificar se é vazia
       if (typeof value === 'string' && value.trim() === '') {
+        // Se for campo crítico que não pode ser vazio, usar valor padrão
+        if (defaultValues[key] !== undefined) {
+          formData.append(key, defaultValues[key]);
+          console.log(`Campo crítico '${key}' recebeu valor padrão: ${defaultValues[key]}`);
+          return true;
+        }
+        
         if (isRequired && key !== 'description') {
           console.log(`Campo obrigatório '${key}' é uma string vazia`);
           return false;
         }
-        // Para descrição, permitimos string vazia
-        if (key === 'description') {
-          formData.append(key, '');
-          return true;
-        }
-        return false;
+        
+        // Para descrição e outros campos opcionais, permitir string vazia
+        formData.append(key, '');
+        return true;
       }
       
       // Tratamento para valores booleanos - converter para "true" ou "false"
@@ -419,18 +451,64 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
         return true;
       }
       
-      // Tratamento para números - verificar se é válido
+      // Tratamento para números - verificar se é válido e formatar corretamente
       if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
-        if ((key.includes('price') || key.includes('Price')) && Number(value) <= 0 && isRequired) {
-          console.log(`Preço inválido (deve ser maior que 0): ${value}`);
-          return false;
+        const numValue = Number(value);
+        
+        // Tratamento especial para preços
+        if (key.includes('price') || key.includes('Price')) {
+          if (numValue <= 0) {
+            if (isRequired) {
+              console.log(`Preço inválido (deve ser maior que 0): ${value}, usando valor padrão 0.01`);
+              formData.append(key, "0.01");
+              return true;
+            } else if (numValue === 0) {
+              // Preço zero para campos opcionais é aceitável (sem desconto)
+              formData.append(key, "0.00");
+              return true;
+            }
+          }
+          
+          // Formatar preço com 2 casas decimais
+          formData.append(key, numValue.toFixed(2));
+          return true;
         }
         
+        // Para outros campos numéricos que não são preços
         formData.append(key, value.toString());
         return true;
       }
       
-      // Para outros tipos, usar string
+      // Tratamento especial para objetos e outros tipos complexos
+      if (typeof value === 'object' && value !== null) {
+        try {
+          if (Array.isArray(value)) {
+            // Para arrays, serializar como JSON
+            formData.append(key, JSON.stringify(value));
+          } else if (value instanceof Date) {
+            // Para datas, usar formato ISO padrão
+            formData.append(key, value.toISOString());
+          } else if (value instanceof File || value instanceof Blob) {
+            // Para arquivos e blobs, anexar diretamente
+            formData.append(key, value);
+          } else {
+            // Para objetos genéricos, serializar como JSON
+            formData.append(key, JSON.stringify(value));
+          }
+          return true;
+        } catch (error) {
+          console.error(`Erro ao serializar objeto para campo '${key}':`, error);
+          
+          // Mesmo com erro, enviar string vazia para campos críticos
+          if (defaultValues[key] !== undefined) {
+            formData.append(key, defaultValues[key]);
+            return true;
+          }
+          return false;
+        }
+      }
+      
+      // Para outros tipos primitivos (symbol, function, etc), converter para string
       formData.append(key, String(value));
       return true;
     };
@@ -442,55 +520,73 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     
     // Campos obrigatórios - validação completa antes de enviar
     // Como vimos no erro: "null value in column \"name\" of relation \"products\" violates not-null constraint"
+    const validationErrors: { field: string; message: string }[] = [];
+    
+    // Verificar todos os campos obrigatórios de uma vez
     if (!data.name || data.name.trim() === '') {
-      setIsLoading(false);
-      toast({
-        title: "Nome obrigatório",
-        description: "O nome do produto não pode ficar em branco.",
-        variant: "destructive",
+      validationErrors.push({
+        field: "name",
+        message: "O nome do produto não pode ficar em branco."
       });
-      return;
     }
 
     if (!data.description || data.description.trim() === '') {
-      setIsLoading(false);
-      toast({
-        title: "Descrição obrigatória",
-        description: "A descrição do produto não pode ficar em branco.",
-        variant: "destructive",
+      validationErrors.push({
+        field: "description",
+        message: "A descrição do produto não pode ficar em branco."
       });
-      return;
     }
 
     if (!data.slug || data.slug.trim() === '') {
-      setIsLoading(false);
-      toast({
-        title: "Slug obrigatório",
-        description: "O slug do produto não pode ficar em branco.",
-        variant: "destructive",
+      validationErrors.push({
+        field: "slug",
+        message: "O slug do produto não pode ficar em branco."
       });
-      return;
     }
 
     if (!data.price || parseFloat(data.price) <= 0) {
-      setIsLoading(false);
-      toast({
-        title: "Preço obrigatório",
-        description: "O preço do produto deve ser maior que zero.",
-        variant: "destructive",
+      validationErrors.push({
+        field: "price",
+        message: "O preço do produto deve ser maior que zero."
       });
-      return;
     }
 
     if (!data.categoryId) {
+      validationErrors.push({
+        field: "categoryId",
+        message: "Você precisa selecionar uma categoria para o produto."
+      });
+    }
+    
+    // Se houver erros, mostrar e retornar
+    if (validationErrors.length > 0) {
       setIsLoading(false);
+      
+      // Mostrar o primeiro erro em um toast
       toast({
-        title: "Categoria obrigatória",
-        description: "Você precisa selecionar uma categoria para o produto.",
+        title: `Campo ${validationErrors[0].field} obrigatório`,
+        description: validationErrors[0].message,
         variant: "destructive",
       });
+      
+      // Se houver mais erros, logar para debug
+      if (validationErrors.length > 1) {
+        console.warn(`Há ${validationErrors.length} campos obrigatórios faltando:`);
+        validationErrors.forEach((error, index) => {
+          console.warn(`${index + 1}. ${error.field}: ${error.message}`);
+          
+          // Destacar campo com erro no formulário
+          form.setError(error.field as any, { 
+            type: "manual", 
+            message: error.message 
+          });
+        });
+      }
+      
       return;
     }
+    
+    // Se todas as validações passarem, prosseguir com valores padrão de segurança
 
     // Nome tem validação extra para garantir que não será nulo
     formData.append("name", data.name.trim());
