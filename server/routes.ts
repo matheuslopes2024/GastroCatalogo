@@ -807,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.post("/api/products", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("productImage"), async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
       
@@ -826,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/products/:id", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.patch("/api/products/:id", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("productImage"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -3067,7 +3067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products/:productId/images", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.post("/api/products/:productId/images", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("image"), async (req, res) => {
     try {
       const productId = parseInt(req.params.productId);
       const product = await storage.getProduct(productId);
@@ -3127,7 +3127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.patch("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("image"), async (req, res) => {
     try {
       const imageId = parseInt(req.params.imageId);
       const image = await storage.getProductImage(imageId);
@@ -3153,7 +3153,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateProductImagesNotPrimary(image.productId, imageId);
       }
       
-      const updatedImage = await storage.updateProductImage(imageId, req.body);
+      // Preparar os dados para atualização
+      const updateData = { ...req.body };
+      
+      // Processar a imagem, se enviada
+      if (req.file) {
+        // Converter a imagem para base64
+        const imageData = req.file.buffer.toString('base64');
+        const imageType = req.file.mimetype;
+        
+        // Adicionar dados da imagem ao objeto de atualização
+        updateData.imageData = imageData;
+        updateData.imageType = imageType;
+        updateData.filename = req.file.originalname;
+        updateData.filesize = req.file.size;
+        
+        console.log(`Imagem processada: ${req.file.originalname} (${req.file.size} bytes)`);
+      }
+      
+      const updatedImage = await storage.updateProductImage(imageId, updateData);
       res.json(updatedImage);
     } catch (error) {
       console.error("Erro ao atualizar imagem do produto:", error);
@@ -3162,7 +3180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota específica para definir uma imagem como principal
-  app.put("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), async (req, res) => {
+  app.put("/api/products/images/:imageId", checkRole([UserRole.SUPPLIER, UserRole.ADMIN]), upload.single("image"), async (req, res) => {
     try {
       const imageId = parseInt(req.params.imageId);
       const image = await storage.getProductImage(imageId);
