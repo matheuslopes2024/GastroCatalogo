@@ -27,9 +27,20 @@ interface ProductInventoryInfoProps {
 export const ProductInventoryInfo = ({ productId, showDetailed = false }: ProductInventoryInfoProps) => {
   const [animateProgress, setAnimateProgress] = useState(false);
   
-  const { data: inventory, isLoading, error } = useQuery<InventoryInfo>({
+  const { data: inventory, isLoading, error, isError } = useQuery<InventoryInfo>({
     queryKey: [`/api/products/${productId}/inventory`],
     enabled: !!productId,
+    retry: (failureCount, error) => {
+      // Não tenta novamente se o erro for 404 (inventário não encontrado)
+      if (error instanceof Error) {
+        const fetchError = error as any;
+        if (fetchError.status === 404) {
+          return false;
+        }
+      }
+      // Para outros erros, tenta até 2 vezes 
+      return failureCount < 2;
+    }
   });
   
   useEffect(() => {
