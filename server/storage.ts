@@ -1066,113 +1066,228 @@ export class MemStorage implements IStorage {
     action?: string;
     batchId?: string;
   }): Promise<InventoryHistory[]> {
-    let history = Array.from(this.inventoryHistory.values());
-    
-    // Aplicar filtros
-    if (options) {
-      if (options.productId) {
-        history = history.filter(record => record.productId === options.productId);
+    try {
+      // Construir a consulta ao banco de dados
+      let query = db.select().from(inventoryHistory);
+      
+      // Aplicar filtros
+      if (options) {
+        if (options.productId) {
+          query = query.where(eq(inventoryHistory.productId, options.productId));
+        }
+        
+        if (options.supplierId) {
+          query = query.where(eq(inventoryHistory.supplierId, options.supplierId));
+        }
+        
+        if (options.action) {
+          query = query.where(eq(inventoryHistory.action, options.action));
+        }
+        
+        if (options.batchId) {
+          query = query.where(eq(inventoryHistory.batchId, options.batchId));
+        }
       }
       
-      if (options.supplierId) {
-        history = history.filter(record => record.supplierId === options.supplierId);
+      // Ordenar por data (mais recentes primeiro)
+      query = query.orderBy(desc(inventoryHistory.createdAt));
+      
+      const dbHistory = await query;
+      console.log(`Encontrados ${dbHistory.length} registros de histórico no banco de dados`);
+      
+      if (dbHistory.length > 0) {
+        return dbHistory;
       }
       
-      if (options.action) {
-        history = history.filter(record => record.action === options.action);
+      // Fallback para dados em memória (legado)
+      let memoryHistory = Array.from(this.inventoryHistory.values());
+      
+      // Aplicar filtros
+      if (options) {
+        if (options.productId) {
+          memoryHistory = memoryHistory.filter(record => record.productId === options.productId);
+        }
+        
+        if (options.supplierId) {
+          memoryHistory = memoryHistory.filter(record => record.supplierId === options.supplierId);
+        }
+        
+        if (options.action) {
+          memoryHistory = memoryHistory.filter(record => record.action === options.action);
+        }
+        
+        if (options.batchId) {
+          memoryHistory = memoryHistory.filter(record => record.batchId === options.batchId);
+        }
       }
       
-      if (options.batchId) {
-        history = history.filter(record => record.batchId === options.batchId);
+      // Ordenar por data (mais recentes primeiro)
+      memoryHistory.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      if (memoryHistory.length > 0) {
+        console.log(`Encontrados ${memoryHistory.length} registros de histórico em memória. Migrando para o banco de dados...`);
+        
+        // Migrar registros encontrados para o banco de dados
+        const migratedHistory: InventoryHistory[] = [];
+        for (const record of memoryHistory) {
+          try {
+            const [dbHistoryRecord] = await db.insert(inventoryHistory)
+              .values({
+                productId: record.productId,
+                supplierId: record.supplierId,
+                userId: record.userId,
+                quantity: record.quantity,
+                previousQuantity: record.previousQuantity,
+                currentQuantity: record.currentQuantity,
+                action: record.action,
+                notes: record.notes,
+                batchId: record.batchId,
+                createdAt: record.createdAt
+              })
+              .returning();
+              
+            if (dbHistoryRecord) {
+              migratedHistory.push(dbHistoryRecord);
+            }
+          } catch (migrationError) {
+            console.error(`Erro ao migrar registro de histórico para o banco: ${migrationError}`);
+          }
+        }
+        
+        return migratedHistory.length > 0 ? migratedHistory : memoryHistory;
       }
+      
+      return [];
+    } catch (error) {
+      console.error("Erro ao buscar histórico de inventário:", error);
+      
+      // Em caso de erro no banco, usar dados em memória como fallback
+      let history = Array.from(this.inventoryHistory.values());
+      
+      // Aplicar filtros
+      if (options) {
+        if (options.productId) {
+          history = history.filter(record => record.productId === options.productId);
+        }
+        
+        if (options.supplierId) {
+          history = history.filter(record => record.supplierId === options.supplierId);
+        }
+        
+        if (options.action) {
+          history = history.filter(record => record.action === options.action);
+        }
+        
+        if (options.batchId) {
+          history = history.filter(record => record.batchId === options.batchId);
+        }
+      }
+      
+      // Ordenar por data (mais recentes primeiro)
+      history.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      console.warn("Usando dados em memória como fallback devido a erro no banco");
+      return history;
     }
-    
-    // Ordenar por data (mais recentes primeiro)
-    history.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return history;
   }
   
   async createInventoryHistory(history: InsertInventoryHistory): Promise<InventoryHistory> {
-    const id = ++this.currentInventoryHistoryId;
-    const newHistory: InventoryHistory = {
-      id,
-      ...history,
-      createdAt: new Date()
-    };
-    
-    this.inventoryHistory.set(id, newHistory);
-    return newHistory;
+    try {
+      // Inserir no banco de dados
+      const [dbHistory] = await db.insert(inventoryHistory)
+        .values({
+          ...history,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log(`Novo registro de histórico criado no banco de dados para o produto ${history.productId}`);
+      return dbHistory;
+    } catch (error) {
+      console.error("Erro ao criar registro de histórico no banco:", error);
+      
+      // Fallback para armazenamento em memória
+      const id = ++this.currentInventoryHistoryId;
+      const newHistory: InventoryHistory = {
+        id,
+        ...history,
+        createdAt: new Date()
+      };
+      
+      this.inventoryHistory.set(id, newHistory);
+      return newHistory;
+    }
   }
   
   // Método auxiliar para verificar níveis de estoque e criar alertas
   private async checkStockLevelsAndCreateAlerts(inventory: ProductInventory): Promise<void> {
     try {
-      const product = this.products.get(inventory.productId);
+      // Buscar o produto no banco de dados
+      const [product] = await db.select().from(products).where(eq(products.id, inventory.productId));
+      
       if (!product) {
+        console.warn(`Produto com ID ${inventory.productId} não encontrado ao verificar níveis de estoque`);
         return;
       }
       
       // Verificar estoque baixo
       if (inventory.quantity > 0 && inventory.quantity <= inventory.lowStockThreshold) {
-        // Verificar se já existe um alerta ativo para este produto
-        let existingAlert = false;
-        for (const alert of this.stockAlerts.values()) {
-          if (
-            alert.productId === inventory.productId &&
-            alert.supplierId === inventory.supplierId &&
-            alert.type === StockAlertType.LOW_STOCK &&
-            !alert.resolved
-          ) {
-            existingAlert = true;
-            break;
-          }
-        }
+        // Verificar se já existe um alerta ativo para este produto no banco
+        const existingAlerts = await db.select()
+          .from(stockAlerts)
+          .where(
+            and(
+              eq(stockAlerts.productId, inventory.productId),
+              eq(stockAlerts.supplierId, inventory.supplierId),
+              eq(stockAlerts.alertType, StockAlertType.LOW_STOCK),
+              isNull(stockAlerts.resolvedAt)
+            )
+          );
         
-        if (!existingAlert) {
+        if (existingAlerts.length === 0) {
+          console.log(`Criando alerta de estoque baixo para o produto ${product.name} (${inventory.quantity} unidades)`);
+          
           await this.createStockAlert({
             productId: inventory.productId,
             supplierId: inventory.supplierId,
-            type: StockAlertType.LOW_STOCK,
+            alertType: StockAlertType.LOW_STOCK,
             message: `Estoque baixo: ${product.name} (${inventory.quantity} unidades)`,
-            threshold: inventory.lowStockThreshold,
-            currentLevel: inventory.quantity,
+            quantity: inventory.quantity,
+            previousQuantity: null,
             priority: 2,
             isRead: false,
-            resolved: false,
-            userId: inventory.userId || null
+            isResolved: false
           });
         }
       }
       
       // Verificar estoque esgotado
       if (inventory.quantity <= 0) {
-        // Verificar se já existe um alerta ativo para este produto
-        let existingAlert = false;
-        for (const alert of this.stockAlerts.values()) {
-          if (
-            alert.productId === inventory.productId &&
-            alert.supplierId === inventory.supplierId &&
-            alert.type === StockAlertType.OUT_OF_STOCK &&
-            !alert.resolved
-          ) {
-            existingAlert = true;
-            break;
-          }
-        }
+        // Verificar se já existe um alerta ativo para este produto no banco
+        const existingAlerts = await db.select()
+          .from(stockAlerts)
+          .where(
+            and(
+              eq(stockAlerts.productId, inventory.productId),
+              eq(stockAlerts.supplierId, inventory.supplierId),
+              eq(stockAlerts.alertType, StockAlertType.OUT_OF_STOCK),
+              isNull(stockAlerts.resolvedAt)
+            )
+          );
         
-        if (!existingAlert) {
+        if (existingAlerts.length === 0) {
+          console.log(`Criando alerta de estoque esgotado para o produto ${product.name}`);
+          
           await this.createStockAlert({
             productId: inventory.productId,
             supplierId: inventory.supplierId,
-            type: StockAlertType.OUT_OF_STOCK,
+            alertType: StockAlertType.OUT_OF_STOCK,
             message: `Estoque esgotado: ${product.name}`,
-            threshold: 0,
-            currentLevel: 0,
+            quantity: 0,
+            previousQuantity: null,
             priority: 1, // Prioridade alta
             isRead: false,
-            resolved: false,
-            userId: inventory.userId || null
+            isResolved: false
           });
         }
       }
