@@ -39,11 +39,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
-// Definição do esquema do formulário
+// Definição do esquema do formulário - com validações mais rigorosas
 const productSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
-  description: z.string().optional(),
-  slug: z.string().optional(),
+  description: z.string().min(5, { message: "Descrição é obrigatória e deve ter pelo menos 5 caracteres" }),
+  slug: z.string().min(3, { message: "Slug deve ter pelo menos 3 caracteres" }).or(z.literal("")),
   price: z.string().min(1, { message: "Preço é obrigatório" }),
   originalPrice: z.string().optional(),
   discount: z.string().optional(),
@@ -440,13 +440,43 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       formData.append("id", productId.toString());
     }
     
-    // Campos obrigatórios - nome e categoria não podem ser nulos
+    // Campos obrigatórios - validação completa antes de enviar
     // Como vimos no erro: "null value in column \"name\" of relation \"products\" violates not-null constraint"
     if (!data.name || data.name.trim() === '') {
       setIsLoading(false);
       toast({
         title: "Nome obrigatório",
         description: "O nome do produto não pode ficar em branco.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.description || data.description.trim() === '') {
+      setIsLoading(false);
+      toast({
+        title: "Descrição obrigatória",
+        description: "A descrição do produto não pode ficar em branco.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.slug || data.slug.trim() === '') {
+      setIsLoading(false);
+      toast({
+        title: "Slug obrigatório",
+        description: "O slug do produto não pode ficar em branco.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.price || parseFloat(data.price) <= 0) {
+      setIsLoading(false);
+      toast({
+        title: "Preço obrigatório",
+        description: "O preço do produto deve ser maior que zero.",
         variant: "destructive",
       });
       return;
@@ -466,11 +496,11 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
     formData.append("name", data.name.trim());
     hasValidData = true;
     
-    // Demais campos obrigatórios
-    safeAppend("description", data.description?.trim());
-    if (safeAppend("slug", data.slug?.trim(), true)) hasValidData = true;
-    if (safeAppend("price", data.price, true)) hasValidData = true;
-    formData.append("categoryId", data.categoryId.toString());
+    // Demais campos obrigatórios - garantindo que serão enviados com trimming seguro
+    formData.append("description", data.description?.trim() || "");
+    formData.append("slug", data.slug?.trim() || "");
+    formData.append("price", data.price?.toString() || "0");
+    formData.append("categoryId", data.categoryId?.toString() || "1");
     hasValidData = true;
     
     // Campos opcionais com validação
