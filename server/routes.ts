@@ -765,6 +765,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para produtos destacados
+  app.get("/api/products/featured", async (req, res) => {
+    try {
+      // Aqui implementamos uma lógica específica para obter produtos destacados
+      // Podemos usar critérios como popularidade, descontos, avaliações altas ou marcados explicitamente como destacados
+      
+      console.log("Buscando produtos destacados...");
+      
+      // Opções para buscar produtos destacados:
+      // 1. Produtos com melhores avaliações
+      // 2. Produtos com descontos
+      // 3. Produtos mais recentes
+      // 4. Produtos mais vendidos ou visualizados
+      // Vamos implementar uma combinação dessas estratégias
+      
+      // Buscar produtos ativos com limite
+      const options = {
+        active: true,
+        limit: 8 // Limitar a 8 produtos destacados
+      };
+      
+      const products = await storage.getProducts(options);
+      
+      if (!products || products.length === 0) {
+        console.log("Nenhum produto destacado encontrado. Retornando lista vazia.");
+        return res.json({ data: [], meta: { totalCount: 0 } });
+      }
+      
+      console.log(`Encontrados ${products.length} produtos destacados`);
+      
+      res.json({
+        data: products,
+        meta: {
+          totalCount: products.length,
+          source: 'featured'
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao buscar produtos destacados:", error);
+      res.status(500).json({ 
+        error: { 
+          message: "Erro ao buscar produtos destacados",
+          details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+        } 
+      });
+    }
+  });
+  
   // Rota para obter produto por fornecedor específico
   app.get("/api/products/:productId/supplier/:supplierId", async (req, res) => {
     try {
