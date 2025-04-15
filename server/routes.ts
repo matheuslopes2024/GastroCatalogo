@@ -1586,6 +1586,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para obter produtos com estoque baixo do fornecedor
+  app.get("/api/supplier/products/low-stock", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      
+      // Verificar se o fornecedor existe
+      if (!supplierId) {
+        return res.status(400).json({ message: "ID de fornecedor inválido" });
+      }
+      
+      // Buscar produtos com estoque baixo
+      const lowStockProducts = await storage.getLowStockProducts(supplierId);
+      
+      // Enriquecer os produtos com informações adicionais
+      const enhancedProducts = await Promise.all(lowStockProducts.map(async (product) => {
+        // Buscar imagens do produto
+        const images = await storage.getProductImages(product.id);
+        const primaryImage = images.find(img => img.isPrimary) || images[0];
+        
+        // Calcular percentual de estoque
+        let stockPercentage = 0;
+        if (product.stock !== null && product.lowStockThreshold !== null && product.lowStockThreshold > 0) {
+          stockPercentage = Math.round((product.stock / product.lowStockThreshold) * 100);
+        }
+        
+        return {
+          ...product,
+          imageUrl: primaryImage?.imageUrl || product.imageUrl || 'https://via.placeholder.com/150?text=Produto',
+          stockPercentage,
+          // Status formatado para exibição
+          statusText: product.stock === 0 ? 'Esgotado' : 
+                     (product.stock && product.lowStockThreshold && product.stock < product.lowStockThreshold) 
+                     ? 'Estoque baixo' : 'Em estoque'
+        };
+      }));
+      
+      return res.json(enhancedProducts);
+    } catch (error) {
+      console.error("Erro ao buscar produtos com estoque baixo:", error);
+      res.status(500).json({ message: "Erro ao buscar produtos com estoque baixo" });
+    }
+  });
+  
+  // Rota para atualização em massa de produtos
+  app.post("/api/supplier/products/bulk-update", checkRole([UserRole.SUPPLIER]), async (req, res) => {
+    try {
+      const supplierId = req.user!.id;
+      const { productIds, updates } = req.body;
+      
+      if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({ 
+          message: "É necessário fornecer uma lista de IDs de produtos para atualização" 
+        });
+      }
+      
+      // Verificar se todos os produtos pertencem ao fornecedor
+      const productsToUpdate = await Promise.all(
+        productIds.map(id => storage.getProduct(id))
+      );
+      
+      const invalidProducts = productsToUpdate
+        .filter(Boolean)
+        .filter(product => product!.supplierId !== supplierId);
+      
+      if (invalidProducts.length > 0) {
+        return res.status(403).json({ 
+          message: "Você não tem permissão para editar alguns dos produtos selecionados",
+          invalidProductIds: invalidProducts.map(p => p!.id)
+        });
+      }
+      
+      // Preparar os dados para atualização em massa
+      const productsData = productIds.map(id => ({
+        id,
+        ...updates
+      }));
+      
+      // Executar a atualização em massa
+      const results = await storage.updateProductsInBulk(productsData);
+      
+      return res.json({ 
+        success: true, 
+        results,
+        updatedCount: results.filter(r => r.success).length,
+        failedCount: results.filter(r => !r.success).length
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar produtos em massa:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Erro ao atualizar produtos em massa" 
+      });
+    }
+  });
+
   // Rota para dashboard do fornecedor - produtos mais visualizados
   app.get("/api/supplier/dashboard/top-products", checkRole([UserRole.SUPPLIER]), async (req, res) => {
     try {
