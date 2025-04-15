@@ -469,11 +469,29 @@ export default function ProductManagement() {
     setIsDeleteDialogOpen(true);
   };
   
-  // Filter products by search term
-  const filteredProducts = products?.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter products by search term with robust error handling
+  const filteredProducts = useMemo(() => {
+    // Se não houver produtos, retornar array vazio
+    if (!products || !Array.isArray(products)) return [];
+    
+    // Se não houver termo de busca, retornar todos os produtos
+    if (!searchTerm) return products;
+    
+    // Filtrar produtos com verificação de segurança para cada propriedade
+    return products.filter(product => {
+      if (!product) return false;
+      
+      const nameMatch = product.name && typeof product.name === 'string' 
+        ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) 
+        : false;
+        
+      const descriptionMatch = product.description && typeof product.description === 'string'
+        ? product.description.toLowerCase().includes(searchTerm.toLowerCase())
+        : false;
+        
+      return nameMatch || descriptionMatch;
+    });
+  }, [products, searchTerm]);
   
   const formatCurrency = (price: string | number) => {
     return Number(price).toLocaleString('pt-BR', {
@@ -1022,11 +1040,15 @@ export default function ProductManagement() {
                                 // Fechar o modal de edição e abrir novamente para mostrar a imagem atualizada
                                 setTimeout(() => {
                                   setEditingProduct(undefined);
-                                  const currentProduct = products?.find(p => p.id === editingProduct.id);
-                                  if (currentProduct) {
-                                    setTimeout(() => {
-                                      setEditingProduct(currentProduct);
-                                    }, 300);
+                                  
+                                  // Verificação robusta antes de procurar o produto no array
+                                  if (products && Array.isArray(products) && editingProduct && editingProduct.id) {
+                                    const currentProduct = products.find(p => p && p.id === editingProduct.id);
+                                    if (currentProduct) {
+                                      setTimeout(() => {
+                                        setEditingProduct(currentProduct);
+                                      }, 300);
+                                    }
                                   }
                                 }, 500);
                               }}
