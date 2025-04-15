@@ -262,7 +262,7 @@ export function ProductGrid() {
         setProducts(productsArray);
         setLoading(false);
       } catch (error) {
-        console.error('Erro ao buscar produtos destacados:', error);
+        console.error('Erro ao buscar produtos destacados:', error instanceof Error ? error.message : 'Erro desconhecido');
         // Garantir que temos algum feedback visual para o usuário
         setProducts([]);
         setLoading(false);
@@ -270,7 +270,7 @@ export function ProductGrid() {
     };
 
     fetchProducts().catch(error => {
-      console.error('Erro não tratado ao buscar produtos destacados:', error);
+      console.error('Erro não tratado ao buscar produtos destacados:', error instanceof Error ? error.message : 'Erro desconhecido');
       setProducts([]);
       setLoading(false);
     });
