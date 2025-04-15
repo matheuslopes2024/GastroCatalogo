@@ -1,34 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import {
-  History,
-  RotateCcw,
-  Search,
-  Filter,
-  Calendar,
-  Package,
-  ArrowDown,
-  ArrowUp,
-  Pencil,
-  RefreshCw,
-  MinusCircle,
-  PlusCircle,
-  FileBarChart,
-  FileCheck,
-  Copy
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -37,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -45,481 +30,1106 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "wouter";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Pagination } from "@/components/ui/pagination";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  CalendarIcon,
+  CircleArrowDown,
+  CircleArrowUp,
+  Clock,
+  Download,
+  Filter,
+  History,
+  Info,
+  Layers,
+  Loader2,
+  PackageOpen,
+  PackagePlus,
+  PanelLeftClose,
+  Pencil,
+  RefreshCw,
+  Search,
+  Settings,
+  Truck,
+  X,
+  ChevronRight,
+  PackageMinus,
+  FileText,
+  FileDown,
+  MinusCircle,
+  PlusCircle,
+  RotateCcw,
+  BarChart,
+  FileSpreadsheet,
+} from "lucide-react";
+import { format, subDays, isSameDay, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export function InventoryHistory() {
+interface InventoryHistoryProps {
+  productId?: number;
+  embedded?: boolean;
+}
+
+// Tipos para o histórico de inventário
+type HistoryAction =
+  | "add"
+  | "remove"
+  | "adjust"
+  | "restock"
+  | "sale"
+  | "return"
+  | "damage"
+  | "count"
+  | "expiration"
+  | "transfer"
+  | "batch_update";
+
+interface HistoryEntry {
+  id: number;
+  createdAt: string | Date;
+  productId: number;
+  productName: string;
+  action: HistoryAction;
+  quantityBefore: number;
+  quantityAfter: number;
+  difference: number;
+  notes: string | null;
+  reason: string | null;
+  supplierId: number;
+  userId: number;
+  userName: string;
+  batchId: string | null;
+}
+
+// Configurações para exportação
+interface ExportSettings {
+  format: "csv" | "excel";
+  dateRange: "all" | "7days" | "30days" | "custom";
+  customStartDate: Date | null;
+  customEndDate: Date | null;
+  includeProductDetails: boolean;
+  includeUserDetails: boolean;
+  includeNotes: boolean;
+}
+
+export function InventoryHistory({ productId, embedded = false }: InventoryHistoryProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [filterType, setFilterType] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   
-  // Buscar histórico de inventário
-  const { 
-    data: historyEntries, 
+  // Estados
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionFilter, setActionFilter] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(!embedded);
+  const [customDateFrom, setCustomDateFrom] = useState<Date | null>(null);
+  const [customDateTo, setCustomDateTo] = useState<Date | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportSettings, setExportSettings] = useState<ExportSettings>({
+    format: "csv",
+    dateRange: "all",
+    customStartDate: null,
+    customEndDate: null,
+    includeProductDetails: true,
+    includeUserDetails: true,
+    includeNotes: true,
+  });
+  const [historyEntryDetails, setHistoryEntryDetails] = useState<HistoryEntry | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [productFilter, setProductFilter] = useState<string>("");
+  const [products, setProducts] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  
+  // Query para buscar histórico de inventário
+  const {
+    data: historyData,
     isLoading: isLoadingHistory,
-    refetch: refetchHistory
+    refetch: refetchHistory,
   } = useQuery({
-    queryKey: ["/api/supplier/inventory/history", { 
-      action: filterType || undefined,
-      date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
-    }],
+    queryKey: [
+      "/api/supplier/inventory/history",
+      {
+        productId: productId || productFilter,
+        action: actionFilter,
+        dateFrom: getDateFromFilter(),
+        dateTo: customDateTo,
+        page,
+        pageSize,
+      },
+    ],
     enabled: !!user?.id,
   });
-
-  // Filtrar histórico baseado na pesquisa
-  const filteredEntries = historyEntries?.filter((entry: any) => 
-    !searchTerm || 
-    (entry.notes && entry.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    entry.productId.toString().includes(searchTerm) ||
-    entry.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (entry.batchId && entry.batchId.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
-
-  // Calcular índices para paginação
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const paginatedEntries = filteredEntries.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-
-  // Ver detalhes de uma entrada
-  const handleViewDetails = (entry: any) => {
-    setSelectedEntry(entry);
-    setIsDetailsOpen(true);
+  
+  // Query para buscar produtos do fornecedor (para o filtro)
+  const { data: productsData } = useQuery({
+    queryKey: ["/api/supplier/products", { limit: 100, includeInventory: true }],
+    enabled: !!user?.id && !productId && !embedded,
+    onSuccess: (data) => {
+      if (data?.items) {
+        setProducts(data.items);
+      }
+    },
+  });
+  
+  // Função para obter data inicial com base no filtro
+  function getDateFromFilter(): Date | null {
+    switch (dateFilter) {
+      case "7days":
+        return subDays(new Date(), 7);
+      case "30days":
+        return subDays(new Date(), 30);
+      case "custom":
+        return customDateFrom;
+      default:
+        return null;
+    }
+  }
+  
+  // Filtrar histórico baseado na busca
+  const filteredHistory = historyData?.items?.filter((entry: HistoryEntry) => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      entry.productName?.toLowerCase().includes(query) ||
+      entry.notes?.toLowerCase().includes(query) ||
+      entry.userName?.toLowerCase().includes(query) ||
+      entry.batchId?.toLowerCase().includes(query)
+    );
+  });
+  
+  // Função para renderizar ícone da ação de histórico
+  const renderActionIcon = (action: HistoryAction) => {
+    switch (action) {
+      case "add":
+        return <PackagePlus className="h-4 w-4 text-green-500" />;
+      case "remove":
+        return <PackageMinus className="h-4 w-4 text-red-500" />;
+      case "adjust":
+        return <Settings className="h-4 w-4 text-blue-500" />;
+      case "restock":
+        return <Truck className="h-4 w-4 text-purple-500" />;
+      case "sale":
+        return <ArrowUp className="h-4 w-4 text-green-500" />;
+      case "return":
+        return <RotateCcw className="h-4 w-4 text-amber-500" />;
+      case "damage":
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case "count":
+        return <Layers className="h-4 w-4 text-blue-500" />;
+      case "expiration":
+        return <Clock className="h-4 w-4 text-orange-500" />;
+      case "transfer":
+        return <RefreshCw className="h-4 w-4 text-indigo-500" />;
+      case "batch_update":
+        return <FileSpreadsheet className="h-4 w-4 text-cyan-500" />;
+      default:
+        return <Activity className="h-4 w-4" />;
+    }
   };
-
-  // Paginar
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Formatar data
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  
+  // Função para obter rótulo da ação
+  const getActionLabel = (action: HistoryAction) => {
+    switch (action) {
+      case "add":
+        return "Adição";
+      case "remove":
+        return "Remoção";
+      case "adjust":
+        return "Ajuste";
+      case "restock":
+        return "Reposição";
+      case "sale":
+        return "Venda";
+      case "return":
+        return "Devolução";
+      case "damage":
+        return "Danificado";
+      case "count":
+        return "Contagem";
+      case "expiration":
+        return "Expiração";
+      case "transfer":
+        return "Transferência";
+      case "batch_update":
+        return "Atualização em Massa";
+      default:
+        return action;
+    }
   };
-
-  // Formatar diferença de quantidade
-  const formatQuantityDifference = (before: number, after: number) => {
-    const diff = after - before;
-    if (diff > 0) {
+  
+  // Função para formatar data relativa
+  const formatRelativeDate = (date: Date | string) => {
+    if (!date) return "";
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    return formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR });
+  };
+  
+  // Função para formatar data absoluta
+  const formatAbsoluteDate = (date: Date | string) => {
+    if (!date) return "";
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    return format(dateObj, "dd/MM/yyyy HH:mm", { locale: ptBR });
+  };
+  
+  // Função para abrir o diálogo de detalhes
+  const showHistoryEntryDetails = (entry: HistoryEntry) => {
+    setHistoryEntryDetails(entry);
+    setDetailsDialogOpen(true);
+  };
+  
+  // Função para exportar histórico
+  const exportHistory = () => {
+    // Simulação de exportação - em um ambiente real, isso faria uma chamada API
+    // para gerar o arquivo e depois baixá-lo
+    
+    let filename = `historico_estoque_${format(new Date(), "yyyyMMdd")}`;
+    
+    if (exportSettings.format === "csv") {
+      filename += ".csv";
+    } else {
+      filename += ".xlsx";
+    }
+    
+    // Fechando o diálogo
+    setExportDialogOpen(false);
+    
+    // Em um ambiente real, aqui faria o download do arquivo
+    // Por enquanto, mostramos apenas uma mensagem de simulação
+    alert(
+      `Exportação simulada: ${filename} com configurações: ${JSON.stringify(
+        exportSettings,
+        null,
+        2
+      )}`
+    );
+  };
+  
+  // Renderizar indicador de diferença
+  const renderDifference = (difference: number) => {
+    if (difference > 0) {
       return (
-        <span className="text-green-600 flex items-center whitespace-nowrap">
-          <ArrowUp className="inline-block h-3 w-3 mr-1" />
-          +{diff}
-        </span>
+        <div className="flex items-center text-green-500">
+          <PlusCircle className="mr-1 h-3 w-3" />
+          <span>+{difference}</span>
+        </div>
       );
-    } else if (diff < 0) {
+    } else if (difference < 0) {
       return (
-        <span className="text-red-600 flex items-center whitespace-nowrap">
-          <ArrowDown className="inline-block h-3 w-3 mr-1" />
-          {diff}
-        </span>
+        <div className="flex items-center text-red-500">
+          <MinusCircle className="mr-1 h-3 w-3" />
+          <span>{difference}</span>
+        </div>
       );
     } else {
       return (
-        <span className="text-gray-500 flex items-center whitespace-nowrap">
-          0
-        </span>
+        <div className="flex items-center text-muted-foreground">
+          <span>0</span>
+        </div>
       );
     }
   };
-
-  // Obter ícone para a ação
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case "add":
-        return <PlusCircle className="h-4 w-4 text-green-600" />;
-      case "remove":
-        return <MinusCircle className="h-4 w-4 text-red-600" />;
-      case "update":
-        return <Pencil className="h-4 w-4 text-blue-600" />;
-      case "audit":
-        return <FileCheck className="h-4 w-4 text-purple-600" />;
-      case "restock":
-        return <RefreshCw className="h-4 w-4 text-cyan-600" />;
-      case "batch_update":
-        return <Copy className="h-4 w-4 text-amber-600" />;
-      case "import":
-        return <FileBarChart className="h-4 w-4 text-gray-600" />;
-      default:
-        return <RotateCcw className="h-4 w-4 text-gray-600" />;
+  
+  // Função para ir para a próxima página
+  const goToNextPage = () => {
+    if (historyData?.hasMore) {
+      setPage(page + 1);
     }
   };
-
-  // Formatar tipo de ação
-  const formatAction = (action: string) => {
-    switch (action) {
-      case "add":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center">
-          <PlusCircle className="mr-1 h-3 w-3" />
-          Adição
-        </Badge>;
-      case "remove":
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center">
-          <MinusCircle className="mr-1 h-3 w-3" />
-          Remoção
-        </Badge>;
-      case "update":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center">
-          <Pencil className="mr-1 h-3 w-3" />
-          Atualização
-        </Badge>;
-      case "audit":
-        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 flex items-center">
-          <FileCheck className="mr-1 h-3 w-3" />
-          Auditoria
-        </Badge>;
-      case "restock":
-        return <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200 flex items-center">
-          <RefreshCw className="mr-1 h-3 w-3" />
-          Reposição
-        </Badge>;
-      case "batch_update":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center">
-          <Copy className="mr-1 h-3 w-3" />
-          Atualização em Lote
-        </Badge>;
-      case "import":
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 flex items-center">
-          <FileBarChart className="mr-1 h-3 w-3" />
-          Importação
-        </Badge>;
-      default:
-        return <Badge variant="outline">{action}</Badge>;
+  
+  // Função para ir para a página anterior
+  const goToPreviousPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
     }
   };
-
+  
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input 
-            placeholder="Buscar por produto, notas ou lote..." 
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex gap-2">
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[180px]">
-              <div className="flex items-center">
-                <Filter className="mr-2 h-4 w-4" />
-                <span>{filterType ? 'Filtrar por ação' : 'Todas as ações'}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
-              <SelectItem value="add">Adição</SelectItem>
-              <SelectItem value="remove">Remoção</SelectItem>
-              <SelectItem value="update">Atualização</SelectItem>
-              <SelectItem value="audit">Auditoria</SelectItem>
-              <SelectItem value="restock">Reposição</SelectItem>
-              <SelectItem value="batch_update">Atualização em Lote</SelectItem>
-              <SelectItem value="import">Importação</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className={embedded ? "" : "space-y-6"}>
+      {!embedded && (
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Histórico de Inventário</h2>
+            <p className="text-muted-foreground">
+              Visualize todas as alterações de estoque
+            </p>
+          </div>
           
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="flex items-center"
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                {selectedDate ? (
-                  format(selectedDate, 'dd/MM/yyyy')
-                ) : (
-                  "Selecionar Data"
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                locale={ptBR}
-                className="border rounded-md"
-                footer={
-                  <div className="flex justify-between items-center p-2 border-t">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setSelectedDate(undefined)}
-                    >
-                      Limpar
-                    </Button>
-                    
-                    <Button 
-                      variant="default" 
-                      size="sm"
-                      onClick={() => setSelectedDate(new Date())}
-                    >
-                      Hoje
-                    </Button>
-                  </div>
-                }
-              />
-            </PopoverContent>
-          </Popover>
-          
-          <Button 
-            variant="outline" 
-            onClick={() => refetchHistory()}
-            className="flex items-center"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Atualizar
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetchHistory()}
+              className="h-9"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Atualizar
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setExportDialogOpen(true)}
+              className="h-9"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <History className="mr-2 h-5 w-5 text-blue-600" />
-            Histórico de Inventário
-          </CardTitle>
-          <CardDescription>
-            Monitore todas as alterações realizadas no seu inventário de produtos.
-          </CardDescription>
-        </CardHeader>
+      <Card className={embedded ? "border-0 shadow-none" : ""}>
+        {!embedded && (
+          <CardHeader className="pb-3">
+            <CardTitle>Registro de Atividades de Estoque</CardTitle>
+            <CardDescription>
+              Acompanhe as movimentações, ajustes e atualizações de inventário
+            </CardDescription>
+          </CardHeader>
+        )}
         
-        <CardContent>
-          {isLoadingHistory ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-md" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                  </div>
-                </div>
-              ))}
+        <CardContent className={embedded ? "p-0" : ""}>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-3">
+              <div className="relative w-full sm:max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar no histórico..."
+                  className="pl-8 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              {!embedded && (
+                <Button
+                  variant="outline"
+                  className="gap-1 h-9"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                  {showFilters ? <PanelLeftClose className="h-4 w-4 ml-1" /> : <ChevronRight className="h-4 w-4 ml-1" />}
+                </Button>
+              )}
             </div>
-          ) : filteredEntries.length > 0 ? (
-            <>
-              <div className="rounded-md border">
+            
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {!productId && (
+                  <div>
+                    <Label htmlFor="product-filter" className="text-xs">Produto</Label>
+                    <Select
+                      value={productFilter}
+                      onValueChange={setProductFilter}
+                    >
+                      <SelectTrigger id="product-filter" className="h-9">
+                        <SelectValue placeholder="Todos os produtos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos os produtos</SelectItem>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
+                            {product.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                <div>
+                  <Label htmlFor="action-filter" className="text-xs">Tipo de Ação</Label>
+                  <Select
+                    value={actionFilter}
+                    onValueChange={setActionFilter}
+                  >
+                    <SelectTrigger id="action-filter" className="h-9">
+                      <SelectValue placeholder="Todas as ações" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas as ações</SelectItem>
+                      <SelectItem value="add">Adição</SelectItem>
+                      <SelectItem value="remove">Remoção</SelectItem>
+                      <SelectItem value="adjust">Ajuste</SelectItem>
+                      <SelectItem value="restock">Reposição</SelectItem>
+                      <SelectItem value="sale">Venda</SelectItem>
+                      <SelectItem value="return">Devolução</SelectItem>
+                      <SelectItem value="damage">Danificado</SelectItem>
+                      <SelectItem value="count">Contagem</SelectItem>
+                      <SelectItem value="expiration">Expiração</SelectItem>
+                      <SelectItem value="transfer">Transferência</SelectItem>
+                      <SelectItem value="batch_update">Atualização em Massa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="date-filter" className="text-xs">Período</Label>
+                  <Select
+                    value={dateFilter}
+                    onValueChange={setDateFilter}
+                  >
+                    <SelectTrigger id="date-filter" className="h-9">
+                      <SelectValue placeholder="Selecione o período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todo o histórico</SelectItem>
+                      <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                      <SelectItem value="custom">Período personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {dateFilter === "custom" && (
+                  <div className="sm:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    <div>
+                      <Label htmlFor="date-from" className="text-xs">Data inicial</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal h-9"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {customDateFrom ? (
+                              format(customDateFrom, "dd/MM/yyyy")
+                            ) : (
+                              <span>Selecione a data inicial</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={customDateFrom}
+                            onSelect={setCustomDateFrom}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="date-to" className="text-xs">Data final</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal h-9"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {customDateTo ? (
+                              format(customDateTo, "dd/MM/yyyy")
+                            ) : (
+                              <span>Selecione a data final</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={customDateTo}
+                            onSelect={setCustomDateTo}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="sm:col-span-3 flex justify-end gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setActionFilter("");
+                      setDateFilter("all");
+                      setProductFilter("");
+                      setCustomDateFrom(null);
+                      setCustomDateTo(null);
+                      setSearchQuery("");
+                      setPage(1);
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setPage(1);
+                      refetchHistory();
+                    }}
+                  >
+                    Aplicar Filtros
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div>
+              <ScrollArea className={embedded ? "h-[350px]" : "h-[500px]"}>
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
-                      <TableHead>Ação</TableHead>
+                      <TableHead className="w-[50px]">Ação</TableHead>
                       <TableHead>Produto</TableHead>
-                      <TableHead>Alteração</TableHead>
-                      <TableHead>Motivo</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-center w-[90px]">Qde Anterior</TableHead>
+                      <TableHead className="text-center w-[90px]">Nova Qde</TableHead>
+                      <TableHead className="text-center w-[80px]">Diferença</TableHead>
+                      <TableHead className="w-[180px]">Usuário</TableHead>
+                      <TableHead className="w-[100px]">Data</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedEntries.map((entry: any) => (
-                      <TableRow key={entry.id}>
-                        <TableCell>
-                          {formatAction(entry.action)}
-                        </TableCell>
-                        <TableCell>
-                          <Link href={`/produto/${entry.productId}`}>
-                            <a className="flex items-center text-blue-600 hover:underline">
-                              #{entry.productId}
-                            </a>
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
-                                {formatQuantityDifference(entry.quantityBefore, entry.quantityAfter)}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                ({entry.quantityBefore} → {entry.quantityAfter})
-                              </span>
+                    {isLoadingHistory ? (
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-2">
+                              <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse" />
+                              <div className="w-1/2 h-3 bg-gray-200 rounded animate-pulse" />
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-12 h-4 mx-auto bg-gray-200 rounded animate-pulse" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-12 h-4 mx-auto bg-gray-200 rounded animate-pulse" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-12 h-4 mx-auto bg-gray-200 rounded animate-pulse" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-20 h-4 bg-gray-200 rounded animate-pulse" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-20 h-4 bg-gray-200 rounded animate-pulse" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-8 h-8 bg-gray-200 rounded animate-pulse" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : filteredHistory?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-32 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <History className="h-8 w-8 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground">
+                              Nenhum registro encontrado
+                            </p>
+                            {searchQuery && (
+                              <Button
+                                variant="link"
+                                onClick={() => setSearchQuery("")}
+                                className="mt-2"
+                              >
+                                Limpar busca
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="max-w-xs truncate">
-                            {entry.reason || "Sem motivo especificado"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(entry.createdAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(entry)}
-                            className="h-8 px-2"
-                          >
+                      </TableRow>
+                    ) : (
+                      filteredHistory?.map((entry: HistoryEntry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell>
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger>
-                                  Ver Detalhes
+                                <TooltipTrigger asChild>
+                                  <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center">
+                                    {renderActionIcon(entry.action)}
+                                  </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Ver detalhes completos</p>
+                                  <p>{getActionLabel(entry.action)}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{entry.productName}</p>
+                              {entry.batchId && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <span>Lote: {entry.batchId}</span>
+                                </span>
+                              )}
+                              {entry.notes && (
+                                <span className="text-xs text-muted-foreground line-clamp-1">
+                                  {entry.notes}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-mono">
+                            {entry.quantityBefore}
+                          </TableCell>
+                          <TableCell className="text-center font-mono">
+                            {entry.quantityAfter}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {renderDifference(entry.difference)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {entry.userName}
+                              {entry.reason && (
+                                <div className="text-xs text-muted-foreground">
+                                  Motivo: {entry.reason}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-sm text-muted-foreground">
+                                    {formatRelativeDate(entry.createdAt)}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{formatAbsoluteDate(entry.createdAt)}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => showHistoryEntryDetails(entry)}
+                            >
+                              <Info className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
-              </div>
+              </ScrollArea>
               
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-4">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={paginate}
-                  />
+              {/* Paginação */}
+              {(page > 1 || historyData?.hasMore) && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Página {page} de {historyData?.totalPages || "?"}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
+                      disabled={page <= 1}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
+                      disabled={!historyData?.hasMore}
+                    >
+                      Próxima
+                    </Button>
+                  </div>
                 </div>
               )}
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="bg-blue-50 p-3 rounded-full mb-2">
-                <History className="h-8 w-8 text-blue-500" />
-              </div>
-              <h3 className="text-lg font-medium">Nenhum registro encontrado</h3>
-              <p className="text-gray-500 mt-1 max-w-md">
-                {searchTerm
-                  ? `Não encontramos registros correspondentes a "${searchTerm}"`
-                  : filterType
-                    ? "Não existem registros que correspondam ao filtro selecionado."
-                    : selectedDate
-                      ? `Não há registros para o dia ${format(selectedDate, 'dd/MM/yyyy')}.`
-                      : "Você não tem histórico de inventário no momento."
-                }
-              </p>
             </div>
-          )}
+          </div>
         </CardContent>
+        
+        {!embedded && (
+          <CardFooter className="flex justify-between">
+            <div className="text-sm text-muted-foreground">
+              Total: {historyData?.total || 0} registros de movimentação
+            </div>
+          </CardFooter>
+        )}
       </Card>
-
-      {/* Dialog para detalhes do registro */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent>
+      
+      {/* Dialog de detalhes da movimentação */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              {selectedEntry && getActionIcon(selectedEntry.action)}
-              <span className="ml-2">Detalhes da Alteração de Estoque</span>
-            </DialogTitle>
+            <DialogTitle>Detalhes da Movimentação</DialogTitle>
             <DialogDescription>
-              Informações detalhadas sobre esta alteração de estoque.
+              Informações completas sobre esta alteração de estoque
             </DialogDescription>
           </DialogHeader>
           
-          {selectedEntry && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">ID do Registro</p>
-                  <p className="text-sm">{selectedEntry.id}</p>
+          {historyEntryDetails && (
+            <div className="py-2 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    {renderActionIcon(historyEntryDetails.action)}
+                  </div>
                 </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Data</p>
-                  <p className="text-sm">{formatDate(selectedEntry.createdAt)}</p>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Ação</p>
-                  <p className="text-sm">{formatAction(selectedEntry.action)}</p>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Produto</p>
-                  <p className="text-sm">#{selectedEntry.productId}</p>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Usuário</p>
-                  <p className="text-sm">#{selectedEntry.userId}</p>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Lote (se aplicável)</p>
-                  <p className="text-sm">{selectedEntry.batchId || "N/A"}</p>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {getActionLabel(historyEntryDetails.action)}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {formatAbsoluteDate(historyEntryDetails.createdAt)}
+                  </p>
                 </div>
               </div>
               
-              <div className="border rounded-md p-4 bg-gray-50">
-                <div className="flex justify-between mb-2">
-                  <p className="text-sm font-medium">Quantidade Antes:</p>
-                  <p className="text-sm">{selectedEntry.quantityBefore}</p>
+              <Separator />
+              
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <div className="font-medium">Qtd. Anterior</div>
+                  <div className="text-2xl font-mono mt-1">
+                    {historyEntryDetails.quantityBefore}
+                  </div>
                 </div>
-                <div className="flex justify-between mb-2">
-                  <p className="text-sm font-medium">Quantidade Depois:</p>
-                  <p className="text-sm">{selectedEntry.quantityAfter}</p>
+                <div>
+                  <div className="font-medium">Nova Qtd.</div>
+                  <div className="text-2xl font-mono mt-1">
+                    {historyEntryDetails.quantityAfter}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <p className="text-sm font-medium">Diferença:</p>
-                  <p className="text-sm font-medium">
-                    {formatQuantityDifference(selectedEntry.quantityBefore, selectedEntry.quantityAfter)}
-                  </p>
+                <div>
+                  <div className="font-medium">Diferença</div>
+                  <div className="text-2xl font-mono mt-1 flex items-center">
+                    {historyEntryDetails.difference > 0 && (
+                      <span className="text-green-500">+</span>
+                    )}
+                    <span
+                      className={
+                        historyEntryDetails.difference > 0
+                          ? "text-green-500"
+                          : historyEntryDetails.difference < 0
+                          ? "text-red-500"
+                          : ""
+                      }
+                    >
+                      {historyEntryDetails.difference}
+                    </span>
+                  </div>
                 </div>
               </div>
               
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-500">Motivo</p>
-                <p className="text-sm p-3 bg-gray-100 rounded-md">
-                  {selectedEntry.reason || "Sem motivo especificado"}
-                </p>
+                <div className="font-medium">Produto</div>
+                <div className="text-sm bg-muted p-2 rounded-md">
+                  {historyEntryDetails.productName}
+                  <div>ID: {historyEntryDetails.productId}</div>
+                </div>
               </div>
               
-              {selectedEntry.notes && (
+              {historyEntryDetails.batchId && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-500">Notas Adicionais</p>
-                  <p className="text-sm p-3 bg-gray-100 rounded-md whitespace-pre-line">
-                    {selectedEntry.notes}
-                  </p>
+                  <div className="font-medium">Lote</div>
+                  <div className="text-sm bg-muted p-2 rounded-md">
+                    {historyEntryDetails.batchId}
+                  </div>
                 </div>
               )}
+              
+              {historyEntryDetails.reason && (
+                <div className="space-y-2">
+                  <div className="font-medium">Motivo</div>
+                  <div className="text-sm bg-muted p-2 rounded-md">
+                    {historyEntryDetails.reason}
+                  </div>
+                </div>
+              )}
+              
+              {historyEntryDetails.notes && (
+                <div className="space-y-2">
+                  <div className="font-medium">Observações</div>
+                  <div className="text-sm bg-muted p-2 rounded-md whitespace-pre-wrap">
+                    {historyEntryDetails.notes}
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <div className="font-medium">Responsável</div>
+                <div className="text-sm bg-muted p-2 rounded-md">
+                  {historyEntryDetails.userName}
+                  <div>ID: {historyEntryDetails.userId}</div>
+                </div>
+              </div>
             </div>
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDetailsDialogOpen(false)}
+            >
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog de exportação */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar Histórico de Inventário</DialogTitle>
+            <DialogDescription>
+              Configure os detalhes para exportar o histórico de movimentações
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-2 space-y-4">
+            <div className="space-y-3">
+              <Label>Formato de Exportação</Label>
+              <Tabs
+                defaultValue="csv"
+                value={exportSettings.format}
+                onValueChange={(value) =>
+                  setExportSettings({ ...exportSettings, format: value as "csv" | "excel" })
+                }
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="csv" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    CSV
+                  </TabsTrigger>
+                  <TabsTrigger value="excel" className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Excel
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Período</Label>
+              <Tabs
+                defaultValue="all"
+                value={exportSettings.dateRange}
+                onValueChange={(value) =>
+                  setExportSettings({
+                    ...exportSettings,
+                    dateRange: value as ExportSettings["dateRange"],
+                  })
+                }
+              >
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="all">Tudo</TabsTrigger>
+                  <TabsTrigger value="7days">7 dias</TabsTrigger>
+                  <TabsTrigger value="30days">30 dias</TabsTrigger>
+                  <TabsTrigger value="custom">Personalizado</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              {exportSettings.dateRange === "custom" && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <Label className="text-xs">Data Inicial</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {exportSettings.customStartDate ? (
+                            format(exportSettings.customStartDate, "dd/MM/yyyy")
+                          ) : (
+                            <span>Selecionar</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={exportSettings.customStartDate}
+                          onSelect={(date) =>
+                            setExportSettings({
+                              ...exportSettings,
+                              customStartDate: date,
+                            })
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs">Data Final</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {exportSettings.customEndDate ? (
+                            format(exportSettings.customEndDate, "dd/MM/yyyy")
+                          ) : (
+                            <span>Selecionar</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={exportSettings.customEndDate}
+                          onSelect={(date) =>
+                            setExportSettings({
+                              ...exportSettings,
+                              customEndDate: date,
+                            })
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Opções de Conteúdo</Label>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="include-product-details"
+                    className="cursor-pointer text-sm"
+                  >
+                    Incluir detalhes do produto
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    <Label
+                      htmlFor="include-product-details"
+                      className="cursor-pointer text-sm"
+                    >
+                      {exportSettings.includeProductDetails ? "Sim" : "Não"}
+                    </Label>
+                    <input
+                      type="checkbox"
+                      id="include-product-details"
+                      checked={exportSettings.includeProductDetails}
+                      onChange={(e) =>
+                        setExportSettings({
+                          ...exportSettings,
+                          includeProductDetails: e.target.checked,
+                        })
+                      }
+                      className="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="include-user-details"
+                    className="cursor-pointer text-sm"
+                  >
+                    Incluir detalhes do usuário
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    <Label
+                      htmlFor="include-user-details"
+                      className="cursor-pointer text-sm"
+                    >
+                      {exportSettings.includeUserDetails ? "Sim" : "Não"}
+                    </Label>
+                    <input
+                      type="checkbox"
+                      id="include-user-details"
+                      checked={exportSettings.includeUserDetails}
+                      onChange={(e) =>
+                        setExportSettings({
+                          ...exportSettings,
+                          includeUserDetails: e.target.checked,
+                        })
+                      }
+                      className="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="include-notes"
+                    className="cursor-pointer text-sm"
+                  >
+                    Incluir notas e observações
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    <Label
+                      htmlFor="include-notes"
+                      className="cursor-pointer text-sm"
+                    >
+                      {exportSettings.includeNotes ? "Sim" : "Não"}
+                    </Label>
+                    <input
+                      type="checkbox"
+                      id="include-notes"
+                      checked={exportSettings.includeNotes}
+                      onChange={(e) =>
+                        setExportSettings({
+                          ...exportSettings,
+                          includeNotes: e.target.checked,
+                        })
+                      }
+                      className="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExportDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={exportHistory}
+              disabled={
+                exportSettings.dateRange === "custom" &&
+                (!exportSettings.customStartDate || !exportSettings.customEndDate)
+              }
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar
             </Button>
           </DialogFooter>
         </DialogContent>
