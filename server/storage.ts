@@ -5593,6 +5593,104 @@ export class DatabaseStorage implements IStorage {
     
     return foundCategories;
   }
+
+  async calculateStockStatus(supplierId?: number): Promise<{
+    totalProducts: number;
+    inStock: number;
+    lowStock: number;
+    outOfStock: number;
+    totalValue: number;
+  }> {
+    try {
+      console.log(`Calculando estatísticas de estoque${supplierId ? ` para o fornecedor ${supplierId}` : ' para todos os fornecedores'}`);
+      
+      // Inicializar contadores
+      let totalProducts = 0;
+      let inStock = 0;
+      let lowStock = 0;
+      let outOfStock = 0;
+      let totalValue = 0;
+      
+      // Buscar inventário com filtro de fornecedor, se aplicável
+      let query = db.select({
+        id: productInventory.id,
+        productId: productInventory.productId,
+        quantity: productInventory.quantity,
+        lowStockThreshold: productInventory.lowStockThreshold,
+        supplierId: productInventory.supplierId
+      }).from(productInventory);
+      
+      if (supplierId) {
+        query = query.where(eq(productInventory.supplierId, supplierId));
+      }
+      
+      const inventoryItems = await query;
+      console.log(`Encontrados ${inventoryItems.length} itens de inventário`);
+      
+      if (inventoryItems.length === 0) {
+        return { totalProducts: 0, inStock: 0, lowStock: 0, outOfStock: 0, totalValue: 0 };
+      }
+      
+      // Mapear IDs de produtos para buscar preços
+      const productIds = inventoryItems.map(item => item.productId);
+      
+      // Buscar informações de preço dos produtos
+      const productsInfo = await db.select({
+        id: products.id,
+        price: products.price
+      }).from(products)
+        .where(inArray(products.id, productIds));
+      
+      console.log(`Encontrados ${productsInfo.length} produtos com informações de preço`);
+      
+      // Criar um mapa de ID do produto para preço para facilitar o acesso
+      const productPriceMap = new Map<number, string>();
+      productsInfo.forEach(product => {
+        productPriceMap.set(product.id, product.price);
+      });
+      
+      // Calcular estatísticas
+      totalProducts = inventoryItems.length;
+      
+      for (const item of inventoryItems) {
+        const quantity = item.quantity;
+        const priceStr = productPriceMap.get(item.productId) || "0";
+        const price = parseFloat(priceStr);
+        
+        // Calcular valor do estoque para este item
+        const itemValue = price * quantity;
+        totalValue += itemValue;
+        
+        // Classificar estoque
+        if (quantity === 0) {
+          outOfStock++;
+        } else if (quantity <= item.lowStockThreshold) {
+          lowStock++;
+        } else {
+          inStock++;
+        }
+      }
+      
+      console.log(`Estatísticas calculadas: totalProducts=${totalProducts}, inStock=${inStock}, lowStock=${lowStock}, outOfStock=${outOfStock}, totalValue=${totalValue.toFixed(2)}`);
+      
+      return {
+        totalProducts,
+        inStock,
+        lowStock,
+        outOfStock,
+        totalValue
+      };
+    } catch (error) {
+      console.error("Erro ao calcular estatísticas de estoque:", error);
+      return {
+        totalProducts: 0,
+        inStock: 0,
+        lowStock: 0,
+        outOfStock: 0,
+        totalValue: 0
+      };
+    }
+  }
 }
 
 // Usar o armazenamento de banco de dados PostgreSQL
