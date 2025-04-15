@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+// Importação do layout do fornecedor
 import { SupplierLayout } from "@/components/layouts/supplier-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -311,7 +312,7 @@ export default function ProdutosPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Todas Categorias</SelectItem>
-                      {categories?.map((category: any) => (
+                      {Array.isArray(categories) && categories.map((category: any) => (
                         <SelectItem key={category.id} value={String(category.id)}>
                           {category.name}
                         </SelectItem>
@@ -563,6 +564,7 @@ export default function ProdutosPage() {
                 </DialogDescription>
               </DialogHeader>
               <ProductForm 
+                productId={editingProduct?.id}
                 product={editingProduct} 
                 onSave={() => handleFormClose(true)}
                 onCancel={() => handleFormClose(false)}
