@@ -349,6 +349,365 @@ export class MemStorage implements IStorage {
   currentStockAlertId: number;
   currentInventoryHistoryId: number;
   
+  // Implementação dos métodos de gerenciamento de estoque (Product Inventory)
+  async getProductInventory(id: number): Promise<ProductInventory | undefined> {
+    return this.productInventory.get(id);
+  }
+  
+  async getProductInventoryByProductId(productId: number): Promise<ProductInventory | undefined> {
+    for (const inventory of this.productInventory.values()) {
+      if (inventory.productId === productId) {
+        return inventory;
+      }
+    }
+    return undefined;
+  }
+  
+  async createProductInventory(inventory: InsertProductInventory): Promise<ProductInventory> {
+    const id = ++this.currentProductInventoryId;
+    const newInventory: ProductInventory = {
+      id,
+      ...inventory,
+      lastUpdatedAt: new Date()
+    };
+    this.productInventory.set(id, newInventory);
+    
+    // Criar um registro histórico
+    await this.createInventoryHistory({
+      productId: inventory.productId,
+      supplierId: inventory.supplierId,
+      userId: inventory.userId,
+      quantity: inventory.quantity,
+      previousQuantity: 0,
+      currentQuantity: inventory.quantity,
+      action: "initial",
+      notes: "Registro inicial de estoque",
+      batchId: null
+    });
+    
+    return newInventory;
+  }
+  
+  async updateProductInventory(id: number, inventoryData: Partial<ProductInventory>): Promise<ProductInventory | undefined> {
+    const currentInventory = this.productInventory.get(id);
+    if (!currentInventory) {
+      return undefined;
+    }
+    
+    const previousQuantity = currentInventory.quantity;
+    const updatedInventory = {
+      ...currentInventory,
+      ...inventoryData,
+      lastUpdatedAt: new Date()
+    };
+    
+    this.productInventory.set(id, updatedInventory);
+    
+    if (inventoryData.quantity !== undefined && inventoryData.quantity !== previousQuantity) {
+      // Registrar mudança no histórico
+      await this.createInventoryHistory({
+        productId: currentInventory.productId,
+        supplierId: currentInventory.supplierId,
+        userId: inventoryData.userId || null,
+        quantity: inventoryData.quantity - previousQuantity,
+        previousQuantity,
+        currentQuantity: inventoryData.quantity,
+        action: "update",
+        notes: inventoryData.notes || "Atualização manual de estoque",
+        batchId: null
+      });
+      
+      // Verificar níveis de estoque
+      this.checkStockLevelsAndCreateAlerts(updatedInventory);
+    }
+    
+    return updatedInventory;
+  }
+  
+  async getProductInventories(options?: {
+    supplierId?: number;
+    status?: InventoryStatusType;
+    lowStock?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<ProductInventory[]> {
+    let inventories = Array.from(this.productInventory.values());
+    
+    // Aplicar filtros
+    if (options) {
+      if (options.supplierId) {
+        inventories = inventories.filter(inv => inv.supplierId === options.supplierId);
+      }
+      
+      if (options.status) {
+        inventories = inventories.filter(inv => inv.status === options.status);
+      }
+      
+      if (options.lowStock) {
+        inventories = inventories.filter(inv => 
+          inv.quantity > 0 && inv.quantity <= inv.lowStockThreshold
+        );
+      }
+      
+      // Aplicar paginação
+      if (options.offset) {
+        inventories = inventories.slice(options.offset);
+      }
+      
+      if (options.limit) {
+        inventories = inventories.slice(0, options.limit);
+      }
+    }
+    
+    return inventories;
+  }
+  
+  async bulkUpdateInventory(items: {productId: number, quantity: number, status?: InventoryStatusType}[]): Promise<ProductInventory[]> {
+    const batchId = `batch-${new Date().getTime()}`;
+    const updatedInventories: ProductInventory[] = [];
+    
+    for (const item of items) {
+      // Encontrar inventário pelo productId
+      let found = false;
+      for (const [invId, inv] of this.productInventory.entries()) {
+        if (inv.productId === item.productId) {
+          found = true;
+          const previousQuantity = inv.quantity;
+          const updatedInventory: ProductInventory = {
+            ...inv,
+            quantity: item.quantity,
+            status: item.status || inv.status,
+            lastUpdatedAt: new Date()
+          };
+          
+          this.productInventory.set(invId, updatedInventory);
+          
+          // Registrar no histórico
+          await this.createInventoryHistory({
+            productId: item.productId,
+            supplierId: inv.supplierId,
+            userId: null,
+            quantity: item.quantity - previousQuantity,
+            previousQuantity,
+            currentQuantity: item.quantity,
+            action: "bulk_update",
+            notes: "Atualização em lote",
+            batchId
+          });
+          
+          // Verificar alertas
+          this.checkStockLevelsAndCreateAlerts(updatedInventory);
+          
+          updatedInventories.push(updatedInventory);
+          break;
+        }
+      }
+      
+      if (!found) {
+        console.warn(`Inventário não encontrado para produto com ID ${item.productId}`);
+      }
+    }
+    
+    return updatedInventories;
+  }
+  
+  // Métodos para alertas de estoque (Stock Alerts)
+  async getStockAlert(id: number): Promise<StockAlert | undefined> {
+    return this.stockAlerts.get(id);
+  }
+  
+  async createStockAlert(alert: InsertStockAlert): Promise<StockAlert> {
+    const id = ++this.currentStockAlertId;
+    const newAlert: StockAlert = {
+      id,
+      ...alert,
+      createdAt: new Date(),
+      isRead: false,
+      readAt: null,
+      readBy: null,
+      resolvedAt: null,
+      resolvedBy: null
+    };
+    
+    this.stockAlerts.set(id, newAlert);
+    return newAlert;
+  }
+  
+  async updateStockAlert(id: number, alertData: Partial<StockAlert>): Promise<StockAlert | undefined> {
+    const currentAlert = this.stockAlerts.get(id);
+    if (!currentAlert) {
+      return undefined;
+    }
+    
+    const updatedAlert = {
+      ...currentAlert,
+      ...alertData
+    };
+    
+    this.stockAlerts.set(id, updatedAlert);
+    return updatedAlert;
+  }
+  
+  async getStockAlerts(options?: {
+    supplierId?: number;
+    productId?: number;
+    type?: StockAlertTypeValue;
+    active?: boolean;
+    resolved?: boolean;
+  }): Promise<StockAlert[]> {
+    let alerts = Array.from(this.stockAlerts.values());
+    
+    // Aplicar filtros
+    if (options) {
+      if (options.supplierId) {
+        alerts = alerts.filter(alert => alert.supplierId === options.supplierId);
+      }
+      
+      if (options.productId) {
+        alerts = alerts.filter(alert => alert.productId === options.productId);
+      }
+      
+      if (options.type) {
+        alerts = alerts.filter(alert => alert.type === options.type);
+      }
+      
+      if (options.active !== undefined) {
+        alerts = alerts.filter(alert => alert.isRead === !options.active);
+      }
+      
+      if (options.resolved !== undefined) {
+        alerts = alerts.filter(alert => alert.resolved === options.resolved);
+      }
+    }
+    
+    // Ordenar por data (mais recentes primeiro)
+    alerts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    return alerts;
+  }
+  
+  // Métodos para histórico de inventário
+  async getInventoryHistory(options?: {
+    productId?: number;
+    supplierId?: number;
+    action?: string;
+    batchId?: string;
+  }): Promise<InventoryHistory[]> {
+    let history = Array.from(this.inventoryHistory.values());
+    
+    // Aplicar filtros
+    if (options) {
+      if (options.productId) {
+        history = history.filter(record => record.productId === options.productId);
+      }
+      
+      if (options.supplierId) {
+        history = history.filter(record => record.supplierId === options.supplierId);
+      }
+      
+      if (options.action) {
+        history = history.filter(record => record.action === options.action);
+      }
+      
+      if (options.batchId) {
+        history = history.filter(record => record.batchId === options.batchId);
+      }
+    }
+    
+    // Ordenar por data (mais recentes primeiro)
+    history.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    return history;
+  }
+  
+  async createInventoryHistory(history: InsertInventoryHistory): Promise<InventoryHistory> {
+    const id = ++this.currentInventoryHistoryId;
+    const newHistory: InventoryHistory = {
+      id,
+      ...history,
+      createdAt: new Date()
+    };
+    
+    this.inventoryHistory.set(id, newHistory);
+    return newHistory;
+  }
+  
+  // Método auxiliar para verificar níveis de estoque e criar alertas
+  private async checkStockLevelsAndCreateAlerts(inventory: ProductInventory): Promise<void> {
+    try {
+      const product = this.products.get(inventory.productId);
+      if (!product) {
+        return;
+      }
+      
+      // Verificar estoque baixo
+      if (inventory.quantity > 0 && inventory.quantity <= inventory.lowStockThreshold) {
+        // Verificar se já existe um alerta ativo para este produto
+        let existingAlert = false;
+        for (const alert of this.stockAlerts.values()) {
+          if (
+            alert.productId === inventory.productId &&
+            alert.supplierId === inventory.supplierId &&
+            alert.type === StockAlertType.LOW_STOCK &&
+            !alert.resolved
+          ) {
+            existingAlert = true;
+            break;
+          }
+        }
+        
+        if (!existingAlert) {
+          await this.createStockAlert({
+            productId: inventory.productId,
+            supplierId: inventory.supplierId,
+            type: StockAlertType.LOW_STOCK,
+            message: `Estoque baixo: ${product.name} (${inventory.quantity} unidades)`,
+            threshold: inventory.lowStockThreshold,
+            currentLevel: inventory.quantity,
+            priority: 2,
+            isRead: false,
+            resolved: false,
+            userId: inventory.userId || null
+          });
+        }
+      }
+      
+      // Verificar estoque esgotado
+      if (inventory.quantity <= 0) {
+        // Verificar se já existe um alerta ativo para este produto
+        let existingAlert = false;
+        for (const alert of this.stockAlerts.values()) {
+          if (
+            alert.productId === inventory.productId &&
+            alert.supplierId === inventory.supplierId &&
+            alert.type === StockAlertType.OUT_OF_STOCK &&
+            !alert.resolved
+          ) {
+            existingAlert = true;
+            break;
+          }
+        }
+        
+        if (!existingAlert) {
+          await this.createStockAlert({
+            productId: inventory.productId,
+            supplierId: inventory.supplierId,
+            type: StockAlertType.OUT_OF_STOCK,
+            message: `Estoque esgotado: ${product.name}`,
+            threshold: 0,
+            currentLevel: 0,
+            priority: 1, // Prioridade alta
+            isRead: false,
+            resolved: false,
+            userId: inventory.userId || null
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao verificar níveis de estoque e criar alertas:", error);
+    }
+  }
+  
   sessionStore: any;
 
   constructor() {
@@ -1798,6 +2157,558 @@ export class DatabaseStorage implements IStorage {
       createTableIfMissing: true 
     });
     this.initData();
+  }
+
+  // Implementação dos métodos de gerenciamento de estoque (Product Inventory)
+  async getProductInventory(productId: number, supplierId: number): Promise<ProductInventory | undefined> {
+    try {
+      const [inventory] = await db.select()
+        .from(productInventory)
+        .where(and(
+          eq(productInventory.productId, productId),
+          eq(productInventory.supplierId, supplierId)
+        ));
+      return inventory;
+    } catch (error) {
+      console.error(`Erro ao buscar inventário (Produto ID ${productId}, Fornecedor ID ${supplierId}):`, error);
+      return undefined;
+    }
+  }
+  
+  async getProductInventories(options?: { 
+    productId?: number; 
+    supplierId?: number; 
+    status?: InventoryStatusType;
+    lowStock?: boolean;
+    outOfStock?: boolean;
+  }): Promise<ProductInventory[]> {
+    try {
+      let query = db.select().from(productInventory);
+      
+      // Aplicar filtros se fornecidos
+      if (options) {
+        const conditions = [];
+        
+        if (options.productId) {
+          conditions.push(eq(productInventory.productId, options.productId));
+        }
+        
+        if (options.supplierId) {
+          conditions.push(eq(productInventory.supplierId, options.supplierId));
+        }
+        
+        if (options.status) {
+          conditions.push(eq(productInventory.status, options.status));
+        }
+        
+        if (options.lowStock) {
+          conditions.push(
+            and(
+              gt(productInventory.quantity, 0),
+              lte(productInventory.quantity, productInventory.lowStockThreshold)
+            )
+          );
+        }
+        
+        if (options.outOfStock) {
+          conditions.push(lte(productInventory.quantity, 0));
+        }
+        
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions));
+        }
+      }
+      
+      return await query.execute();
+    } catch (error) {
+      console.error("Erro ao buscar inventários:", error);
+      return [];
+    }
+  }
+  
+  async createProductInventory(inventory: InsertProductInventory): Promise<ProductInventory> {
+    try {
+      const [newInventory] = await db.insert(productInventory)
+        .values({
+          ...inventory,
+          lastUpdatedAt: new Date()
+        })
+        .returning();
+      
+      // Criar um registro de histórico para a criação inicial do estoque
+      await this.createInventoryHistory({
+        productId: inventory.productId,
+        supplierId: inventory.supplierId,
+        userId: inventory.userId,
+        quantity: inventory.quantity,
+        previousQuantity: 0,
+        currentQuantity: inventory.quantity,
+        action: "initial",
+        notes: "Registro inicial de estoque",
+        batchId: null
+      });
+      
+      return newInventory;
+    } catch (error) {
+      console.error("Erro ao criar registro de inventário:", error);
+      throw new Error(`Falha ao criar inventário: ${error}`);
+    }
+  }
+  
+  async updateProductInventory(id: number, inventoryData: Partial<ProductInventory>): Promise<ProductInventory | undefined> {
+    try {
+      // Buscar o inventário atual para comparar valores
+      const [currentInventory] = await db.select()
+        .from(productInventory)
+        .where(eq(productInventory.id, id));
+      
+      if (!currentInventory) {
+        console.error(`Inventário ID ${id} não encontrado`);
+        return undefined;
+      }
+      
+      // Atualizar timestamp
+      const updateData = {
+        ...inventoryData,
+        lastUpdatedAt: new Date()
+      };
+      
+      // Atualizar o registro no banco de dados
+      const [updatedInventory] = await db.update(productInventory)
+        .set(updateData)
+        .where(eq(productInventory.id, id))
+        .returning();
+      
+      // Se houve mudança na quantidade, registrar no histórico
+      if (inventoryData.quantity !== undefined && 
+          inventoryData.quantity !== currentInventory.quantity) {
+            
+        await this.createInventoryHistory({
+          productId: currentInventory.productId,
+          supplierId: currentInventory.supplierId,
+          userId: inventoryData.userId || null,
+          quantity: inventoryData.quantity - currentInventory.quantity, // Delta da quantidade
+          previousQuantity: currentInventory.quantity,
+          currentQuantity: inventoryData.quantity,
+          action: "update",
+          notes: inventoryData.notes || "Atualização manual de estoque",
+          batchId: null
+        });
+        
+        // Verificar se é necessário criar alertas de estoque
+        this.checkStockLevelsAndCreateAlerts(updatedInventory);
+      }
+      
+      return updatedInventory;
+    } catch (error) {
+      console.error(`Erro ao atualizar inventário ID ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async updateProductQuantity(productId: number, supplierId: number, quantity: number, reason?: string, userId?: number): Promise<ProductInventory | undefined> {
+    try {
+      // Buscar inventário existente
+      const [inventory] = await db.select()
+        .from(productInventory)
+        .where(and(
+          eq(productInventory.productId, productId),
+          eq(productInventory.supplierId, supplierId)
+        ));
+      
+      if (!inventory) {
+        console.error(`Inventário não encontrado para produto ${productId} e fornecedor ${supplierId}`);
+        return undefined;
+      }
+      
+      // Calcular nova quantidade
+      const previousQuantity = inventory.quantity;
+      const newQuantity = quantity;
+      
+      // Atualizar o inventário
+      const [updatedInventory] = await db.update(productInventory)
+        .set({ 
+          quantity: newQuantity,
+          lastUpdatedAt: new Date()
+        })
+        .where(eq(productInventory.id, inventory.id))
+        .returning();
+      
+      // Registrar no histórico
+      await this.createInventoryHistory({
+        productId,
+        supplierId,
+        userId: userId || null,
+        quantity: newQuantity - previousQuantity,
+        previousQuantity,
+        currentQuantity: newQuantity,
+        action: "quantity_change",
+        notes: reason || "Alteração de quantidade",
+        batchId: null
+      });
+      
+      // Verificar alertas de estoque
+      this.checkStockLevelsAndCreateAlerts(updatedInventory);
+      
+      return updatedInventory;
+    } catch (error) {
+      console.error(`Erro ao atualizar quantidade do produto ${productId}:`, error);
+      return undefined;
+    }
+  }
+  
+  async bulkUpdateInventory(items: {productId: number, quantity: number, status?: InventoryStatusType}[]): Promise<ProductInventory[]> {
+    const batchId = `batch-${new Date().getTime()}`;
+    const updatedInventories: ProductInventory[] = [];
+    
+    try {
+      // Processar todos os itens
+      for (const item of items) {
+        try {
+          // Buscar inventário existente
+          const [inventory] = await db.select()
+            .from(productInventory)
+            .where(eq(productInventory.productId, item.productId));
+          
+          if (inventory) {
+            // Atualizar inventário existente
+            const previousQuantity = inventory.quantity;
+            const newStatus = item.status || inventory.status;
+            
+            const [updatedInventory] = await db.update(productInventory)
+              .set({ 
+                quantity: item.quantity,
+                status: newStatus,
+                lastUpdatedAt: new Date()
+              })
+              .where(eq(productInventory.id, inventory.id))
+              .returning();
+              
+            // Registrar no histórico
+            await this.createInventoryHistory({
+              productId: item.productId,
+              supplierId: inventory.supplierId,
+              userId: null, // API pública, usuário desconhecido
+              quantity: item.quantity - previousQuantity,
+              previousQuantity,
+              currentQuantity: item.quantity,
+              action: "bulk_update",
+              notes: "Atualização em massa via API",
+              batchId
+            });
+            
+            // Verificar alertas
+            await this.checkStockLevelsAndCreateAlerts(updatedInventory);
+            
+            updatedInventories.push(updatedInventory);
+          } else {
+            // Inventário não encontrado, ignorar
+            console.warn(`Ignorando item não encontrado (produto ${item.productId})`);
+          }
+        } catch (error) {
+          console.error(`Erro ao atualizar item em lote (produto ${item.productId}):`, error);
+          // Continuar com os próximos itens
+        }
+      }
+      
+      return updatedInventories;
+    } catch (error) {
+      console.error("Erro na atualização em lote:", error);
+      return [];
+    }
+  }
+  
+  // Métodos para Stock Alerts
+  async getStockAlert(id: number): Promise<StockAlert | undefined> {
+    try {
+      const [alert] = await db.select()
+        .from(stockAlerts)
+        .where(eq(stockAlerts.id, id));
+      return alert;
+    } catch (error) {
+      console.error(`Erro ao buscar alerta ID ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async getStockAlerts(options?: { 
+    productId?: number; 
+    supplierId?: number; 
+    alertType?: StockAlertTypeValue;
+    isRead?: boolean;
+    isResolved?: boolean;
+    priority?: number;
+  }): Promise<StockAlert[]> {
+    try {
+      let query = db.select().from(stockAlerts);
+      
+      // Aplicar filtros
+      if (options) {
+        const conditions = [];
+        
+        if (options.productId) {
+          conditions.push(eq(stockAlerts.productId, options.productId));
+        }
+        
+        if (options.supplierId) {
+          conditions.push(eq(stockAlerts.supplierId, options.supplierId));
+        }
+        
+        if (options.alertType) {
+          conditions.push(eq(stockAlerts.type, options.alertType));
+        }
+        
+        if (options.isRead !== undefined) {
+          conditions.push(eq(stockAlerts.isRead, options.isRead));
+        }
+        
+        if (options.isResolved !== undefined) {
+          conditions.push(eq(stockAlerts.resolved, options.isResolved));
+        }
+        
+        if (options.priority !== undefined) {
+          conditions.push(eq(stockAlerts.priority, options.priority));
+        }
+        
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions));
+        }
+      }
+      
+      // Ordenar por data de criação (mais recentes primeiro)
+      query = query.orderBy(desc(stockAlerts.createdAt));
+      
+      return await query.execute();
+    } catch (error) {
+      console.error("Erro ao buscar alertas de estoque:", error);
+      return [];
+    }
+  }
+  
+  async createStockAlert(alert: InsertStockAlert): Promise<StockAlert> {
+    try {
+      const [newAlert] = await db.insert(stockAlerts)
+        .values({
+          ...alert,
+          createdAt: new Date(),
+          isRead: false
+        })
+        .returning();
+        
+      return newAlert;
+    } catch (error) {
+      console.error("Erro ao criar alerta de estoque:", error);
+      throw new Error(`Falha ao criar alerta: ${error}`);
+    }
+  }
+  
+  async updateStockAlert(id: number, alertData: Partial<StockAlert>): Promise<StockAlert | undefined> {
+    try {
+      const [updatedAlert] = await db.update(stockAlerts)
+        .set(alertData)
+        .where(eq(stockAlerts.id, id))
+        .returning();
+        
+      return updatedAlert;
+    } catch (error) {
+      console.error(`Erro ao atualizar alerta ID ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async markStockAlertAsRead(id: number, userId?: number): Promise<StockAlert | undefined> {
+    try {
+      const [updatedAlert] = await db.update(stockAlerts)
+        .set({ 
+          isRead: true,
+          readBy: userId || null,
+          readAt: new Date()
+        })
+        .where(eq(stockAlerts.id, id))
+        .returning();
+        
+      return updatedAlert;
+    } catch (error) {
+      console.error(`Erro ao marcar alerta ID ${id} como lido:`, error);
+      return undefined;
+    }
+  }
+  
+  async markStockAlertAsResolved(id: number, userId?: number): Promise<StockAlert | undefined> {
+    try {
+      const [updatedAlert] = await db.update(stockAlerts)
+        .set({ 
+          resolved: true,
+          resolvedBy: userId || null,
+          resolvedAt: new Date()
+        })
+        .where(eq(stockAlerts.id, id))
+        .returning();
+        
+      return updatedAlert;
+    } catch (error) {
+      console.error(`Erro ao marcar alerta ID ${id} como resolvido:`, error);
+      return undefined;
+    }
+  }
+  
+  // Métodos para Inventory History
+  async getInventoryHistory(options?: { 
+    productId?: number; 
+    supplierId?: number; 
+    userId?: number;
+    action?: string;
+    batchId?: string;
+    limit?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<InventoryHistory[]> {
+    try {
+      let query = db.select().from(inventoryHistory);
+      
+      // Aplicar filtros
+      if (options) {
+        const conditions = [];
+        
+        if (options.productId) {
+          conditions.push(eq(inventoryHistory.productId, options.productId));
+        }
+        
+        if (options.supplierId) {
+          conditions.push(eq(inventoryHistory.supplierId, options.supplierId));
+        }
+        
+        if (options.userId) {
+          conditions.push(eq(inventoryHistory.userId, options.userId));
+        }
+        
+        if (options.action) {
+          conditions.push(eq(inventoryHistory.action, options.action));
+        }
+        
+        if (options.batchId) {
+          conditions.push(eq(inventoryHistory.batchId, options.batchId));
+        }
+        
+        if (options.startDate) {
+          conditions.push(gte(inventoryHistory.createdAt, options.startDate));
+        }
+        
+        if (options.endDate) {
+          conditions.push(lte(inventoryHistory.createdAt, options.endDate));
+        }
+        
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions));
+        }
+      }
+      
+      // Ordenar por data (mais recentes primeiro)
+      query = query.orderBy(desc(inventoryHistory.createdAt));
+      
+      // Aplicar limite se fornecido
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      }
+      
+      return await query.execute();
+    } catch (error) {
+      console.error("Erro ao buscar histórico de inventário:", error);
+      return [];
+    }
+  }
+  
+  async createInventoryHistory(history: InsertInventoryHistory): Promise<InventoryHistory> {
+    try {
+      const [newHistory] = await db.insert(inventoryHistory)
+        .values({
+          ...history,
+          createdAt: new Date()
+        })
+        .returning();
+        
+      return newHistory;
+    } catch (error) {
+      console.error("Erro ao criar histórico de inventário:", error);
+      throw new Error(`Falha ao criar histórico: ${error}`);
+    }
+  }
+  
+  // Método auxiliar para verificar níveis de estoque e criar alertas
+  private async checkStockLevelsAndCreateAlerts(inventory: ProductInventory): Promise<void> {
+    try {
+      // Verificar estoque baixo
+      if (inventory.quantity > 0 && inventory.quantity <= inventory.lowStockThreshold) {
+        // Buscar produto para incluir nome no alerta
+        const [product] = await db.select()
+          .from(products)
+          .where(eq(products.id, inventory.productId));
+          
+        if (product) {
+          // Verificar se já existe um alerta ativo para este produto
+          const [existingAlert] = await db.select()
+            .from(stockAlerts)
+            .where(and(
+              eq(stockAlerts.productId, inventory.productId),
+              eq(stockAlerts.supplierId, inventory.supplierId),
+              eq(stockAlerts.type, StockAlertType.LOW_STOCK),
+              eq(stockAlerts.resolved, false)
+            ));
+            
+          if (!existingAlert) {
+            await this.createStockAlert({
+              productId: inventory.productId,
+              supplierId: inventory.supplierId,
+              type: StockAlertType.LOW_STOCK,
+              message: `Estoque baixo: ${product.name} (${inventory.quantity} unidades)`,
+              threshold: inventory.lowStockThreshold,
+              currentLevel: inventory.quantity,
+              priority: 2,
+              isRead: false,
+              resolved: false,
+              userId: inventory.userId || null
+            });
+          }
+        }
+      }
+      
+      // Verificar estoque esgotado
+      if (inventory.quantity <= 0) {
+        // Buscar produto para incluir nome no alerta
+        const [product] = await db.select()
+          .from(products)
+          .where(eq(products.id, inventory.productId));
+          
+        if (product) {
+          // Verificar se já existe um alerta ativo para este produto
+          const [existingAlert] = await db.select()
+            .from(stockAlerts)
+            .where(and(
+              eq(stockAlerts.productId, inventory.productId),
+              eq(stockAlerts.supplierId, inventory.supplierId),
+              eq(stockAlerts.type, StockAlertType.OUT_OF_STOCK),
+              eq(stockAlerts.resolved, false)
+            ));
+            
+          if (!existingAlert) {
+            await this.createStockAlert({
+              productId: inventory.productId,
+              supplierId: inventory.supplierId,
+              type: StockAlertType.OUT_OF_STOCK,
+              message: `Estoque esgotado: ${product.name}`,
+              threshold: 0,
+              currentLevel: 0,
+              priority: 1, // Prioridade alta
+              isRead: false,
+              resolved: false,
+              userId: inventory.userId || null
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao verificar níveis de estoque e criar alertas:", error);
+    }
   }
 
   private async initData() {
