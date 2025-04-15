@@ -121,16 +121,17 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
 
   // Buscar produto para edição, se houver um ID
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
-    queryKey: [`/api/supplier/products/${productId}`],
+    queryKey: [`/api/suppliers/${user?.id}/products/${productId}`],
     enabled: !!productId && !!user?.id,
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/supplier/products/${productId}`);
+      console.log(`Buscando produto ID ${productId} do fornecedor ID ${user?.id}`);
+      const res = await apiRequest("GET", `/api/suppliers/${user?.id}/products/${productId}`);
+      if (!res.ok) {
+        throw new Error(`Erro ao buscar produto: ${res.status} ${res.statusText}`);
+      }
       return await res.json();
     },
   });
-
-  // Obter o usuário atual
-  const { user } = useAuth();
   
   // Mutation para criar/atualizar produto
   const productMutation = useMutation({
@@ -152,7 +153,8 @@ export function ProductForm({ productId, onSave, onCancel, product }: ProductFor
       console.log(`Enviando requisição para ${url} usando método ${method}`);
       
       try {
-        const res = await apiRequest(method, url, data, true);
+        // Passar um objeto vazio como opções para indicar que estamos enviando um FormData
+        const res = await apiRequest(method, url, data, { isFormData: true });
         
         if (!res.ok) {
           const errorText = await res.text();
