@@ -2109,7 +2109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Suppliers info API (for checkout)
-  app.get("/api/suppliers-info", async (req, res) => {
+  app.get("/api/suppliers-info-checkout", async (req, res) => {
     try {
       const { ids } = req.query;
       
@@ -2123,10 +2123,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter suppliers by IDs and remove sensitive information
       const filteredSuppliers = suppliers
         .filter(supplier => supplierIds.includes(supplier.id))
-        .map(({ password, email, ...supplier }) => supplier);
+        .map(({ password, email, ...supplierData }) => {
+          // Converta todos os dados para formatos simples
+          return {
+            id: supplierData.id,
+            name: supplierData.name || '',
+            username: supplierData.username || '',
+            companyName: supplierData.companyName || '',
+            phone: supplierData.phone || '',
+            cnpj: supplierData.cnpj || '',
+            role: supplierData.role || 'supplier',
+            active: Boolean(supplierData.active),
+            createdDate: supplierData.createdAt ? supplierData.createdAt.toISOString() : '',
+            // Adicione outras propriedades simples conforme necessário
+          };
+        });
       
       res.json(filteredSuppliers);
     } catch (error) {
+      console.error("Erro ao buscar informações dos fornecedores para checkout:", error);
       res.status(500).json({ message: "Erro ao buscar informações dos fornecedores" });
     }
   });

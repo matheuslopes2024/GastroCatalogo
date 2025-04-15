@@ -43,8 +43,80 @@ export function ComparisonResult({
     }
   });
 
-  // Extrair recursos do produto (se disponíveis)
-  const features = product.features || [];
+  /**
+   * Processador avançado de features do produto
+   * 
+   * Esta implementação lida com diferentes formatos de dados de features:
+   * 1. Arrays de strings simples
+   * 2. Arrays de objetos com {name, value}
+   * 3. Arrays mistos ou outros formatos
+   * 
+   * O resultado é sempre um array de strings seguro para renderização
+   */
+  const processFeatures = (rawFeatures: any): string[] => {
+    if (!rawFeatures) return [];
+    
+    try {
+      // Se for string em formato JSON, tentar fazer parse
+      if (typeof rawFeatures === 'string' && 
+          (rawFeatures.startsWith('[') || rawFeatures.startsWith('{'))) {
+        try {
+          rawFeatures = JSON.parse(rawFeatures);
+        } catch (e) {
+          console.log("Feature não é um JSON válido, usando como texto");
+        }
+      }
+      
+      // Se não for array, converter para array com um item
+      if (!Array.isArray(rawFeatures)) {
+        rawFeatures = [rawFeatures];
+      }
+      
+      // Mapear cada feature para string segura
+      return rawFeatures.map((feature: any, index: number) => {
+        if (feature === null || feature === undefined) {
+          return `Feature ${index + 1}`;
+        }
+        
+        if (typeof feature === 'string') {
+          return feature;
+        }
+        
+        if (typeof feature === 'number' || typeof feature === 'boolean') {
+          return String(feature);
+        }
+        
+        // Se for objeto com name/value ou name/text
+        if (typeof feature === 'object') {
+          if (feature.name && feature.value !== undefined) {
+            return `${feature.name}: ${feature.value}`;
+          }
+          
+          if (feature.name) {
+            return feature.name;
+          }
+          
+          if (feature.text) {
+            return feature.text;
+          }
+          
+          // Tentativa final de extrair algo útil
+          const keys = Object.keys(feature);
+          if (keys.length > 0) {
+            return `${keys[0]}: ${feature[keys[0]]}`;
+          }
+        }
+        
+        return `Feature ${index + 1}`;
+      });
+    } catch (error) {
+      console.error("Erro ao processar features:", error);
+      return [];
+    }
+  };
+  
+  // Processar features de forma segura
+  const features = processFeatures(product.features);
   
   // Determinar as categorias adicionais (usado para depuração)
   const hasAdditionalCategories = product.additionalCategories && 
