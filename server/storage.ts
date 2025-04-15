@@ -3550,6 +3550,40 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async deleteProduct(id: number): Promise<boolean> {
+    try {
+      // Verificar se o produto existe
+      const product = await this.getProduct(id);
+      if (!product) {
+        console.log(`Tentativa de exclusão de produto inexistente id=${id}`);
+        return false;
+      }
+      
+      // Usamos uma exclusão lógica (setando active = false) em vez de excluir fisicamente
+      const [deletedProduct] = await db
+        .update(products)
+        .set({ active: false })
+        .where(eq(products.id, id))
+        .returning()
+        .execute();
+      
+      if (deletedProduct) {
+        console.log(`Produto excluído (logicamente) com sucesso id=${id}:`, {
+          id: deletedProduct.id,
+          supplierId: deletedProduct.supplierId,
+          nome: deletedProduct.name
+        });
+        return true;
+      } else {
+        console.log(`Produto não foi excluído id=${id}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Erro ao excluir produto id=${id}:`, error);
+      return false;
+    }
+  }
+  
   // Método unificado para busca avançada de produtos
   async getProducts(options?: { 
     // Filtros básicos
