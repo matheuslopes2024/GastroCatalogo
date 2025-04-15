@@ -1047,6 +1047,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API para fornecer informações de fornecedores para filtragem
+  app.get("/api/suppliers-info", async (req, res) => {
+    try {
+      // Obter todos os fornecedores
+      const suppliers = await storage.getSuppliers({});
+      
+      // Formatar para uso na UI de filtro
+      const formattedSuppliers = suppliers.map(supplier => ({
+        id: supplier.id,
+        name: supplier.name,
+        logo: supplier.logo,
+        rating: supplier.rating,
+        productsCount: supplier.productsCount || 0,
+        minPrice: supplier.minPrice,
+        maxPrice: supplier.maxPrice,
+        // Gerar estatísticas para cada fornecedor
+        stats: [
+          {
+            name: "Produtos",
+            value: supplier.productsCount || 0
+          },
+          {
+            name: "Avaliação",
+            value: supplier.rating || 0
+          }
+        ]
+      }));
+      
+      res.json(formattedSuppliers);
+    } catch (error) {
+      console.error("Erro ao buscar informações de fornecedores:", error);
+      res.status(500).json({ message: "Erro ao buscar informações de fornecedores" });
+    }
+  });
+  
   app.get("/api/product-groups/:idOrSlug", async (req, res) => {
     try {
       const idOrSlug = req.params.idOrSlug;

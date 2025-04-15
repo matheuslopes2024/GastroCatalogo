@@ -79,20 +79,34 @@ export function WebSocketProvider({ children }: { children: ReactNode }): JSX.El
         // Construir URL segura com verificações de fallback
         let port = "5000"; // Porta padrão do servidor
         
-        // Garantir que temos um host válido
-        if (currentHost) {
-          // Sempre usar o host atual para evitar problemas de localhost:undefined
+        // Garantir que temos um host válido e usar uma abordagem mais robusta
+        if (currentHost && currentHost.length > 0) {
+          // Usar host atual, garantindo que o caminho comece com /ws
           wsUrl = `${protocol}//${currentHost}/ws?token=${token}`;
           console.log("[WS] Usando URL com host atual:", wsUrl);
         } else {
-          // Fallback absoluto para desenvolvimento local
+          // Fallback absoluto para desenvolvimento local apenas como último recurso
+          // Usando uma URL que sabemos que é válida e com porta correta para desenvolvimento
           wsUrl = `${protocol}//localhost:5000/ws?token=${token}`;
           console.log("[WS] Usando URL local fallback:", wsUrl);
         }
         
-        // Verificação final para garantir que temos uma URL válida
-        if (!wsUrl || wsUrl.includes("undefined")) {
-          throw new Error(`URL WebSocket inválida: ${wsUrl}`);
+        // Verificação final mais robusta com tentativa de corrigir URLs inválidas
+        if (!wsUrl) {
+          throw new Error("URL WebSocket não pôde ser gerada");
+        }
+        
+        // Remover partes indefinidas da URL, se houver
+        if (wsUrl.includes("undefined")) {
+          console.warn("[WS] Corrigindo URL com valores indefinidos:", wsUrl);
+          wsUrl = wsUrl.replace(/undefined/g, "").replace(/::/, ":").replace(/\/\//g, "/").replace(/:\//g, "://");
+          console.log("[WS] URL corrigida:", wsUrl);
+          
+          // Se ainda estiver inválida após correções, usar URL padrão para o host atual
+          if (!wsUrl || wsUrl.includes("undefined")) {
+            wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
+            console.log("[WS] Usando URL de fallback final:", wsUrl);
+          }
         }
       } catch (urlError) {
         console.error("[WS] Erro ao construir URL do WebSocket:", urlError);
