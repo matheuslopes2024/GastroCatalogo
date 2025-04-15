@@ -559,6 +559,67 @@ export class MemStorage implements IStorage {
     return categories;
   }
   
+  /**
+   * Obtém produtos com estoque abaixo do limite configurado
+   * @param supplierId ID do fornecedor
+   * @param limit Limitar quantidade de resultados
+   * @returns Lista de produtos com estoque baixo
+   */
+  async getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]> {
+    if (!supplierId) return [];
+    
+    let products = Array.from(this.products.values())
+      .filter(product => 
+        product.supplierId === supplierId && 
+        product.active && 
+        product.stock !== undefined && 
+        product.stockThreshold !== undefined &&
+        product.stock <= product.stockThreshold
+      )
+      .sort((a, b) => (a.stock || 0) - (b.stock || 0));
+      
+    if (limit) {
+      products = products.slice(0, limit);
+    }
+    
+    return products;
+  }
+  
+  /**
+   * Atualiza vários produtos em massa
+   * @param productIds IDs dos produtos a serem atualizados
+   * @param updateData Dados a serem atualizados
+   * @param supplierId ID do fornecedor para verificação de propriedade
+   * @returns Produtos atualizados
+   */
+  async bulkUpdateProducts(productIds: number[], updateData: Partial<Omit<InsertProduct, "id" | "supplierId" | "createdAt">>, supplierId: number): Promise<Product[]> {
+    if (!supplierId || !productIds.length) return [];
+    
+    // Verificar se todos os produtos pertencem ao fornecedor
+    const productsToUpdate = Array.from(this.products.values())
+      .filter(product => 
+        productIds.includes(product.id) && 
+        product.supplierId === supplierId
+      );
+    
+    // Se a quantidade de produtos encontrados não corresponder aos IDs fornecidos, algum produto não pertence ao fornecedor
+    if (productsToUpdate.length !== productIds.length) {
+      throw new Error("Alguns produtos não pertencem a este fornecedor");
+    }
+    
+    const updatedProducts: Product[] = [];
+    
+    // Atualizar cada produto individualmente
+    for (const productId of productIds) {
+      const result = await this.updateProduct(productId, updateData);
+      if (result) {
+        updatedProducts.push(result);
+      }
+    }
+    
+    return updatedProducts;
+  }
+  
   async getProducts(options?: { 
     // Filtros básicos
     categoryId?: number; 
@@ -3936,6 +3997,75 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.supplierId, supplierId));
       
     return result[0]?.count || 0;
+  }
+  
+  /**
+   * Obtém produtos com estoque abaixo do limite configurado
+   * @param supplierId ID do fornecedor
+   * @param limit Limitar quantidade de resultados
+   * @returns Lista de produtos com estoque baixo
+   */
+  async getLowStockProducts(supplierId: number, limit?: number): Promise<Product[]> {
+    if (!supplierId) return [];
+    
+    // Consulta produtos com estoque abaixo do limiar e ordena pelo nível de estoque (mais baixo primeiro)
+    let query = db.select()
+      .from(products)
+      .where(
+        and(
+          eq(products.supplierId, supplierId),
+          eq(products.active, true),
+          sql`${products.stock} <= ${products.stockThreshold}`,
+          sql`${products.stock} IS NOT NULL`,
+          sql`${products.stockThreshold} IS NOT NULL`
+        )
+      )
+      .orderBy(asc(products.stock));
+    
+    // Aplicar limite se especificado
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
+  }
+  
+  /**
+   * Atualiza vários produtos em massa
+   * @param productIds IDs dos produtos a serem atualizados
+   * @param updateData Dados a serem atualizados
+   * @param supplierId ID do fornecedor para verificação de propriedade
+   * @returns Produtos atualizados
+   */
+  async bulkUpdateProducts(productIds: number[], updateData: Partial<Omit<InsertProduct, "id" | "supplierId" | "createdAt">>, supplierId: number): Promise<Product[]> {
+    if (!supplierId || !productIds.length) return [];
+    
+    // Verificar se todos os produtos pertencem ao fornecedor
+    const productsToUpdate = await db.select()
+      .from(products)
+      .where(
+        and(
+          inArray(products.id, productIds),
+          eq(products.supplierId, supplierId)
+        )
+      );
+    
+    // Se a quantidade de produtos encontrados não corresponder aos IDs fornecidos, algum produto não pertence ao fornecedor
+    if (productsToUpdate.length !== productIds.length) {
+      throw new Error("Alguns produtos não pertencem a este fornecedor");
+    }
+    
+    const updatedProducts: Product[] = [];
+    
+    // Atualizar cada produto individualmente
+    for (const productId of productIds) {
+      const result = await this.updateProduct(productId, updateData);
+      if (result) {
+        updatedProducts.push(result);
+      }
+    }
+    
+    return updatedProducts;
   }
   
   // Método para buscar categorias de produtos de um fornecedor
