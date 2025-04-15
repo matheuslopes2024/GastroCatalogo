@@ -355,73 +355,160 @@ export class MemStorage implements IStorage {
   }
   
   async getProductInventoryByProductId(productId: number): Promise<ProductInventory | undefined> {
-    for (const inventory of this.productInventory.values()) {
-      if (inventory.productId === productId) {
-        return inventory;
+    try {
+      // Tenta buscar do banco de dados primeiro
+      const [result] = await db.select()
+        .from(productInventory)
+        .where(eq(productInventory.productId, productId));
+      
+      if (result) {
+        console.log(`Inventário encontrado no banco de dados para o produto ${productId}: ${JSON.stringify(result)}`);
+        return result;
       }
+      
+      // Se não encontrou no banco, busca da memória (legado)
+      for (const inventory of this.productInventory.values()) {
+        if (inventory.productId === productId) {
+          console.log(`Inventário encontrado em memória para o produto ${productId}. Migrando para o banco de dados...`);
+          
+          // Migrar dados da memória para o banco
+          const dbInventory = await this.createProductInventory({
+            ...inventory,
+            productId: inventory.productId,
+            supplierId: inventory.supplierId,
+            quantity: inventory.quantity,
+            status: inventory.status,
+            lowStockThreshold: inventory.lowStockThreshold,
+            restockLevel: inventory.restockLevel,
+            reservedQuantity: inventory.reservedQuantity || 0,
+            location: inventory.location || "Depósito Principal",
+            notes: inventory.notes || "Migrado da memória"
+          });
+          
+          return dbInventory;
+        }
+      }
+      
+      console.log(`Nenhum inventário encontrado para o produto ${productId}`);
+      return undefined;
+    } catch (error) {
+      console.error(`Erro ao buscar inventário do produto ${productId}:`, error);
+      return undefined;
     }
-    return undefined;
   }
   
   async createProductInventory(inventory: InsertProductInventory): Promise<ProductInventory> {
-    const id = ++this.currentProductInventoryId;
-    const newInventory: ProductInventory = {
-      id,
-      ...inventory,
-      lastUpdatedAt: new Date()
-    };
-    this.productInventory.set(id, newInventory);
-    
-    // Criar um registro histórico
-    await this.createInventoryHistory({
-      productId: inventory.productId,
-      supplierId: inventory.supplierId,
-      userId: inventory.userId,
-      quantity: inventory.quantity,
-      previousQuantity: 0,
-      currentQuantity: inventory.quantity,
-      action: "initial",
-      notes: "Registro inicial de estoque",
-      batchId: null
-    });
-    
-    return newInventory;
-  }
-  
-  async updateProductInventory(id: number, inventoryData: Partial<ProductInventory>): Promise<ProductInventory | undefined> {
-    const currentInventory = this.productInventory.get(id);
-    if (!currentInventory) {
-      return undefined;
-    }
-    
-    const previousQuantity = currentInventory.quantity;
-    const updatedInventory = {
-      ...currentInventory,
-      ...inventoryData,
-      lastUpdatedAt: new Date()
-    };
-    
-    this.productInventory.set(id, updatedInventory);
-    
-    if (inventoryData.quantity !== undefined && inventoryData.quantity !== previousQuantity) {
-      // Registrar mudança no histórico
+    try {
+      // Inserir no banco de dados PostgreSQL
+      const [newInventory] = await db.insert(productInventory)
+        .values({
+          ...inventory,
+          createdAt: new Date(),
+          lastUpdated: new Date()
+        })
+        .returning();
+      
+      console.log(`Novo inventário criado no banco de dados para o produto ${inventory.productId}:`, newInventory);
+      
+      // Criar um registro histórico
       await this.createInventoryHistory({
-        productId: currentInventory.productId,
-        supplierId: currentInventory.supplierId,
-        userId: inventoryData.userId || null,
-        quantity: inventoryData.quantity - previousQuantity,
-        previousQuantity,
-        currentQuantity: inventoryData.quantity,
-        action: "update",
-        notes: inventoryData.notes || "Atualização manual de estoque",
+        productId: inventory.productId,
+        supplierId: inventory.supplierId,
+        userId: inventory.userId,
+        quantity: inventory.quantity,
+        previousQuantity: 0,
+        currentQuantity: inventory.quantity,
+        action: "initial",
+        notes: "Registro inicial de estoque",
         batchId: null
       });
       
-      // Verificar níveis de estoque
-      this.checkStockLevelsAndCreateAlerts(updatedInventory);
+      return newInventory;
+    } catch (error) {
+      console.error("Erro ao criar inventário no banco:", error);
+      
+      // Fallback para armazenamento em memória
+      const id = ++this.currentProductInventoryId;
+      const newInventory: ProductInventory = {
+        id,
+        ...inventory,
+        createdAt: new Date(),
+        lastUpdated: new Date()
+      };
+      
+      this.productInventory.set(id, newInventory);
+      return newInventory;
     }
-    
-    return updatedInventory;
+  }
+  
+  async updateProductInventory(id: number, inventoryData: Partial<ProductInventory>): Promise<ProductInventory | undefined> {
+    try {
+      // Buscar no banco de dados primeiro
+      const [currentInventory] = await db.select()
+        .from(productInventory)
+        .where(eq(productInventory.id, id));
+      
+      if (!currentInventory) {
+        // Se não encontrou no banco, buscar da memória (legacy)
+        const memoryInventory = this.productInventory.get(id);
+        if (!memoryInventory) {
+          return undefined;
+        }
+        
+        // Migrar para o banco e depois atualizar
+        console.log(`Inventário encontrado em memória para o ID ${id}. Migrando para o banco de dados antes de atualizar...`);
+        const dbInventory = await this.createProductInventory({
+          productId: memoryInventory.productId,
+          supplierId: memoryInventory.supplierId,
+          quantity: memoryInventory.quantity,
+          status: memoryInventory.status,
+          lowStockThreshold: memoryInventory.lowStockThreshold,
+          restockLevel: memoryInventory.restockLevel,
+          reservedQuantity: memoryInventory.reservedQuantity || 0,
+          location: memoryInventory.location || "Depósito Principal",
+          notes: memoryInventory.notes || "Migrado da memória"
+        });
+        
+        // Recursivamente chamar o mesmo método agora que o registro está no banco
+        return this.updateProductInventory(dbInventory.id, inventoryData);
+      }
+      
+      const previousQuantity = currentInventory.quantity;
+      
+      // Atualizar no banco de dados
+      const [updatedInventory] = await db.update(productInventory)
+        .set({
+          ...inventoryData,
+          lastUpdated: new Date()
+        })
+        .where(eq(productInventory.id, id))
+        .returning();
+      
+      console.log(`Inventário atualizado no banco de dados: ${JSON.stringify(updatedInventory)}`);
+      
+      if (inventoryData.quantity !== undefined && inventoryData.quantity !== previousQuantity) {
+        // Registrar mudança no histórico
+        await this.createInventoryHistory({
+          productId: currentInventory.productId,
+          supplierId: currentInventory.supplierId,
+          userId: null, // Ajustado para evitar erro, já que userId não está no tipo
+          quantity: inventoryData.quantity - previousQuantity,
+          previousQuantity,
+          currentQuantity: inventoryData.quantity,
+          action: "update",
+          notes: inventoryData.notes || "Atualização manual de estoque",
+          batchId: null
+        });
+        
+        // Verificar níveis de estoque
+        await this.checkStockLevelsAndCreateAlerts(updatedInventory);
+      }
+      
+      return updatedInventory;
+    } catch (error) {
+      console.error(`Erro ao atualizar inventário com ID ${id}:`, error);
+      return undefined;
+    }
   }
   
   async getProductInventories(options?: {
@@ -431,121 +518,423 @@ export class MemStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<ProductInventory[]> {
-    let inventories = Array.from(this.productInventory.values());
-    
-    // Aplicar filtros
-    if (options) {
-      if (options.supplierId) {
-        inventories = inventories.filter(inv => inv.supplierId === options.supplierId);
-      }
+    try {
+      // Construir a consulta ao banco de dados
+      let query = db.select().from(productInventory);
       
-      if (options.status) {
-        inventories = inventories.filter(inv => inv.status === options.status);
-      }
-      
-      if (options.lowStock) {
-        inventories = inventories.filter(inv => 
-          inv.quantity > 0 && inv.quantity <= inv.lowStockThreshold
-        );
-      }
-      
-      // Aplicar paginação
-      if (options.offset) {
-        inventories = inventories.slice(options.offset);
-      }
-      
-      if (options.limit) {
-        inventories = inventories.slice(0, options.limit);
-      }
-    }
-    
-    return inventories;
-  }
-  
-  async bulkUpdateInventory(items: {productId: number, quantity: number, status?: InventoryStatusType}[]): Promise<ProductInventory[]> {
-    const batchId = `batch-${new Date().getTime()}`;
-    const updatedInventories: ProductInventory[] = [];
-    
-    for (const item of items) {
-      // Encontrar inventário pelo productId
-      let found = false;
-      for (const [invId, inv] of this.productInventory.entries()) {
-        if (inv.productId === item.productId) {
-          found = true;
-          const previousQuantity = inv.quantity;
-          const updatedInventory: ProductInventory = {
-            ...inv,
-            quantity: item.quantity,
-            status: item.status || inv.status,
-            lastUpdatedAt: new Date()
-          };
-          
-          this.productInventory.set(invId, updatedInventory);
-          
-          // Registrar no histórico
-          await this.createInventoryHistory({
-            productId: item.productId,
-            supplierId: inv.supplierId,
-            userId: null,
-            quantity: item.quantity - previousQuantity,
-            previousQuantity,
-            currentQuantity: item.quantity,
-            action: "bulk_update",
-            notes: "Atualização em lote",
-            batchId
-          });
-          
-          // Verificar alertas
-          this.checkStockLevelsAndCreateAlerts(updatedInventory);
-          
-          updatedInventories.push(updatedInventory);
-          break;
+      // Aplicar filtros
+      if (options) {
+        if (options.supplierId) {
+          query = query.where(eq(productInventory.supplierId, options.supplierId));
+        }
+        
+        if (options.status) {
+          query = query.where(eq(productInventory.status, options.status));
+        }
+        
+        if (options.lowStock) {
+          query = query.where(
+            and(
+              gt(productInventory.quantity, 0),
+              lte(productInventory.quantity, productInventory.lowStockThreshold)
+            )
+          );
+        }
+        
+        // Aplicar ordenação
+        query = query.orderBy(desc(productInventory.lastUpdated));
+        
+        // Aplicar paginação
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+        
+        if (options.offset) {
+          query = query.offset(options.offset);
         }
       }
       
-      if (!found) {
-        console.warn(`Inventário não encontrado para produto com ID ${item.productId}`);
+      const dbInventories = await query;
+      console.log(`Encontrados ${dbInventories.length} registros de inventário no banco de dados`);
+      
+      if (dbInventories.length > 0) {
+        return dbInventories;
       }
+      
+      // Fallback para dados em memória (legado)
+      let inventories = Array.from(this.productInventory.values());
+      
+      // Aplicar filtros
+      if (options) {
+        if (options.supplierId) {
+          inventories = inventories.filter(inv => inv.supplierId === options.supplierId);
+        }
+        
+        if (options.status) {
+          inventories = inventories.filter(inv => inv.status === options.status);
+        }
+        
+        if (options.lowStock) {
+          inventories = inventories.filter(inv => 
+            inv.quantity > 0 && inv.quantity <= inv.lowStockThreshold
+          );
+        }
+        
+        // Aplicar paginação
+        if (options.offset) {
+          inventories = inventories.slice(options.offset);
+        }
+        
+        if (options.limit) {
+          inventories = inventories.slice(0, options.limit);
+        }
+      }
+      
+      if (inventories.length > 0) {
+        console.log(`Encontrados ${inventories.length} registros de inventário em memória. Migrando para o banco de dados...`);
+        
+        // Migrar registros encontrados para o banco de dados
+        const migratedInventories: ProductInventory[] = [];
+        for (const inv of inventories) {
+          const dbInventory = await this.createProductInventory({
+            productId: inv.productId,
+            supplierId: inv.supplierId,
+            quantity: inv.quantity,
+            status: inv.status,
+            lowStockThreshold: inv.lowStockThreshold,
+            restockLevel: inv.restockLevel,
+            reservedQuantity: inv.reservedQuantity || 0,
+            location: inv.location || "Depósito Principal",
+            notes: inv.notes || "Migrado da memória"
+          });
+          migratedInventories.push(dbInventory);
+        }
+        
+        return migratedInventories;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error("Erro ao buscar inventários:", error);
+      return [];
     }
-    
-    return updatedInventories;
+  }
+  
+  async bulkUpdateInventory(items: {productId: number, quantity: number, status?: InventoryStatusType}[]): Promise<ProductInventory[]> {
+    try {
+      const batchId = `batch-${new Date().getTime()}`;
+      const updatedInventories: ProductInventory[] = [];
+      
+      for (const item of items) {
+        try {
+          // Buscar inventário no banco pelo productId
+          const [inventory] = await db.select()
+            .from(productInventory)
+            .where(eq(productInventory.productId, item.productId));
+          
+          if (inventory) {
+            console.log(`Atualizando inventário do produto ${item.productId} no banco de dados`);
+            
+            const previousQuantity = inventory.quantity;
+            
+            // Atualizar no banco de dados
+            const [updatedInventory] = await db.update(productInventory)
+              .set({
+                quantity: item.quantity,
+                status: item.status || inventory.status,
+                lastUpdated: new Date()
+              })
+              .where(eq(productInventory.id, inventory.id))
+              .returning();
+            
+            // Registrar no histórico
+            await this.createInventoryHistory({
+              productId: item.productId,
+              supplierId: inventory.supplierId,
+              userId: null,
+              quantity: item.quantity - previousQuantity,
+              previousQuantity,
+              currentQuantity: item.quantity,
+              action: "bulk_update",
+              notes: "Atualização em lote",
+              batchId
+            });
+            
+            // Verificar alertas
+            await this.checkStockLevelsAndCreateAlerts(updatedInventory);
+            
+            updatedInventories.push(updatedInventory);
+          } else {
+            // Verificar na memória (legado)
+            let found = false;
+            for (const [invId, inv] of this.productInventory.entries()) {
+              if (inv.productId === item.productId) {
+                found = true;
+                console.log(`Encontrado inventário em memória para produto ${item.productId}. Migrando para banco...`);
+                
+                // Migrar para o banco e depois atualizar
+                const dbInventory = await this.createProductInventory({
+                  productId: inv.productId,
+                  supplierId: inv.supplierId,
+                  quantity: item.quantity, // Já atualiza com a nova quantidade
+                  status: item.status || inv.status,
+                  lowStockThreshold: inv.lowStockThreshold,
+                  restockLevel: inv.restockLevel,
+                  reservedQuantity: inv.reservedQuantity || 0,
+                  location: inv.location || "Depósito Principal",
+                  notes: inv.notes || "Migrado da memória e atualizado em lote"
+                });
+                
+                // Registrar no histórico
+                await this.createInventoryHistory({
+                  productId: item.productId,
+                  supplierId: inv.supplierId,
+                  userId: null,
+                  quantity: item.quantity - inv.quantity,
+                  previousQuantity: inv.quantity,
+                  currentQuantity: item.quantity,
+                  action: "bulk_update",
+                  notes: "Migração e atualização em lote",
+                  batchId
+                });
+                
+                // Verificar alertas
+                await this.checkStockLevelsAndCreateAlerts(dbInventory);
+                
+                updatedInventories.push(dbInventory);
+                break;
+              }
+            }
+            
+            if (!found) {
+              console.warn(`Inventário não encontrado para produto com ID ${item.productId}. Criando novo...`);
+              
+              // Criar novo inventário no banco
+              const product = await this.getProduct(item.productId);
+              if (product) {
+                const newInventory = await this.createProductInventory({
+                  productId: item.productId,
+                  supplierId: product.supplierId,
+                  quantity: item.quantity,
+                  status: item.status || InventoryStatus.IN_STOCK,
+                  lowStockThreshold: 5, // Valor padrão
+                  restockLevel: 10, // Valor padrão
+                  reservedQuantity: 0,
+                  location: "Depósito Principal",
+                  notes: "Criado durante atualização em lote"
+                });
+                
+                // Registrar no histórico
+                await this.createInventoryHistory({
+                  productId: item.productId,
+                  supplierId: product.supplierId,
+                  userId: null,
+                  quantity: item.quantity,
+                  previousQuantity: 0,
+                  currentQuantity: item.quantity,
+                  action: "bulk_create",
+                  notes: "Criação durante atualização em lote",
+                  batchId
+                });
+                
+                updatedInventories.push(newInventory);
+              } else {
+                console.error(`Não foi possível criar inventário, produto ${item.productId} não encontrado`);
+              }
+            }
+          }
+        } catch (itemError) {
+          console.error(`Erro ao processar item ${item.productId}:`, itemError);
+        }
+      }
+      
+      return updatedInventories;
+    } catch (error) {
+      console.error("Erro ao executar atualização em lote do inventário:", error);
+      return [];
+    }
   }
   
   // Métodos para alertas de estoque (Stock Alerts)
   async getStockAlert(id: number): Promise<StockAlert | undefined> {
-    return this.stockAlerts.get(id);
+    try {
+      // Tentar buscar no banco de dados
+      const [dbAlert] = await db
+        .select()
+        .from(stockAlerts)
+        .where(eq(stockAlerts.id, id));
+      
+      if (dbAlert) {
+        console.log(`Alerta de estoque ${id} encontrado no banco de dados`);
+        return dbAlert;
+      }
+      
+      // Fallback para busca em memória (legado)
+      console.warn(`Alerta ${id} não encontrado no banco. Tentando em memória...`);
+      const alert = this.stockAlerts.get(id);
+      
+      // Se encontrou em memória, tenta migrar para o banco
+      if (alert) {
+        console.log(`Alerta ${id} encontrado em memória. Migrando para o banco...`);
+        
+        try {
+          const [newDbAlert] = await db
+            .insert(stockAlerts)
+            .values({
+              ...alert,
+              id: undefined // O banco vai gerar um novo ID
+            })
+            .returning();
+          
+          if (newDbAlert) {
+            console.log(`Alerta migrado para o banco com ID ${newDbAlert.id}`);
+            
+            // Remove da memória para evitar duplicidade
+            this.stockAlerts.delete(id);
+            
+            return newDbAlert;
+          }
+        } catch (migrationError) {
+          console.error(`Erro ao migrar alerta ${id} para o banco:`, migrationError);
+        }
+        
+        return alert;
+      }
+      
+      return undefined;
+    } catch (error) {
+      console.error(`Erro ao buscar alerta ${id} no banco:`, error);
+      
+      // Fallback para busca em memória
+      return this.stockAlerts.get(id);
+    }
   }
   
   async createStockAlert(alert: InsertStockAlert): Promise<StockAlert> {
-    const id = ++this.currentStockAlertId;
-    const newAlert: StockAlert = {
-      id,
-      ...alert,
-      createdAt: new Date(),
-      isRead: false,
-      readAt: null,
-      readBy: null,
-      resolvedAt: null,
-      resolvedBy: null
-    };
-    
-    this.stockAlerts.set(id, newAlert);
-    return newAlert;
+    try {
+      // Tentar criar o alerta no banco de dados
+      const [dbAlert] = await db.insert(stockAlerts)
+        .values({
+          ...alert,
+          createdAt: new Date(),
+          isRead: false,
+          readAt: null,
+          readBy: null,
+          resolvedAt: null,
+          resolvedBy: null
+        })
+        .returning();
+      
+      if (dbAlert) {
+        console.log(`Alerta de estoque criado no banco com ID ${dbAlert.id}`);
+        return dbAlert;
+      }
+      
+      // Fallback para armazenamento em memória (legado)
+      console.warn("Fallback para armazenamento em memória para alerta de estoque");
+      const id = ++this.currentStockAlertId;
+      const newAlert: StockAlert = {
+        id,
+        ...alert,
+        createdAt: new Date(),
+        isRead: false,
+        readAt: null,
+        readBy: null,
+        resolvedAt: null,
+        resolvedBy: null
+      };
+      
+      this.stockAlerts.set(id, newAlert);
+      return newAlert;
+    } catch (error) {
+      console.error("Erro ao criar alerta de estoque no banco:", error);
+      
+      // Fallback para armazenamento em memória em caso de erro
+      const id = ++this.currentStockAlertId;
+      const newAlert: StockAlert = {
+        id,
+        ...alert,
+        createdAt: new Date(),
+        isRead: false,
+        readAt: null,
+        readBy: null,
+        resolvedAt: null,
+        resolvedBy: null
+      };
+      
+      this.stockAlerts.set(id, newAlert);
+      return newAlert;
+    }
   }
   
   async updateStockAlert(id: number, alertData: Partial<StockAlert>): Promise<StockAlert | undefined> {
-    const currentAlert = this.stockAlerts.get(id);
-    if (!currentAlert) {
-      return undefined;
+    try {
+      // Tentar atualizar no banco de dados
+      const [dbAlert] = await db
+        .update(stockAlerts)
+        .set(alertData)
+        .where(eq(stockAlerts.id, id))
+        .returning();
+      
+      if (dbAlert) {
+        console.log(`Alerta de estoque ${id} atualizado no banco de dados`);
+        return dbAlert;
+      }
+      
+      // Fallback para atualização em memória (legado)
+      console.warn(`Alerta ${id} não encontrado no banco. Tentando em memória...`);
+      const currentAlert = this.stockAlerts.get(id);
+      if (!currentAlert) {
+        return undefined;
+      }
+      
+      const updatedAlert = {
+        ...currentAlert,
+        ...alertData
+      };
+      
+      this.stockAlerts.set(id, updatedAlert);
+      
+      // Tentar salvar no banco após atualização em memória
+      try {
+        const alertToInsert = {
+          ...updatedAlert,
+          id: undefined // O banco vai gerar um novo ID
+        };
+        
+        const [newDbAlert] = await db
+          .insert(stockAlerts)
+          .values(alertToInsert)
+          .returning();
+          
+        if (newDbAlert) {
+          console.log(`Alerta de memória migrado para o banco com novo ID ${newDbAlert.id}`);
+          // Remover da memória o alerta antigo
+          this.stockAlerts.delete(id);
+          return newDbAlert;
+        }
+      } catch (migrationError) {
+        console.error("Erro ao migrar alerta para o banco:", migrationError);
+      }
+      
+      return updatedAlert;
+    } catch (error) {
+      console.error("Erro ao atualizar alerta no banco:", error);
+      
+      // Fallback para atualização em memória em caso de erro
+      const currentAlert = this.stockAlerts.get(id);
+      if (!currentAlert) {
+        return undefined;
+      }
+      
+      const updatedAlert = {
+        ...currentAlert,
+        ...alertData
+      };
+      
+      this.stockAlerts.set(id, updatedAlert);
+      return updatedAlert;
     }
-    
-    const updatedAlert = {
-      ...currentAlert,
-      ...alertData
-    };
-    
-    this.stockAlerts.set(id, updatedAlert);
-    return updatedAlert;
   }
   
   async getStockAlerts(options?: {
@@ -555,35 +944,119 @@ export class MemStorage implements IStorage {
     active?: boolean;
     resolved?: boolean;
   }): Promise<StockAlert[]> {
-    let alerts = Array.from(this.stockAlerts.values());
-    
-    // Aplicar filtros
-    if (options) {
-      if (options.supplierId) {
-        alerts = alerts.filter(alert => alert.supplierId === options.supplierId);
+    try {
+      // Construir a consulta ao banco de dados
+      let query = db.select().from(stockAlerts);
+      
+      // Aplicar filtros
+      if (options) {
+        if (options.supplierId) {
+          query = query.where(eq(stockAlerts.supplierId, options.supplierId));
+        }
+        
+        if (options.productId) {
+          query = query.where(eq(stockAlerts.productId, options.productId));
+        }
+        
+        if (options.type) {
+          query = query.where(eq(stockAlerts.type, options.type));
+        }
+        
+        if (options.active !== undefined) {
+          query = query.where(eq(stockAlerts.isRead, !options.active));
+        }
+        
+        if (options.resolved !== undefined) {
+          query = query.where(eq(stockAlerts.resolved, options.resolved));
+        }
       }
       
-      if (options.productId) {
-        alerts = alerts.filter(alert => alert.productId === options.productId);
+      // Ordenar por data (mais recentes primeiro)
+      query = query.orderBy(desc(stockAlerts.createdAt));
+      
+      const dbAlerts = await query;
+      console.log(`Encontrados ${dbAlerts.length} alertas de estoque no banco de dados`);
+      
+      if (dbAlerts.length > 0) {
+        return dbAlerts;
       }
       
-      if (options.type) {
-        alerts = alerts.filter(alert => alert.type === options.type);
+      // Fallback para dados em memória (legado)
+      let alerts = Array.from(this.stockAlerts.values());
+      
+      // Aplicar filtros
+      if (options) {
+        if (options.supplierId) {
+          alerts = alerts.filter(alert => alert.supplierId === options.supplierId);
+        }
+        
+        if (options.productId) {
+          alerts = alerts.filter(alert => alert.productId === options.productId);
+        }
+        
+        if (options.type) {
+          alerts = alerts.filter(alert => alert.type === options.type);
+        }
+        
+        if (options.active !== undefined) {
+          alerts = alerts.filter(alert => alert.isRead === !options.active);
+        }
+        
+        if (options.resolved !== undefined) {
+          alerts = alerts.filter(alert => alert.resolved === options.resolved);
+        }
       }
       
-      if (options.active !== undefined) {
-        alerts = alerts.filter(alert => alert.isRead === !options.active);
+      // Ordenar por data (mais recentes primeiro)
+      alerts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      if (alerts.length > 0) {
+        console.log(`Encontrados ${alerts.length} alertas de estoque em memória. Migrando para o banco de dados...`);
+        
+        // Migrar alertas encontrados para o banco de dados
+        const migratedAlerts: StockAlert[] = [];
+        for (const alert of alerts) {
+          try {
+            const dbAlert = await db.insert(stockAlerts)
+              .values({
+                productId: alert.productId,
+                supplierId: alert.supplierId,
+                type: alert.type,
+                message: alert.message,
+                threshold: alert.threshold,
+                currentLevel: alert.currentLevel,
+                priority: alert.priority,
+                isRead: alert.isRead,
+                resolved: alert.resolved,
+                userId: alert.userId,
+                createdAt: alert.createdAt,
+                readAt: alert.readAt,
+                readBy: alert.readBy,
+                resolvedAt: alert.resolvedAt,
+                resolvedBy: alert.resolvedBy
+              })
+              .returning();
+              
+            if (dbAlert.length > 0) {
+              migratedAlerts.push(dbAlert[0]);
+            }
+          } catch (migrationError) {
+            console.error(`Erro ao migrar alerta de estoque para o banco: ${migrationError}`);
+          }
+        }
+        
+        return migratedAlerts.length > 0 ? migratedAlerts : alerts;
       }
       
-      if (options.resolved !== undefined) {
-        alerts = alerts.filter(alert => alert.resolved === options.resolved);
-      }
+      return [];
+    } catch (error) {
+      console.error("Erro ao buscar alertas de estoque:", error);
+      
+      // Em caso de erro no banco, usar dados em memória como fallback
+      const alerts = Array.from(this.stockAlerts.values());
+      console.warn("Usando dados em memória como fallback devido a erro no banco");
+      return alerts;
     }
-    
-    // Ordenar por data (mais recentes primeiro)
-    alerts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return alerts;
   }
   
   // Métodos para histórico de inventário
