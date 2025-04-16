@@ -826,12 +826,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productData.supplierId = product.supplierId;
       }
       
+      // Garantir que lastStockUpdate seja tratado corretamente
+      if (productData.lastStockUpdate) {
+        try {
+          // Se for uma string ISO, converta para Date para o banco de dados
+          if (typeof productData.lastStockUpdate === 'string') {
+            const dateObj = new Date(productData.lastStockUpdate);
+            // Verificar se a data é válida antes de prosseguir
+            if (isNaN(dateObj.getTime())) {
+              console.error("Data inválida recebida:", productData.lastStockUpdate);
+              throw new Error("Data de atualização de estoque inválida");
+            }
+            // Use a data válida
+            productData.lastStockUpdate = dateObj;
+          } else {
+            // Se não for string nem Date, remova o campo para evitar erros
+            if (!(productData.lastStockUpdate instanceof Date)) {
+              console.error("Tipo de data inválido:", typeof productData.lastStockUpdate);
+              delete productData.lastStockUpdate;
+            }
+          }
+        } catch (dateError) {
+          console.error("Erro ao processar lastStockUpdate:", dateError);
+          delete productData.lastStockUpdate;
+        }
+      }
+      
       console.log("Dados finais para atualização:", {
         productId: id,
         name: productData.name,
         supplierId: productData.supplierId,
         preco: productData.price,
-        categoria: productData.categoryId
+        categoria: productData.categoryId,
+        lastStockUpdate: productData.lastStockUpdate 
+          ? (productData.lastStockUpdate instanceof Date 
+             ? productData.lastStockUpdate.toISOString() 
+             : productData.lastStockUpdate)
+          : null
       });
       
       // Realizamos aqui a atualização do produto
