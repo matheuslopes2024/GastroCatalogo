@@ -419,7 +419,7 @@ export default function ProductManagement() {
       lowStockThreshold: data.lowStockThreshold,
       sku: data.sku,
       stockStatus: data.stockStatus,
-      lastStockUpdate: new Date().toISOString()
+      lastStockUpdate: new Date()
     };
     
     console.log("Dados simplificados para envio:", productData);
@@ -456,7 +456,7 @@ export default function ProductManagement() {
       lowStockThreshold: data.lowStockThreshold,
       sku: data.sku,
       stockStatus: data.stockStatus,
-      lastStockUpdate: new Date().toISOString()
+      lastStockUpdate: new Date()
     };
     
     console.log("Dados simplificados para edição:", productData);
