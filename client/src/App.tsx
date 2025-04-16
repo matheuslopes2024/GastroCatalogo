@@ -35,6 +35,9 @@ import ChatAdminPage from "@/pages/admin/chat-admin";
 import SupplierDashboard from "@/pages/supplier/dashboard";
 import SupplierProductManagement from "@/pages/supplier/product-management";
 import SupplierSales from "@/pages/supplier/sales";
+import EstoquePage from "@/pages/supplier/estoque/index";
+import AlertasEstoquePage from "@/pages/supplier/estoque/alertas";
+import BulkUpdatePage from "@/pages/supplier/produtos/bulk-update";
 
 // Existing pages
 import CategoriesPage from "@/pages/categories-page";
@@ -176,6 +179,23 @@ const MainRoutes = memo(function MainRoutes() {
                 })))}
               </Suspense>
             )}
+            allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+          />
+          
+          {/* Rotas de Estoque */}
+          <ProtectedRoute 
+            path="/fornecedor/estoque" 
+            component={EstoquePage} 
+            allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+          />
+          <ProtectedRoute 
+            path="/fornecedor/estoque/alertas" 
+            component={AlertasEstoquePage} 
+            allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
+          />
+          <ProtectedRoute 
+            path="/fornecedor/produtos/bulk-update" 
+            component={BulkUpdatePage} 
             allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
           />
           

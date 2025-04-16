@@ -112,7 +112,18 @@ const productFormSchema = z.object({
   imageUrl: z.string().url("URL da imagem inválida"),
   imageData: z.string().nullable().optional(),
   imageType: z.string().nullable().optional(),
-  active: z.boolean().default(true)
+  active: z.boolean().default(true),
+  // Campos para controle de estoque
+  stock: z.union([
+    z.string().refine(val => !isNaN(parseInt(val)), "Estoque deve ser um número").transform(val => parseInt(val)),
+    z.number()
+  ]).optional().default(0),
+  lowStockThreshold: z.union([
+    z.string().refine(val => !isNaN(parseInt(val)), "Limite deve ser um número").transform(val => parseInt(val)),
+    z.number()
+  ]).optional().default(5),
+  sku: z.string().optional(),
+  stockStatus: z.string().optional().default("in_stock")
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -174,6 +185,11 @@ export default function ProductManagement() {
       imageData: null,
       imageType: null,
       active: true,
+      // Campos de estoque com valores padrão
+      stock: 0,
+      lowStockThreshold: 5,
+      sku: "",
+      stockStatus: "in_stock"
     },
   });
   
@@ -193,6 +209,11 @@ export default function ProductManagement() {
       imageData: null,
       imageType: null,
       active: true,
+      // Campos de estoque com valores padrão
+      stock: 0,
+      lowStockThreshold: 5,
+      sku: "",
+      stockStatus: "in_stock"
     },
   });
   
@@ -392,7 +413,13 @@ export default function ProductManagement() {
       imageData: data.imageData,
       imageType: data.imageType,
       rating: null,
-      ratingsCount: 0
+      ratingsCount: 0,
+      // Campos de estoque
+      stock: data.stock,
+      lowStockThreshold: data.lowStockThreshold,
+      sku: data.sku,
+      stockStatus: data.stockStatus,
+      lastStockUpdate: new Date()
     };
     
     console.log("Dados simplificados para envio:", productData);
@@ -423,7 +450,13 @@ export default function ProductManagement() {
       imageData: data.imageData,
       imageType: data.imageType,
       rating: editingProduct.rating,
-      ratingsCount: editingProduct.ratingsCount || 0
+      ratingsCount: editingProduct.ratingsCount || 0,
+      // Campos de estoque
+      stock: data.stock,
+      lowStockThreshold: data.lowStockThreshold,
+      sku: data.sku,
+      stockStatus: data.stockStatus,
+      lastStockUpdate: new Date()
     };
     
     console.log("Dados simplificados para edição:", productData);
