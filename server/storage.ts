@@ -461,7 +461,7 @@ export class MemStorage implements IStorage {
             dataToUpdate.lastStockUpdate = new Date(dataToUpdate.lastStockUpdate).toISOString();
           } catch (err) {
             console.warn(`Erro ao processar lastStockUpdate, usando data atual:`, err);
-            dataToUpdate.lastStockUpdate = new Date().toISOString();
+            dataToUpdate.lastStockUpdate = new Date();
           }
         }
       }
@@ -503,7 +503,7 @@ export class MemStorage implements IStorage {
         // Tratar dados antes da atualização
         if (updateData.stock !== undefined) {
           updateData.stock = Number(updateData.stock);
-          updateData.lastStockUpdate = new Date().toISOString();
+          updateData.lastStockUpdate = new Date();
           
           // Atualizar status do estoque com base na quantidade
           if (existingProduct.lowStockThreshold !== null) {
@@ -1839,7 +1839,7 @@ export class DatabaseStorage implements IStorage {
         // Tratar dados antes da atualização
         if (updateData.stock !== undefined) {
           updateData.stock = Number(updateData.stock);
-          updateData.lastStockUpdate = new Date().toISOString();
+          updateData.lastStockUpdate = new Date();
           
           // Atualizar status do estoque com base na quantidade
           if (existingProduct.lowStockThreshold !== null) {
