@@ -803,6 +803,118 @@ export default function ProductManagement() {
                 )}
               />
               
+              {/* Seção de Estoque */}
+              <div className="space-y-4">
+                <div className="text-lg font-semibold">Informações de Estoque</div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="stock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quantidade em Estoque</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            placeholder="0" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              field.onChange(value);
+                            }}
+                            value={field.value || 0}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Quantidade atual disponível em estoque
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="lowStockThreshold"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Limite para Alerta</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            placeholder="5" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              field.onChange(value);
+                            }}
+                            value={field.value || 5}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Quantidade mínima para alerta de estoque baixo
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código SKU</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="SKU-123456" 
+                            {...field} 
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Código de referência única para o produto
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="stockStatus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status do Estoque</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value || "in_stock"}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="in_stock">Em Estoque</SelectItem>
+                            <SelectItem value="low_stock">Estoque Baixo</SelectItem>
+                            <SelectItem value="out_of_stock">Fora de Estoque</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Estado atual do produto no estoque
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+              
               <FormField
                 control={form.control}
                 name="features"
@@ -995,6 +1107,118 @@ export default function ProductManagement() {
                   </FormItem>
                 )}
               />
+              
+              {/* Seção de Estoque */}
+              <div className="space-y-4">
+                <div className="text-lg font-semibold">Informações de Estoque</div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="stock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quantidade em Estoque</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            placeholder="0" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              field.onChange(value);
+                            }}
+                            value={field.value || 0}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Quantidade atual disponível em estoque
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="lowStockThreshold"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Limite para Alerta</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            placeholder="5" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              field.onChange(value);
+                            }}
+                            value={field.value || 5}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Quantidade mínima para alerta de estoque baixo
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código SKU</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="SKU-123456" 
+                            {...field} 
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Código de referência única para o produto
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="stockStatus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status do Estoque</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value || "in_stock"}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="in_stock">Em Estoque</SelectItem>
+                            <SelectItem value="low_stock">Estoque Baixo</SelectItem>
+                            <SelectItem value="out_of_stock">Fora de Estoque</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Estado atual do produto no estoque
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
               
               <FormField
                 control={editForm.control}

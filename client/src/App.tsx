@@ -142,6 +142,31 @@ const MainRoutes = memo(function MainRoutes() {
             component={SupplierProductManagement} 
             allowedRoles={[UserRole.SUPPLIER, UserRole.ADMIN]}
           />
+          {/* English route aliases - redirects to Portuguese equivalents */}
+          <Route path="/supplier/products">
+            {() => {
+              window.location.href = '/fornecedor/produtos';
+              return <Loader message="Redirecionando..." />;
+            }}
+          </Route>
+          <Route path="/supplier/dashboard">
+            {() => {
+              window.location.href = '/fornecedor/dashboard';
+              return <Loader message="Redirecionando..." />;
+            }}
+          </Route>
+          <Route path="/supplier/stock">
+            {() => {
+              window.location.href = '/fornecedor/estoque';
+              return <Loader message="Redirecionando..." />;
+            }}
+          </Route>
+          <Route path="/supplier">
+            {() => {
+              window.location.href = '/fornecedor';
+              return <Loader message="Redirecionando..." />;
+            }}
+          </Route>
           <ProtectedRoute 
             path="/fornecedor/vendas" 
             component={SupplierSales} 
