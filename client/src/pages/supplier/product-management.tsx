@@ -281,45 +281,66 @@ export default function ProductManagement() {
     mutationFn: async (data: ProductFormValues & { id: number }) => {
       const { id, ...productData } = data;
       
-      // Garantir que lastStockUpdate seja uma string ISO se estiver presente
-      if (productData.lastStockUpdate && typeof productData.lastStockUpdate !== 'string') {
-        try {
-          productData.lastStockUpdate = new Date(productData.lastStockUpdate).toISOString();
-        } catch (err) {
-          console.error("Erro ao converter lastStockUpdate para ISO string:", err);
-          productData.lastStockUpdate = new Date().toISOString();
-        }
-      }
+      // Não precisamos mais converter lastStockUpdate para ISO 
+      // O backend já espera um objeto Date e não mais uma string ISO
+      console.log("Dados de produto sendo enviados para atualização:", productData);
       
       console.log("Enviando dados para atualização:", productData);
       return apiRequest("PATCH", `/api/products/${id}`, productData);
     },
     onSuccess: (data) => {
-      // Invalidar a consulta de produtos para atualização
+      console.log("Resposta da atualização recebida:", data);
+      
+      // Forçar uma nova busca de todos os produtos para atualizar a interface
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       
-      // Atualizar o cache com o produto modificado em tempo real
+      // Tentar processar a resposta para atualizar em tempo real
       try {
-        data.text().then(text => {
-          try {
-            const updatedProduct = JSON.parse(text);
-            const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
-            
-            if (updatedProduct && updatedProduct.id) {
-              // Substituir o produto antigo pelo atualizado na lista
-              const updatedProducts = currentProducts.map(p => 
-                p.id === updatedProduct.id ? updatedProduct : p
-              );
-              
-              queryClient.setQueryData(["/api/products"], updatedProducts);
-              console.log("Produto atualizado em tempo real:", updatedProduct);
+        // Verificar se data já é um objeto ou precisa ser convertido de JSON
+        const processData = async () => {
+          let updatedProduct;
+          
+          // Se a resposta for um objeto Response, tentar extrair o JSON
+          if (data && typeof data.json === 'function') {
+            try {
+              updatedProduct = await data.json();
+            } catch (err) {
+              console.error("Erro ao converter resposta para JSON:", err);
+              return;
             }
-          } catch (e) {
-            console.error("Erro ao processar resposta de atualização:", e);
+          } else {
+            // Se já for um objeto, usar diretamente
+            updatedProduct = data;
           }
-        });
+          
+          if (updatedProduct && updatedProduct.id) {
+            // Buscar produtos atuais do cache
+            const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
+            const productsData = Array.isArray(currentProducts) ? currentProducts : 
+              (currentProducts && 'data' in currentProducts && Array.isArray(currentProducts.data)) ? 
+                currentProducts.data : [];
+            
+            // Substituir o produto na lista
+            const updatedProducts = productsData.map(p => 
+              p.id === updatedProduct.id ? updatedProduct : p
+            );
+            
+            // Atualizar a lista no cache
+            if (Array.isArray(currentProducts)) {
+              queryClient.setQueryData(["/api/products"], updatedProducts);
+            } else if (currentProducts && 'data' in currentProducts) {
+              queryClient.setQueryData(["/api/products"], { ...currentProducts, data: updatedProducts });
+            }
+            
+            console.log("Produto atualizado em tempo real:", updatedProduct);
+          }
+        };
+        
+        processData();
       } catch (e) {
-        console.error("Erro ao ler resposta de atualização:", e);
+        console.error("Erro ao processar resposta de atualização:", e);
+        // Garantir que os dados sejam atualizados mesmo em caso de erro
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       }
       
       setIsEditDialogOpen(false);
@@ -345,37 +366,57 @@ export default function ProductManagement() {
       return apiRequest("DELETE", `/api/products/${id}`);
     },
     onSuccess: (data) => {
-      // Invalidar a consulta principal
+      console.log("Resposta da exclusão recebida:", data);
+      
+      // Forçar uma nova busca de todos os produtos para atualizar a interface
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       
-      // Atualizar a interface em tempo real removendo o produto desativado
+      // Tentar processar a resposta para atualizar em tempo real
       try {
-        data.text().then(text => {
-          try {
-            const deletedProduct = JSON.parse(text);
-            const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
-            
-            if (deletedProduct && deletedProduct.id) {
-              // Atualizar o produto na lista (mudar status para inativo)
-              const updatedProducts = currentProducts.map(p => 
-                p.id === deletedProduct.id ? {...p, active: false} : p
-              );
-              
-              // Como é uma operação de desativação, ainda mantemos o produto na lista mas com status "inativo"
-              queryClient.setQueryData(["/api/products"], updatedProducts);
-              console.log("Produto desativado em tempo real:", deletedProduct);
+        // Verificar se data já é um objeto ou precisa ser convertido de JSON
+        const processData = async () => {
+          let deletedProduct;
+          
+          // Se a resposta for um objeto Response, tentar extrair o JSON
+          if (data && typeof data.json === 'function') {
+            try {
+              deletedProduct = await data.json();
+            } catch (err) {
+              console.error("Erro ao converter resposta para JSON:", err);
+              return;
             }
-          } catch (e) {
-            console.error("Erro ao processar resposta de exclusão:", e);
+          } else {
+            // Se já for um objeto, usar diretamente
+            deletedProduct = data;
           }
-        }).catch(e => {
-          console.error("Falha ao processar texto da resposta:", e);
-          // Mesmo em caso de erro, invalidamos a query para forçar nova busca
-          queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-        });
+          
+          if (deletedProduct && deletedProduct.id) {
+            // Buscar produtos atuais do cache
+            const currentProducts = queryClient.getQueryData<Product[]>(["/api/products"]) || [];
+            const productsData = Array.isArray(currentProducts) ? currentProducts : 
+              (currentProducts && 'data' in currentProducts && Array.isArray(currentProducts.data)) ? 
+                currentProducts.data : [];
+            
+            // Atualizar o produto na lista (mudar status para inativo)
+            const updatedProducts = productsData.map(p => 
+              p.id === deletedProduct.id ? {...p, active: false} : p
+            );
+            
+            // Atualizar a lista no cache
+            if (Array.isArray(currentProducts)) {
+              queryClient.setQueryData(["/api/products"], updatedProducts);
+            } else if (currentProducts && 'data' in currentProducts) {
+              queryClient.setQueryData(["/api/products"], { ...currentProducts, data: updatedProducts });
+            }
+            
+            console.log("Produto desativado em tempo real:", deletedProduct);
+          }
+        };
+        
+        processData();
       } catch (e) {
-        console.error("Erro ao ler resposta de exclusão:", e);
-        // Garantir invalidação da query mesmo em caso de erro
+        console.error("Erro ao processar resposta de exclusão:", e);
+        // Garantir que os dados sejam atualizados mesmo em caso de erro
         queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       }
       
