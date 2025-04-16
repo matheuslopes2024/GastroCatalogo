@@ -280,6 +280,18 @@ export default function ProductManagement() {
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues & { id: number }) => {
       const { id, ...productData } = data;
+      
+      // Garantir que lastStockUpdate seja uma string ISO se estiver presente
+      if (productData.lastStockUpdate && typeof productData.lastStockUpdate !== 'string') {
+        try {
+          productData.lastStockUpdate = new Date(productData.lastStockUpdate).toISOString();
+        } catch (err) {
+          console.error("Erro ao converter lastStockUpdate para ISO string:", err);
+          productData.lastStockUpdate = new Date().toISOString();
+        }
+      }
+      
+      console.log("Enviando dados para atualização:", productData);
       return apiRequest("PATCH", `/api/products/${id}`, productData);
     },
     onSuccess: (data) => {
@@ -396,6 +408,10 @@ export default function ProductManagement() {
     // Garanta que todos os campos obrigatórios estejam presentes
     const slug = generateSlug(data.name);
     
+    // Garantir que as datas estejam no formato string ISO
+    const lastStockUpdateISO = new Date().toISOString();
+    console.log("Data de criação gerada:", lastStockUpdateISO, "Tipo:", typeof lastStockUpdateISO);
+    
     // Versão completa do produto com todas as propriedades necessárias
     const productData = {
       name: data.name,
@@ -419,7 +435,7 @@ export default function ProductManagement() {
       lowStockThreshold: data.lowStockThreshold,
       sku: data.sku,
       stockStatus: data.stockStatus,
-      lastStockUpdate: new Date().toISOString()
+      lastStockUpdate: lastStockUpdateISO
     };
     
     console.log("Dados simplificados para envio:", productData);
@@ -431,6 +447,10 @@ export default function ProductManagement() {
     if (!editingProduct) return;
     
     console.log("Enviando dados de edição:", data);
+    
+    // Garantir que as datas estejam no formato string ISO
+    const lastStockUpdateISO = new Date().toISOString();
+    console.log("Data de atualização gerada:", lastStockUpdateISO, "Tipo:", typeof lastStockUpdateISO);
     
     // Versão completa do produto para edição
     const productData = {
@@ -456,10 +476,11 @@ export default function ProductManagement() {
       lowStockThreshold: data.lowStockThreshold,
       sku: data.sku,
       stockStatus: data.stockStatus,
-      lastStockUpdate: new Date().toISOString()
+      lastStockUpdate: lastStockUpdateISO
     };
     
     console.log("Dados simplificados para edição:", productData);
+    console.log("Tipo de lastStockUpdate:", typeof productData.lastStockUpdate);
     updateProductMutation.mutate(productData as ProductFormValues & { id: number });
   };
   
