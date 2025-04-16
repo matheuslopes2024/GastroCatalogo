@@ -442,7 +442,31 @@ export class MemStorage implements IStorage {
       const product = await this.getProduct(id);
       if (!product) return undefined;
       
-      const updatedProduct = { ...product, ...productData };
+      // Verificar e ajustar o campo lastStockUpdate se for uma string
+      const dataToUpdate = { ...productData };
+      
+      // Tratar data de atualização do estoque
+      if (dataToUpdate.lastStockUpdate !== undefined) {
+        // Se for string, manter como string sem tentar converter para Date
+        console.log(`Campo lastStockUpdate recebido: ${dataToUpdate.lastStockUpdate} (tipo: ${typeof dataToUpdate.lastStockUpdate})`);
+        
+        // Se for null ou undefined, mantenha assim (sem conversão)
+        if (dataToUpdate.lastStockUpdate === null || dataToUpdate.lastStockUpdate === undefined) {
+          // Nada a fazer, manter o valor como está
+        } 
+        // Caso contrário, garantir que é tratado como string para evitar problemas
+        else if (typeof dataToUpdate.lastStockUpdate !== 'string') {
+          try {
+            // Se for um objeto Date, converter para string ISO
+            dataToUpdate.lastStockUpdate = new Date(dataToUpdate.lastStockUpdate).toISOString();
+          } catch (err) {
+            console.warn(`Erro ao processar lastStockUpdate, usando data atual:`, err);
+            dataToUpdate.lastStockUpdate = new Date().toISOString();
+          }
+        }
+      }
+      
+      const updatedProduct = { ...product, ...dataToUpdate };
       this.products.set(id, updatedProduct);
       
       console.log(`Produto ${id} atualizado com sucesso:`, updatedProduct);
@@ -479,7 +503,7 @@ export class MemStorage implements IStorage {
         // Tratar dados antes da atualização
         if (updateData.stock !== undefined) {
           updateData.stock = Number(updateData.stock);
-          updateData.lastStockUpdate = new Date();
+          updateData.lastStockUpdate = new Date().toISOString();
           
           // Atualizar status do estoque com base na quantidade
           if (existingProduct.lowStockThreshold !== null) {
@@ -1815,7 +1839,7 @@ export class DatabaseStorage implements IStorage {
         // Tratar dados antes da atualização
         if (updateData.stock !== undefined) {
           updateData.stock = Number(updateData.stock);
-          updateData.lastStockUpdate = new Date();
+          updateData.lastStockUpdate = new Date().toISOString();
           
           // Atualizar status do estoque com base na quantidade
           if (existingProduct.lowStockThreshold !== null) {
