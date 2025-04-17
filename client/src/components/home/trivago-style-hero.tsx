@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, 
@@ -15,6 +15,12 @@ interface Category {
   id: number;
   name: string;
   slug: string;
+}
+
+// Item de busca popular
+interface PopularSearch {
+  text: string;
+  query: string;
 }
 
 // Componente principal de hero estilo Trivago
