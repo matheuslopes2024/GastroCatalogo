@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { Product } from "@shared/schema";
 import { ComparisonResult } from "@/components/product/comparison-result";
+import { ProductSearchResultCard } from "@/components/product/product-search-result-card";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Filter, RefreshCw } from "lucide-react";
+import { 
+  AlertTriangle, 
+  Filter, 
+  RefreshCw, 
+  LayoutList, 
+  LayoutGrid, 
+  AlignLeft 
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SearchResultsGridProps {
   products: Product[] | undefined;
@@ -14,6 +24,9 @@ interface SearchResultsGridProps {
   error?: Error | null;
 }
 
+// Define os tipos de visualização
+type ViewMode = 'card' | 'list' | 'detailed';
+
 export function SearchResultsGrid({
   products,
   isLoading,
@@ -23,6 +36,8 @@ export function SearchResultsGrid({
   errorMessage = "Ocorreu um erro ao buscar os produtos.",
   error
 }: SearchResultsGridProps) {
+  // Estado para o modo de visualização
+  const [viewMode, setViewMode] = useState<ViewMode>('card');
   
   // Se estiver carregando, mostrar componente de loading
   if (isLoading) {
@@ -43,7 +58,7 @@ export function SearchResultsGrid({
       error.message?.includes('cast');
     
     return (
-      <div className="text-center p-12 bg-white rounded-lg shadow">
+      <div className="text-center p-12 bg-white rounded-xl shadow-lg">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
           <AlertTriangle className="h-8 w-8 text-red-600" />
         </div>
@@ -110,24 +125,182 @@ export function SearchResultsGrid({
   // Se não houver produtos
   if (!products || products.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Sem resultados</h3>
-        <p className="text-gray-500">{emptyMessage}</p>
+      <div className="text-center py-16 bg-white rounded-xl shadow-lg">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-6">
+          <Filter className="h-10 w-10 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-semibold mb-3 text-gray-800">Sem resultados</h3>
+        <p className="text-gray-500 max-w-lg mx-auto">{emptyMessage}</p>
       </div>
     );
   }
   
-  // Renderiza a lista de produtos
+  // Selecionar de visualização
+  const ViewToggle = () => (
+    <div className="flex items-center justify-between mb-6">
+      <div className="text-sm text-gray-500">
+        {products.length} {products.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
+      </div>
+      <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+        <button
+          onClick={() => setViewMode('card')}
+          className={`p-2 rounded ${viewMode === 'card' ? 'bg-white shadow text-primary' : 'text-gray-500'}`}
+          title="Visualização em cards"
+        >
+          <LayoutGrid size={18} />
+        </button>
+        <button
+          onClick={() => setViewMode('list')}
+          className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow text-primary' : 'text-gray-500'}`}
+          title="Visualização em lista"
+        >
+          <LayoutList size={18} />
+        </button>
+        <button
+          onClick={() => setViewMode('detailed')}
+          className={`p-2 rounded ${viewMode === 'detailed' ? 'bg-white shadow text-primary' : 'text-gray-500'}`}
+          title="Visualização detalhada"
+        >
+          <AlignLeft size={18} />
+        </button>
+      </div>
+    </div>
+  );
+  
+  // Renderizar os produtos de acordo com o modo de visualização
+  const renderProducts = () => {
+    // Animação para a transição entre modos de visualização
+    const containerVariants = {
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: {
+          staggerChildren: 0.05
+        }
+      }
+    };
+    
+    if (viewMode === 'card') {
+      return (
+        <motion.div 
+          className="grid grid-cols-1 gap-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {products.map((product, index) => (
+            <ProductSearchResultCard 
+              key={product.id} 
+              product={{
+                id: product.id,
+                name: product.name,
+                slug: product.slug || product.name.toLowerCase().replace(/\s+/g, '-'),
+                description: product.description || '',
+                price: product.price,
+                originalPrice: product.originalPrice || null,
+                discount: product.discount || null,
+                imageUrl: product.imageUrl || 'https://placehold.co/300x300?text=Sem+imagem',
+                rating: typeof product.rating === 'string' ? parseFloat(product.rating) : product.rating,
+                ratingsCount: product.ratingsCount || 0,
+                supplierId: product.supplierId,
+                supplierName: product.supplierName || ''
+              }} 
+              index={index}
+            />
+          ))}
+        </motion.div>
+      );
+    } else if (viewMode === 'list') {
+      // Visualização em lista mais compacta
+      return (
+        <motion.div 
+          className="flex flex-col gap-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {products.map((product, index) => (
+            <motion.div 
+              key={product.id}
+              className="bg-white rounded-lg shadow-md p-4 flex items-center gap-4 hover:shadow-lg transition-shadow"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <div className="w-20 h-20 flex-shrink-0">
+                <img 
+                  src={product.imageUrl || 'https://placehold.co/300x300?text=Sem+imagem'} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover rounded-md"
+                />
+              </div>
+              <div className="flex-grow">
+                <h3 className="font-medium">{product.name}</h3>
+                <div className="text-sm text-gray-500 line-clamp-1">{product.description}</div>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className="font-bold text-primary text-lg">
+                  R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+                {product.originalPrice && (
+                  <div className="text-gray-400 line-through text-sm">
+                    R$ {parseFloat(product.originalPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                )}
+                <div className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => window.location.href = `/produto/${product.slug || product.id}`}
+                  >
+                    Ver detalhes
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      );
+    } else {
+      // Visualização detalhada (mantendo o componente antigo para compatibilidade)
+      return (
+        <motion.div 
+          className="space-y-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {products.map((product, index) => (
+            <ComparisonResult 
+              key={product.id} 
+              product={product} 
+              isBestPrice={index === 0} 
+            />
+          ))}
+        </motion.div>
+      );
+    }
+  };
+  
+  // Renderização final
   return (
     <div className="space-y-4">
-      {/* Lista de produtos */}
-      {products.map((product, index) => (
-        <ComparisonResult 
-          key={product.id} 
-          product={product} 
-          isBestPrice={index === 0} 
-        />
-      ))}
+      {/* Seletor de modo de visualização */}
+      <ViewToggle />
+      
+      {/* Lista de produtos com transição animada entre modos */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={viewMode}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {renderProducts()}
+        </motion.div>
+      </AnimatePresence>
       
       {/* Botão para carregar mais */}
       {hasMore && onLoadMore && (

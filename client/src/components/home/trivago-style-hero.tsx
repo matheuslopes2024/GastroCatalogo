@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, 
@@ -280,7 +280,7 @@ export function TrivagoStyleHero() {
           >
             <span className="text-sm text-gray-500">Buscas populares:</span>
             {popularSearches.map((search, index) => (
-              <React.Fragment key={index}>
+              <div key={index} className="flex items-center">
                 <a 
                   href={`/busca?q=${encodeURIComponent(search.query)}`} 
                   className="text-sm text-primary hover:underline"
@@ -288,9 +288,9 @@ export function TrivagoStyleHero() {
                   {search.text}
                 </a>
                 {index < popularSearches.length - 1 && (
-                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-300 ml-2 mr-1">•</span>
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </motion.div>
         </motion.div>
