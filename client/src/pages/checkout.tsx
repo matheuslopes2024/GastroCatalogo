@@ -115,9 +115,9 @@ const CheckoutForm = () => {
 
 // Componente de resumo do carrinho
 const CartSummary = () => {
-  const { items, calculateTotal } = useCart();
+  const { items, getTotalPrice } = useCart();
   const [, setLocation] = useLocation();
-  const total = calculateTotal();
+  const total = getTotalPrice();
 
   return (
     <Card>
@@ -133,22 +133,22 @@ const CartSummary = () => {
       <CardContent>
         <div className="space-y-3">
           {items.map((item) => (
-            <div key={item.productId} className="flex justify-between items-center">
+            <div key={item.product.id} className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100">
                   <img 
-                    src={item.image || 'https://placehold.co/100x100?text=Produto'} 
-                    alt={item.productName}
+                    src={item.product.imageUrl || 'https://placehold.co/100x100?text=Produto'} 
+                    alt={item.product.name}
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{item.productName}</p>
+                  <p className="text-sm font-medium">{item.product.name}</p>
                   <p className="text-xs text-muted-foreground">Qtd: {item.quantity}</p>
                 </div>
               </div>
               <p className="text-sm font-medium">
-                {formatCurrency(parseFloat(item.price) * item.quantity)}
+                {formatCurrency(parseFloat(item.product.price) * item.quantity)}
               </p>
             </div>
           ))}
@@ -189,10 +189,10 @@ const CartSummary = () => {
 // Página principal de checkout
 const CheckoutPage = () => {
   const [clientSecret, setClientSecret] = useState<string>("");
-  const { items, calculateTotal } = useCart();
+  const { items, getTotalPrice } = useCart();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const total = calculateTotal();
+  const total = getTotalPrice();
   
   useEffect(() => {
     // Redirecionar se o carrinho estiver vazio

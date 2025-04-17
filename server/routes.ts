@@ -3282,6 +3282,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para criar um PaymentIntent do Stripe
+  app.post("/api/create-payment-intent", async (req, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ 
+          message: "Serviço de pagamento não configurado. Contate o administrador." 
+        });
+      }
+      
+      const { amount } = req.body;
+      
+      if (!amount || isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ 
+          message: "Valor do pagamento inválido" 
+        });
+      }
+
+      // Criar o PaymentIntent com o valor convertido para centavos
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convertendo para centavos
+        currency: "brl",  // Usando a moeda brasileira (Real)
+        // Você pode adicionar metadados como o ID do usuário se estiver autenticado
+        ...(req.isAuthenticated() ? { metadata: { userId: req.user.id } } : {})
+      });
+      
+      // Retornar apenas o clientSecret que será usado pelo frontend
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Erro ao criar o PaymentIntent:", error);
+      res.status(500).json({ 
+        message: "Erro ao processar pagamento: " + error.message 
+      });
+    }
+  });
+  
   const httpServer = createServer(app);
   
   // Configuração do WebSocket Server para chat em tempo real
