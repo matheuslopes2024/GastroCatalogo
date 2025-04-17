@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Product } from "@shared/schema";
 import { ComparisonResult } from "@/components/product/comparison-result";
 import { ProductSearchResultCard } from "@/components/product/product-search-result-card";
 import { Loading } from "@/components/ui/loading";
@@ -13,6 +12,26 @@ import {
   AlignLeft 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Definição de tipo para os produtos usados nas grids de busca
+// Adaptado de acordo com schema.ts e necessidades do componente
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  slug: string;
+  categoryId: number;
+  supplierId: number;
+  price: string;
+  originalPrice?: string | null;
+  discount?: number | null;
+  rating?: string | number | null;
+  ratingsCount?: number;
+  imageUrl: string;
+  features?: string[];
+  supplierName?: string;
+  [key: string]: any; // Para outros campos que possam existir
+}
 
 interface SearchResultsGridProps {
   products: Product[] | undefined;
